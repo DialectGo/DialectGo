@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text, Button, Card, Avatar, TextInput } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 
 const Login = () => {
-  // 1. State for user input
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
@@ -11,7 +12,6 @@ const Login = () => {
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        {/* 2. Header Icon and Title */}
         <Card.Title 
           title="DialectGo" 
           subtitle="Login to continue" 
@@ -19,7 +19,6 @@ const Login = () => {
         />
 
         <Card.Content>
-          {/* 3. Email Input */}
           <TextInput
             label="Email"
             value={email}
@@ -29,8 +28,6 @@ const Login = () => {
             style={styles.input}
             left={<TextInput.Icon icon="email" />}
           />
-
-          {/* 4. Password Input with Toggle Visibility */}
           <TextInput
             label="Password"
             value={password}
@@ -49,13 +46,12 @@ const Login = () => {
         </Card.Content>
 
         <Card.Actions style={styles.actions}>
-          {/* 5. Action Buttons */}
           <Button mode="text" onPress={() => {}}>
             Forgot Password?
           </Button>
           <Button 
             mode="contained" 
-            onPress={() => console.log('Login Pressed')}
+            onPress={() => router.push('/home')}
             style={styles.loginBtn}
           >
             Login
@@ -68,9 +64,7 @@ const Login = () => {
       </Button>
     </View>
   );
-}
-
-export default Login;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -98,3 +92,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
   }
 });
+
+export default Login;
