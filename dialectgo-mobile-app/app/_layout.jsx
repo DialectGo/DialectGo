@@ -1,11 +1,11 @@
 import "../global.css";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
-import { PaperProvider } from 'react-native-paper';
 
 export default function RootLayout() {
   return (
-    <PaperProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </PaperProvider>
+    <SafeAreaProvider>
+      <Stack />
+    </SafeAreaProvider>
   );
 }
