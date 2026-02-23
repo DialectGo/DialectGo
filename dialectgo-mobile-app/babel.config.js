@@ -12,9 +12,11 @@ module.exports = function (api) {
           root: ['./'],
           alias: {
             '@assets': './assets',
-          }
-        }
-      ]
+          },
+        },
+      ],
+      '@babel/plugin-proposal-optional-chaining', // Add this here
+      'react-native-reanimated/plugin',
     ],
   };
 };
