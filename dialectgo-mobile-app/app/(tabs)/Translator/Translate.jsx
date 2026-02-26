@@ -24,12 +24,9 @@ export default function Translate() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 1. The Dynamic Content Area */}
       <View style={styles.content}>
         {renderTranslationMode()}
       </View>
-
-      {/* 2. The Sub-Navigation (Fixed at the bottom) */}
       <View style={styles.navWrapper}>
         <SegmentedButtons
           value={activeTab}
@@ -51,7 +48,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   content: {
-    flex: 1, // This takes up all space above the buttons
+    flex: 1,
   },
   navWrapper: {
     paddingHorizontal: 16,
