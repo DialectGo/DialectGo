@@ -89,7 +89,7 @@ export default function Login() {
                 <Text mode="text" style={{ marginTop: 16, borderRadius: 10}} textColor="#000000">
                   Don't have an account?
                 </Text>
-                <Button mode="text" style={{ marginTop: 16, borderRadius: 10 }} textColor="#000000" onPress={() => router.push('/auth/Register')}>
+                <Button mode="text" style={{ marginTop: 16, borderRadius: 10 }} textColor="#000000" onPress={() => router.push('/(tabs)/auth/Register')}>
                   Sign Up
                 </Button>
               </View>
