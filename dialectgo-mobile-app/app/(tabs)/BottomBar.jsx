@@ -1,7 +1,9 @@
 import React from 'react';
 import { BottomNavigation } from 'react-native-paper';
 import { useRouter, usePathname } from 'expo-router';
-import { Text } from 'react-native';
+import { Text, Image } from 'react-native';
+import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
+import translateIcon from '../../assets/icons/translateIcon.png';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function BottomBar() {
@@ -9,8 +11,9 @@ export default function BottomBar() {
     const pathname = usePathname(); 
 
     const routes = [
-        { key: 'home', title: 'Home', path: '/Home', focusedIcon: 'home', unfocusedIcon: 'home-outline'},
-        { key: 'translate', title: 'Translate', path: '/Translator/Translate', focusedIcon: 'translate', unfocusedIcon: 'translate-variant'},
+        { key: 'home', title: 'Home', path: '/Home', focusedIcon: dictionaryIcon, unfocusedIcon: 'home-outline'},
+        { key: 'translate', title: 'Translate', path: '/Translator/Translate', focusedIcon: translateIcon, unfocusedIcon: 'translate-variant'},
+        { key: 'dictionary', title: 'Dictionary', path: '/Dictionary/Dictionary', focusedIcon: dictionaryIcon, unfocusedIcon: 'book-outline'},
     ];
 
     const index = routes.findIndex(r => r.path === pathname);
@@ -24,13 +27,21 @@ export default function BottomBar() {
           router.push(route.path);
         }
       }}
-      renderIcon={({ route, focused, color }) => (
-        <MaterialCommunityIcons 
-          name={focused ? route.focusedIcon : route.unfocusedIcon} 
-          size={24} 
-          color={color} 
-        />
-      )}
+      renderIcon={({ route, focused, color }) => {
+        const iconSource = focused ? route.focusedIcon : route.unfocusedIcon;
+        
+        if (typeof iconSource !== 'string') {
+          return (
+            <Image 
+              source={iconSource} 
+              style={{ width: 24, height: 24, tintColor: color }} 
+            />
+          );
+        }
+        return (
+          <MaterialCommunityIcons name={iconSource} size={24} color={color} />
+        );
+      }}
       style={{ backgroundColor: '#fff' }}
       inactiveColor='#48AAD9'       
       activeColor='#FFFFFF' 
