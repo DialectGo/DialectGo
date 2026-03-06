@@ -30,7 +30,6 @@ export default function BottomBar() {
             style={[styles.tabItem, isActive && styles.activeTabItem]}
             onPress={() => router.push(route.path)}
           >
-            {/* The Circle Background for the active item */}
             {isActive && <View style={styles.activeIndicator} />}
             
             <Image
@@ -54,13 +53,13 @@ export default function BottomBar() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#FBBF24', // Yellow background
+    backgroundColor: '#FBBF24', 
     height: 80,
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingBottom: 10,
-    elevation: 10, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
+    elevation: 10, 
+    shadowColor: '#000', 
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 10,

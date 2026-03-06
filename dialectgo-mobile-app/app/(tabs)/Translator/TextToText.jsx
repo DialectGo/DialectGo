@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Dimensions, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Keyboard,
-  ScrollView 
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Keyboard, ScrollView } from 'react-native';
 import { Text, TextInput, IconButton, Surface, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import cameraIcon from '../../../assets/icons/cameraIcon.png';
+import micIcon from '../../../assets/icons/micIcon.png';
+import translateIcon from '../../../assets/icons/translateIcon.png';
 
 const { height } = Dimensions.get('window');
 
@@ -43,7 +37,7 @@ export default function TextToText() {
           </TouchableOpacity>
 
           <IconButton 
-            icon="swap-horizontal" 
+            icon={translateIcon}
             size={24}
             iconColor="#1f2937"
             onPress={swapLanguages}
@@ -120,29 +114,38 @@ export default function TextToText() {
               </View>
             )}
           </ScrollView>
-
           <View style={styles.footerActions}>
-            {inputText.length > 0 ? (
-              <Button 
-                mode="contained" 
-                buttonColor="#FBBF24" 
-                textColor="#1f2937"
-                onPress={() => console.log('Translate:', inputText)}
-                style={styles.translateBtn}
-                labelStyle={{ fontWeight: 'bold' }}
-              >
-                Translate
-              </Button>
-            ) : (
-              <IconButton 
-                icon="microphone" 
-                size={32}
-                iconColor="#374151"
-                onPress={() => {}}
-                style={styles.micButton}
-              />
-            )}
-          </View>
+            <IconButton 
+              icon = {cameraIcon}// Example: Gallery/Image icon
+              size={28}
+              iconColor="#374151"
+              onPress={() => console.log('Image Picker Pressed')}
+              style={styles.leftAction}
+            />
+
+            {/* EXISTING LOGIC ON THE RIGHT */}
+            <View style={styles.rightAction}>
+              {inputText.length > 0 ? (
+                <Button 
+                  mode="contained" 
+                  buttonColor="#FBBF24" 
+                  textColor="#1f2937"
+                  onPress={() => console.log('Translate:', inputText)}
+                  style={styles.translateBtn}
+                >
+                  Translate
+                </Button>
+              ) : (
+                <IconButton 
+                  icon={micIcon} 
+                  size={32}
+                  iconColor="#374151"
+                  onPress={() => {}}
+                  style={styles.micButton}
+                />
+              )}
+            </View>
+            </View>
         </Surface>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -222,8 +225,10 @@ const styles = StyleSheet.create({
   },
   footerActions: {
     height: 60,
-    justifyContent: 'center',
-    alignItems: 'flex-end', // Keeps icons/buttons at bottom-right
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
   translateBtn: {
     borderRadius: 20,
