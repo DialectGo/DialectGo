@@ -1,59 +1,106 @@
 import React from 'react';
-import { BottomNavigation } from 'react-native-paper';
+import { View, TouchableOpacity, StyleSheet, Image, Text } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Text, Image } from 'react-native';
 import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
 import translateIcon from '../../assets/icons/translateIcon.png';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import learnIcon from '../../assets/icons/chatbotIcon.png';
+import homeIcon from '../../assets/icons/homeIcon.png';
+import gameIcon from '../../assets/icons/gameIcon.png';
 
 export default function BottomBar() {
-    const router = useRouter();
-    const pathname = usePathname(); 
+  const router = useRouter();
+  const pathname = usePathname();
 
-    const routes = [
-        { key: 'home', title: 'Home', path: '/Home', focusedIcon: dictionaryIcon, unfocusedIcon: 'home-outline'},
-        { key: 'translate', title: 'Translate', path: '/Translator/Translate', focusedIcon: translateIcon, unfocusedIcon: 'translate-variant'},
-        { key: 'dictionary', title: 'Dictionary', path: '/Dictionary/Dictionary', focusedIcon: dictionaryIcon, unfocusedIcon: 'book-outline'},
-    ];
-
-    const index = routes.findIndex(r => r.path === pathname);
-    const activeIndex = index >= 0 ? index : 0;
+  const routes = [
+    { key: 'dictionary', title: 'Dictionary', path: '/Dictionary/Dictionary', icon: dictionaryIcon },
+    { key: 'translate', title: 'Translate', path: '/Translator/Translate', icon: translateIcon },
+    { key: 'home', title: 'Home', path: '/Home', icon: homeIcon },
+    { key: 'learn', title: 'Learn', path: '/Learn/Learn', icon: learnIcon },
+    { key: 'games', title: 'Games', path: '/Games/Games', icon: gameIcon },
+  ];
 
   return (
-    <BottomNavigation.Bar
-      navigationState={{ index: activeIndex, routes }}
-      onTabPress={({ route }) => {
-        if (pathname !== route.path) {
-          router.push(route.path);
-        }
-      }}
-      renderIcon={({ route, focused, color }) => {
-        const iconSource = focused ? route.focusedIcon : route.unfocusedIcon;
-        
-        if (typeof iconSource !== 'string') {
-          return (
-            <Image 
-              source={iconSource} 
-              style={{ width: 24, height: 24, tintColor: color }} 
-            />
-          );
-        }
+    <View style={styles.container}>
+      {routes.map((route) => {
+        const isActive = pathname === route.path;
+
         return (
-          <MaterialCommunityIcons name={iconSource} size={24} color={color} />
+          <TouchableOpacity
+            key={route.key}
+            style={[styles.tabItem, isActive && styles.activeTabItem]}
+            onPress={() => router.push(route.path)}
+          >
+            {/* The Circle Background for the active item */}
+            {isActive && <View style={styles.activeIndicator} />}
+            
+            <Image
+              source={route.icon}
+              style={[
+                styles.icon,
+                isActive ? styles.activeIcon : styles.inactiveIcon
+              ]}
+            />
+            
+            <Text style={[styles.label, isActive && styles.activeLabel]}>
+              {route.title}
+            </Text>
+          </TouchableOpacity>
         );
-      }}
-      style={{ backgroundColor: '#fff' }}
-      inactiveColor='#48AAD9'       
-      activeColor='#FFFFFF' 
-      activeIndicatorStyle={{
-        backgroundColor: '#48AAD9',
-      }}
-      renderLabel={({ route, color }) => (
-        <Text style={{ color: '#48AAD9', fontSize: 10, textAlign: 'center' }}>
-          {route.title}
-        </Text>
-      )}
-      labeled={true}
-    />
+      })}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: '#FBBF24', // Yellow background
+    height: 80,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingBottom: 10,
+    elevation: 10, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  activeTabItem: {
+    marginTop: -35, // This "enlarges" and lifts the button
+  },
+  activeIndicator: {
+    position: 'absolute',
+    width: 75,
+    height: 75,
+    borderRadius: 40,
+    backgroundColor: '#FBBF24', // Matches the bar to create the "hump" effect
+    top: -5,
+  },
+  icon: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
+  },
+  activeIcon: {
+    width: 45, // Enlarged icon size
+    height: 45,
+    tintColor: '#000', // Black font/icon
+  },
+  inactiveIcon: {
+    tintColor: '#000', // Black font/icon for inactive too
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#000', // Black labels
+    marginTop: 4,
+  },
+  activeLabel: {
+    marginTop: 8,
+  }
+});

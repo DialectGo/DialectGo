@@ -10,7 +10,7 @@ export default function MyComponent() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       {/* Red background helps you see exactly where this View sits */}
       <View style={{ marginTop: 100, backgroundColor: 'red', padding: 20 }}> 
-        <Text style={{ fontSize: 30, color: 'black' }}>THIS IS HOME</Text>
+        <Text style={{ fontSize: 30, color: 'black' }}>THIS IS LEARN</Text>
       </View>
     </SafeAreaView>
   );

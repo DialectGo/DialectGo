@@ -152,7 +152,7 @@ export default function TextToText() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FBBF24',
+    backgroundColor: '#FFFFFF',
   },
   languageSelectorContainer: {
     paddingHorizontal: 20,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#D9D9D9',
     borderRadius: 20,
     paddingHorizontal: 15,
     height: 65,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   translationCard: {
-    backgroundColor: '#D1D5DB', //
+    backgroundColor: '#D9D9D9', //
     marginHorizontal: 15,
     borderRadius: 30,
     padding: 20,

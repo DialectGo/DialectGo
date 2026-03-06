@@ -32,9 +32,9 @@ export default function Translate() {
           value={activeTab}
           onValueChange={setActiveTab}
           buttons={[
-            {value: 'text', label: 'Text', icon: 'format-text',checkedColor: '#FFFFFF', style: activeTab === 'text' ? styles.activeBtn : styles.inactiveBtn,},
-            {value: 'speech', label: 'Speech', icon: 'microphone', checkedColor: '#FFFFFF', style: activeTab === 'speech' ? styles.activeBtn : styles.inactiveBtn,},
-            {value: 'image', label: 'Image', icon: 'camera', checkedColor: '#FFFFFF', style: activeTab === 'image' ? styles.activeBtn : styles.inactiveBtn,},
+            {value: 'text', label: 'Text', icon: 'format-text',checkedColor: '#1D1B20', style: activeTab === 'text' ? styles.activeBtn : styles.inactiveBtn,},
+            {value: 'speech', label: 'Speech', icon: 'microphone', checkedColor: '#1D1B20', style: activeTab === 'speech' ? styles.activeBtn : styles.inactiveBtn,},
+            {value: 'image', label: 'Image', icon: 'camera', checkedColor: '#1D1B20', style: activeTab === 'image' ? styles.activeBtn : styles.inactiveBtn,},
           ]}
         />
       </View>
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   activeBtn: {
-    backgroundColor: '#48AAD9',
+    backgroundColor: '#FDCE4A',
   },
   inactiveBtn: {
     backgroundColor: 'transparent',
