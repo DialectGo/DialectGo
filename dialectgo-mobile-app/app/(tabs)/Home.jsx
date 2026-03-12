@@ -2,8 +2,6 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { Text, Surface, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Icons based on your previous imports
 import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
 import translateIcon from '../../assets/icons/translateIcon.png';
 import learnIcon from '../../assets/icons/chatbotIcon.png';
@@ -19,7 +17,6 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 1. Yellow Header with Profile */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.profileContainer}>
           <Avatar.Icon size={40} icon="account" backgroundColor="white" color="black" />
@@ -27,10 +24,7 @@ export default function Home() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* 2. Welcome Message */}
         <Text style={styles.welcomeText}>Hi, John Doe</Text>
-
-        {/* 3. Category Grid */}
         <View style={styles.categoryRow}>
           {categories.map((item, index) => (
             <View key={index} style={styles.categoryItem}>
@@ -41,8 +35,6 @@ export default function Home() {
             </View>
           ))}
         </View>
-
-        {/* 4. Stats Row (Streak) */}
         <View style={styles.statsRow}>
           <View style={[styles.statsCard, { backgroundColor: '#FFB800' }]} />
           <Surface style={[styles.statsCard, styles.streakCard]} elevation={0}>
@@ -55,8 +47,6 @@ export default function Home() {
              <Text style={styles.streakSubText}>Keep learning for another streak.</Text>
           </Surface>
         </View>
-
-        {/* 5. Word of the Day Card */}
         <Surface style={styles.wordCard} elevation={1}>
           <Text style={styles.wordCardTitle}>Word of the day!</Text>
           <Text style={styles.mainWord}>Ngani</Text>
