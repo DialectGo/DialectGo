@@ -6,6 +6,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import cameraIcon from '../../../assets/icons/cameraIcon.png';
 import micIcon from '../../../assets/icons/micIcon.png';
 import translateIcon from '../../../assets/icons/translateIcon.png';
+import Result from './Result/Result';
 
 const { height } = Dimensions.get('window');
 
@@ -15,9 +16,21 @@ export default function TextToText() {
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
+  const [showResult, setShowResult] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
+
   const swapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
+  };
+
+  const handleTranslate = () => {
+    if (inputText.length > 0) {
+      // Mock translation logic - replace with your actual NMT/AI call
+      setTranslatedText("Unsay mahitabo!"); 
+      setShowResult(true);
+      Keyboard.dismiss();
+    }
   };
 
   const handleExit = () => {
@@ -26,9 +39,25 @@ export default function TextToText() {
     setIsFocused(false);
   };
 
+  if (showResult) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.resultTopBar}>
+          <IconButton icon="arrow-left" size={24} onPress={() => setShowResult(false)} />
+          <Text style={styles.resultTitle}>Translation</Text>
+        </View>
+        <Result 
+          sourceText={inputText} 
+          translatedText={translatedText} 
+          sourceLang={sourceLang} 
+          targetLang={targetLang} 
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* 1. Static Language Selection Header */}
       <View style={styles.languageSelectorContainer}>
         <Surface style={styles.selectorSurface} elevation={1}>
           <TouchableOpacity style={styles.langButton}>
@@ -50,7 +79,6 @@ export default function TextToText() {
         </Surface>
       </View>
 
-      {/* 2. Keyboard Avoiding Wrapper */}
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -60,7 +88,6 @@ export default function TextToText() {
           style={[
             styles.translationCard, 
             { 
-              // DYNAMIC CHANGE: Shrink the card weight when keyboard is up
               flex: isFocused ? 0.90 : 1, 
               marginBottom: isFocused ? 5 : 15 
             }
@@ -116,21 +143,19 @@ export default function TextToText() {
           </ScrollView>
           <View style={styles.footerActions}>
             <IconButton 
-              icon = {cameraIcon}// Example: Gallery/Image icon
+              icon = {cameraIcon}
               size={28}
               iconColor="#374151"
               onPress={() => console.log('Image Picker Pressed')}
               style={styles.leftAction}
             />
-
-            {/* EXISTING LOGIC ON THE RIGHT */}
             <View style={styles.rightAction}>
               {inputText.length > 0 ? (
                 <Button 
                   mode="contained" 
                   buttonColor="#FBBF24" 
                   textColor="#1f2937"
-                  onPress={() => console.log('Translate:', inputText)}
+                  onPress={handleTranslate}
                   style={styles.translateBtn}
                 >
                   Translate
@@ -181,7 +206,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   translationCard: {
-    backgroundColor: '#D9D9D9', //
+    backgroundColor: '#D9D9D9', 
     marginHorizontal: 15,
     borderRadius: 30,
     padding: 20,
