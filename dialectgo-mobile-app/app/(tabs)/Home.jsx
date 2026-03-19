@@ -17,11 +17,6 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.profileContainer}>
-          <Avatar.Icon size={40} icon="account" backgroundColor="white" color="black" />
-        </TouchableOpacity>
-      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.welcomeText}>Hi, John Doe</Text>

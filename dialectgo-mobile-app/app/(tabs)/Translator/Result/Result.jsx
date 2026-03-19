@@ -3,12 +3,10 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-nat
 import { Text, Surface, IconButton, Divider } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-// Sub-components
 import ResultExample from './ResultExample';
 import SynonymResult from './SynonymResult';
 import ResultTone from './ResultTone';
 
-// Asset
 import pronounceIcon from '../../../../assets/icons/pronounceIcon.png';
 
 export default function Result({ sourceText, translatedText, targetLang, sourceLang }) {
@@ -25,7 +23,6 @@ export default function Result({ sourceText, translatedText, targetLang, sourceL
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 1. Primary Translation Card */}
       <Surface style={styles.resultCard} elevation={0}>
         <View style={styles.cardHeader}>
           <Text style={styles.langLabel}>{sourceLang}</Text>
@@ -64,7 +61,6 @@ export default function Result({ sourceText, translatedText, targetLang, sourceL
         </View>
       </Surface>
 
-      {/* 2. Sub-Navigation Tabs */}
       <View style={styles.tabBar}>
         {[
           { id: 'examples', label: 'Examples', icon: 'format-list-bulleted' },
@@ -88,7 +84,6 @@ export default function Result({ sourceText, translatedText, targetLang, sourceL
         ))}
       </View>
 
-      {/* 3. Dynamic Sub-Content Area */}
       <View style={styles.subContentContainer}>
         {renderSubContent()}
       </View>

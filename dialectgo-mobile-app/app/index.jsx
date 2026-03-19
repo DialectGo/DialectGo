@@ -3,20 +3,26 @@ import { StyleSheet, View, Image, Animated, Easing, Dimensions } from 'react-nat
 import { useRouter } from 'expo-router';
 import { Text, Button, TextInput, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-// Assets
 import bubbleTextImg from '@assets/logo/BubbleText.png';
 import dotImg from '@assets/logo/Dot.png';
 import goProfileImg from '@assets/logo/GoProfile.png'; 
 import finalLogoImg from '@assets/logo/Logo.png'; 
 import googleLogo from '@assets/logo/googleLogo.png';
 import facebookLogo from '@assets/logo/facebookLogo.jpg';
+import { createClient } from '@supabase/supabase-js';
 
+const supabase = createClient('https://egalempypegfsegmomud.supabase.co', 'sb_publishable_Q-n8s648TscunnWlP0Sefg_8ebPONMt');
 const { height } = Dimensions.get('window');
 
 export default function Login() {
   const router = useRouter();
   const [animationFinished, setAnimationFinished] = useState(false);
+
+    // 1. Add email and password to your useState hooks
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [loading, setLoading] = useState(false); // For button feedback
+
 
   // Animation Refs
   const bubbleScale = useRef(new Animated.Value(5)).current; 
@@ -29,6 +35,29 @@ export default function Login() {
   const logoTranslateY = useRef(new Animated.Value(0)).current;
   const formTranslateY = useRef(new Animated.Value(height)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
+
+
+const handleLogin = async () => {
+  if (!email || !password) {
+    alert("Please fill in all fields");
+    return;
+  }
+
+  setLoading(true);
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: password,
+  });
+
+  setLoading(false);
+
+  if (error) {
+    alert(error.message);
+  } else {
+    // Navigate only on success
+    router.push('/(tabs)/Home');
+  }
+};
 
   useEffect(() => {
     const runDotTypingSequence = () => [
@@ -114,14 +143,22 @@ export default function Login() {
       <Animated.View style={[styles.formWrapper, { transform: [{ translateY: formTranslateY }] }]}>
         <View className="h-full w-full bg-[#D9D9D9] rounded-t-[45px] px-6 pt-10 pb-12 shadow-lg">
           <Text variant="headlineLarge" className="text-slate-800 p-5 text-center font-bold">LOG IN</Text>
-          <TextInput label="Email" mode="outlined" style={styles.input} keyboardType="email-address" />
-          <TextInput label="Password" mode="outlined" style={styles.input} secureTextEntry />
+          <TextInput label="Email" mode="outlined" style={styles.input} keyboardType="email-address" value={email} onChangeText={setEmail} autoCapitalize="none"/>
+          <TextInput label="Password" mode="outlined" style={styles.input} secureTextEntry value={password} onChangeText={setPassword}/> 
           <View className="items-end">
             <Button mode="text" textColor="#000">Forgot Password?</Button>
           </View>
-          <Button mode="contained" style={styles.loginBtn} buttonColor="#F2F2F2" textColor="#000" onPress={() => router.push('/(tabs)/Home')}>
-            LOG IN
-          </Button>
+          <Button 
+  mode="contained" 
+  style={styles.loginBtn} 
+  buttonColor="#F2F2F2" 
+  textColor="#000" 
+  onPress={handleLogin} // Trigger the function
+  loading={loading}     // Show spinner while waiting
+  disabled={loading}
+>
+  LOG IN
+</Button>
           <View className="flex-row items-center my-6">
             <View className="flex-1 h-[1px] bg-gray-500" />
             <Text className="mx-4 text-gray-500">Or continue with</Text>

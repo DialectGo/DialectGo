@@ -26,7 +26,6 @@ export default function TextToText() {
 
   const handleTranslate = () => {
     if (inputText.length > 0) {
-      // Mock translation logic - replace with your actual NMT/AI call
       setTranslatedText("Unsay mahitabo!"); 
       setShowResult(true);
       Keyboard.dismiss();

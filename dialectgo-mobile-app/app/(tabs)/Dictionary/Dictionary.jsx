@@ -3,11 +3,7 @@ import { View, StyleSheet, TouchableOpacity, TextInput, Image } from 'react-nati
 import { Text, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-// Import the Result Component
 import ResultDictionary from './ResultDictionary';
-
-// Logo for empty state
 import finalLogoImg from '@assets/logo/Logo.png';
 
 export default function Dictionary() {
@@ -22,14 +18,6 @@ export default function Dictionary() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 1. Shared Yellow Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.profileContainer}>
-          <Avatar.Icon size={40} icon="account" backgroundColor="white" color="black" />
-        </TouchableOpacity>
-      </View>
-
-      {/* 2. Search Bar Section */}
       <View style={styles.searchContainer}>
         <View style={styles.searchWrapper}>
           <TextInput
@@ -48,7 +36,6 @@ export default function Dictionary() {
         </View>
       </View>
 
-      {/* 3. Conditional Content */}
       <View style={styles.content}>
         {!showResult ? (
           <View style={styles.emptyState}>
@@ -79,7 +66,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 20,
-    marginTop: -25, // Overlap with header
+    marginTop: -25,
   },
   searchWrapper: {
     flexDirection: 'row',

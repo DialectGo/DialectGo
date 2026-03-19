@@ -19,8 +19,7 @@ export default function Learn() {
   const sendMessage = (text) => {
     const newUserMsg = { id: Date.now().toString(), sender: 'user', text };
     setMessages((prev) => [...prev, newUserMsg]);
-    
-    // Mock bot response logic
+
     setTimeout(() => {
       const botReply = {
         id: (Date.now() + 1).toString(),
