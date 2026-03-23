@@ -23,14 +23,38 @@ export default function TextToText() {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
   };
+  
 
-  const handleTranslate = () => {
+  const handleTranslate = async () => {
     if (inputText.length > 0) {
-      setTranslatedText("Unsay mahitabo!"); 
-      setShowResult(true);
-      Keyboard.dismiss();
+      try {
+        // Use your local IP or localhost (10.0.2.2 for Android Emulator)
+        const response = await fetch('http://192.168.1.43:5001/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceText: inputText,
+            sourceLang: sourceLang,
+            targetLang: targetLang
+          }),
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          setTranslatedText(result.translatedText);
+          setShowResult(true);
+        } else {
+          alert("Translation failed. Check if Backend/Colab is running.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Network error.");
+      } finally {
+        Keyboard.dismiss();
+      }
     }
-  };
+};
 
   const handleExit = () => {
     setInputText('');

@@ -9,7 +9,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <View style={styles.container}>
-        <TopBar />
+        {/* <TopBar /> */}
           <View style={{ flex: 1, backgroundColor: 'blue' }}> 
             <Slot /> 
         </View>
