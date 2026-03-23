@@ -1,19 +1,33 @@
 {
   "name": "dialectgo-server",
   "version": "1.0.0",
-  "description": "",
+  "type": "module",
+  "description": "Learning nodejs express framework",
   "main": "index.js",
   "scripts": {
+    "dev": "node --watch app/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/garu10/DialectGo.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/garu10/DialectGo/issues"
+  },
+  "homepage": "https://github.com/garu10/DialectGo#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.2",
-    "apollo-server": "^3.13.0",
+    "@supabase/supabase-js": "^2.100.0",
+    "axios": "^1.13.6",
+    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "graphql": "^16.13.1"
+    "express": "^5.2.1",
+    "joi": "^18.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
