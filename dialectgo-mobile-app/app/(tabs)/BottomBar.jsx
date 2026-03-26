@@ -13,7 +13,7 @@ export default function BottomBar() {
 
   const routes = [
     { key: 'dictionary', title: 'Dictionary', path: '/Dictionary/Dictionary', icon: dictionaryIcon },
-    { key: 'translate', title: 'Translate', path: '/Translator/Translate', icon: translateIcon },
+    { key: 'translate', title: 'Translate', path: '/Translator/TextToText', icon: translateIcon },
     { key: 'home', title: 'Home', path: '/Home', icon: homeIcon },
     { key: 'learn', title: 'Learn', path: '/Learn/Learn', icon: learnIcon },
     { key: 'games', title: 'Games', path: '/Games/Games', icon: gameIcon },
