@@ -4,7 +4,7 @@ export const translateText = async (req, res) => {
     const { sourceText, sourceLang, targetLang } = req.body;
     
     // THE NGROK URL FROM YOUR COLAB OUTPUT
-    const COLAB_URL = "https://vaned-procompensation-enda.ngrok-free.dev/translate";
+    const COLAB_URL = "https://lateritic-vocally-steffanie.ngrok-free.dev/translate"; //replace with actual Colab URL
 
     try {
         const response = await axios.post(COLAB_URL, {
