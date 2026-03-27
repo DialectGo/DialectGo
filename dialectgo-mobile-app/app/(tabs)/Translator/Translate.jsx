@@ -64,3 +64,13 @@
 //     backgroundColor: 'transparent',
 //   },
 // });
+
+import { View, Text } from 'react-native';
+
+export default function TranslateScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Translate Screen</Text>
+    </View>
+  );
+}

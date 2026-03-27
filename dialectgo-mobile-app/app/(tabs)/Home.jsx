@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity } from 'react-native';
 import { Text, Surface, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
 import translateIcon from '../../assets/icons/translateIcon.png';
 import learnIcon from '../../assets/icons/chatbotIcon.png';
 import gameIcon from '../../assets/icons/gameIcon.png';
+import { supabase } from '../../shared/lib/supabase';
 
 export default function Home() {
   const categories = [
@@ -14,12 +15,34 @@ export default function Home() {
     { label: 'Learn', icon: learnIcon },
     { label: 'Games', icon: gameIcon },
   ];
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to sign out of DialectoGo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Logout", 
+          style: "destructive", 
+          onPress: async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) Alert.alert("Error", error.message);
+          } 
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.welcomeText}>Hi, John Doe</Text>
+        <View style={styles.headerAction}>
+          <TouchableOpacity onPress={handleLogout}>
+            <Avatar.Icon size={45} icon="logout" backgroundColor="#FFCB45" color="#5D4037" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.categoryRow}>
           {categories.map((item, index) => (
             <View key={index} style={styles.categoryItem}>

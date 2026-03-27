@@ -4,41 +4,28 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function InnerShadowText() {
+  const HEADER_TEXT = "Translate Now!";
+
   return (
     <View style={styles.container}>
-      <MaskedView
-        maskElement={
-          <Text style={styles.text}>
-            Translate Now!
-          </Text>
-        }
-      >
-        <LinearGradient
-          colors={['#EAB308', '#FDE047', '#CA8A04']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.gradient}
+      <View style={styles.headerWrapper}>
+        <MaskedView
+          maskElement={<Text style={styles.titleText}>{HEADER_TEXT}</Text>}
         >
-          <Text
-            style={[
-              styles.text,
-              {
-                color: 'transparent',
-                textShadowColor: 'rgba(0, 0, 0, 0.3)',
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 3,
-              },
-            ]}
+          <LinearGradient
+            colors={['#EAB308', '#FDE047', '#CA8A04']}
+            style={styles.gradient}
           >
-            Translate Now!
-          </Text>
-        </LinearGradient>
-      </MaskedView>
+            <Text style={styles.hiddenText}>{HEADER_TEXT}</Text>
+          </LinearGradient>
+        </MaskedView>
+      </View>
       
-      <Text style={styles.subText}>
+      <Text style={styles.italicLabel}>
         You can translate ideas into more connective way.
       </Text>
-      <Text style={styles.subText1}>
+      
+      <Text style={styles.brandSubtitle}>
         Dialect/Language
       </Text>
     </View>
@@ -47,32 +34,41 @@ export default function InnerShadowText() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     alignItems: 'flex-start',
   },
-  text: {
+  headerWrapper: {
+    height: 55, 
+    justifyContent: 'center',
+  },
+  titleText: {
     fontSize: 40,
     fontWeight: '900',
-    lineHeight: 60, 
-    marginTop: -15,
+  },
+  hiddenText: {
+    fontSize: 40,
+    fontWeight: '900',
+    color: 'transparent',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   gradient: {
-    height: 70,
-    width: 500,
+    flex: 1,
+    width: 300, 
   },
-  subText: {
-    fontSize: 16,
+  italicLabel: {
+    fontSize: 15,
     fontStyle: 'italic',
-    color: '#374151',
-    marginTop: -25,
+    color: '#4b5563',
     fontWeight: '300',
-    marginBottom: 10,
+    marginTop: 5, 
   },
-    subText1: {
-    fontSize: 25,
+  brandSubtitle: {
+    fontSize: 24,
     color: '#604B48',
-    marginTop: -5,
     fontWeight: '700',
-    marginBottom: -25,
+    marginTop: 10,
   },
 });
