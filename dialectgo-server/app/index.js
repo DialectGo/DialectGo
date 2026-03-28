@@ -5,6 +5,8 @@ import supabase from './config/db.js';
 import userRoutes from "./routes/userRoutes.js";
 import errorHandling from './middlewares/errorHandler.js';
 import translationRoutes from './routes/translationRoutes.js';
+import dictionaryRoutes from './routes/dictionaryRoutes.js';
+
 
 dotenv.config(); 
 
@@ -19,6 +21,8 @@ app.use(cors());
 app.use('/api', userRoutes);
 
 app.use('/api', translationRoutes); // 2. Add this
+// ... other middlewares
+app.use('/api/dictionary', dictionaryRoutes);
 
 // Testing Supabase connection
 app.get('/test-supabase', async (req, res) => {
