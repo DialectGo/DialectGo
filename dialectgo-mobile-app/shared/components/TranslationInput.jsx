@@ -12,7 +12,7 @@ export default function TranslationInput({
   onFocus, 
   onBlur, 
   onExit,
-  icons // cameraIcon, micIcon
+  icons
 }) {
   const suggestions = ['Hi there', 'Good morning', 'How\'s it going'];
   const router = useRouter();
