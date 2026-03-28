@@ -133,8 +133,6 @@ const styles = StyleSheet.create({
   greetingText: {
     color: '#FFBC00', // Your specific theme yellow
     fontWeight: '900',
-    fontSize: 32,
-    marginBottom: 8,
   },
   loginBtn: {
     backgroundColor: '#FFBC00',
