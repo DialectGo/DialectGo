@@ -202,7 +202,7 @@ export default function WordBridgeGame() {
     }
   }
 
-  // HOME SCREEN — no container card
+  // HOME SCREEN 
   if (screen === 'home') {
     return (
       <SafeAreaView style={styles.container}>
@@ -245,7 +245,7 @@ export default function WordBridgeGame() {
     );
   }
 
-  // GAME SCREEN — no container card
+  // GAME SCREEN
   return (
     <SafeAreaView style={styles.container}>
 

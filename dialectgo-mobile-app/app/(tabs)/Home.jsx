@@ -1,75 +1,142 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity } from 'react-native';
-import { Text, Surface, Avatar } from 'react-native-paper';
+import {
+  View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity,
+} from 'react-native';
+import { Text, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
-import translateIcon from '../../assets/icons/translateIcon.png';
-import learnIcon from '../../assets/icons/chatbotIcon.png';
-import gameIcon from '../../assets/icons/gameIcon.png';
 import { supabase } from '../../shared/lib/supabase';
 
+const YELLOW = '#FFCB45';
+const BROWN = '#5D4037';
+const DARK_BROWN = '#3E2723';
+const MUTED_BROWN = '#8D6E63';
+
 export default function Home() {
-  const categories = [
-    { label: 'Dictionary', icon: dictionaryIcon },
-    { label: 'Translate', icon: translateIcon },
-    { label: 'Learn', icon: learnIcon },
-    { label: 'Games', icon: gameIcon },
-  ];
+  // need pa ito from the database 
+  const wordOfTheDay = {
+    word: '"Puhon"',
+    meaning: 'Meaning: Soon / Hopefully / God willing',
+    usage: '"Magkita ta puhon"',
+    usageTranslation: '(We will see each other soon/hopefully)',
+  };
+
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to sign out of DialectoGo?",
+      'Logout',
+      'Are you sure you want to sign out of DialectoGo?',
       [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Logout", 
-          style: "destructive", 
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
           onPress: async () => {
             const { error } = await supabase.auth.signOut();
-            if (error) Alert.alert("Error", error.message);
-          } 
-        }
-      ]
+            if (error) Alert.alert('Error', error.message);
+          },
+        },
+      ],
     );
+  };
+
+  const handleSeeStreak = () => {
+    // palitan ng navigation logic papunta sa streak details screen
+  };
+
+  const handleExplore = () => {
+    // palitan ng navigation logic papunta sa explore screen (ai)
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.welcomeText}>Hi, John Doe</Text>
-        <View style={styles.headerAction}>
-          <TouchableOpacity onPress={handleLogout}>
-            <Avatar.Icon size={45} icon="logout" backgroundColor="#FFCB45" color="#5D4037" />
+        {/* ── Header ── */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            {/* dito lagay avatar — placeholder muna */}
+            <Avatar.Icon
+              size={54}
+              icon="account-circle"
+              backgroundColor="#FFF3C4"
+              color={BROWN}
+            />
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.helloText}>Hello,</Text>
+              <Text style={styles.nameText}>Maria Clara</Text>
+              <Text style={styles.subtitleText}>Enjoy Translating and Learning!</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={handleLogout} activeOpacity={0.7}>
+            <Avatar.Icon
+              size={40}
+              icon="logout"
+              backgroundColor="#F5F0EB"
+              color={MUTED_BROWN}
+            />
           </TouchableOpacity>
         </View>
-        <View style={styles.categoryRow}>
-          {categories.map((item, index) => (
-            <View key={index} style={styles.categoryItem}>
-              <TouchableOpacity style={styles.categoryCircle}>
-                <Image source={item.icon} style={styles.iconImage} />
-              </TouchableOpacity>
-              <Text style={styles.categoryLabel}>{item.label}</Text>
+
+        {/* ── Discover Label ── */}
+        <Text style={styles.discoverTitle}>Discover</Text>
+
+        {/* ── Word of the Day ── */}
+        <View style={styles.wordCard}>
+          <View style={styles.wordCardBadge}>
+            <Text style={styles.wordCardBadgeText}>Word of the day</Text>
+          </View>
+          <Text style={styles.mainWord}>{wordOfTheDay.word}</Text>
+          <View style={styles.wordDivider} />
+          <Text style={styles.wordMeaning}>{wordOfTheDay.meaning}</Text>
+          <Text style={styles.wordUsage}>Usage: {wordOfTheDay.usage}</Text>
+          <Text style={styles.wordUsage}>{wordOfTheDay.usageTranslation}</Text>
+        </View>
+
+        {/* ── Streak Row ── */}
+        <View style={styles.streakRow}>
+
+          {/* Left — count */}
+          <View style={styles.streakLeft}>
+            <Text style={styles.streakYouText}>You are in</Text>
+            <View style={styles.numberCircle}>
+              <Text style={styles.streakNumberText}>24</Text>
             </View>
-          ))}
+            <Text style={styles.streakDaysText}>days streak</Text>
+          </View>
+
+          {/* Right — flame */}
+          <View style={styles.streakRight}>
+            <Text style={styles.streakHint}>{'Keep using the app\nfor the flame.'}</Text>
+            <Image
+              source={require('../../assets/images/flame.png')}
+              style={styles.flameImage}
+              resizeMode="contain"
+            />
+            <TouchableOpacity style={styles.streakBtn} onPress={handleSeeStreak} activeOpacity={0.8}>
+              <Text style={styles.streakBtnText}>See Streak</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
-        <View style={styles.statsRow}>
-          <View style={[styles.statsCard, { backgroundColor: '#FFB800' }]} />
-          <Surface style={[styles.statsCard, styles.streakCard]} elevation={0}>
-             <Text style={styles.streakSmallText}>You are in</Text>
-             <View style={styles.streakInfo}>
-                <Text style={styles.streakNumber}>24</Text>
-                <Text style={styles.flameIcon}>🔥</Text>
-             </View>
-             <Text style={styles.streakMainText}>days streak</Text>
-             <Text style={styles.streakSubText}>Keep learning for another streak.</Text>
-          </Surface>
+
+        {/* ── Explore Banner ── */}
+        <View style={styles.banner}>
+          <View style={styles.bannerLeft}>
+            <Text style={styles.bannerLabel}>Learn more about</Text>
+            <Text style={styles.bannerTitle}>dialectGo</Text>
+            <TouchableOpacity style={styles.exploreBtn} onPress={handleExplore} activeOpacity={0.8}>
+              <Text style={styles.exploreBtnText}>Explore</Text>
+            </TouchableOpacity>
+          </View>
+          <Image
+            source={require('../../assets/images/jeepney.png')}
+            style={styles.jeepneyImage}
+            resizeMode="contain"
+          />
         </View>
-        <Surface style={styles.wordCard} elevation={1}>
-          <Text style={styles.wordCardTitle}>Word of the day!</Text>
-          <Text style={styles.mainWord}>Ngani</Text>
-          <Text style={styles.subWord}>"Pagod na ngani"</Text>
-        </Surface>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -78,143 +145,255 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    backgroundColor: '#FFCB45',
-    height: 70,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  statusBarMock: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -20,
-  },
-  timeText: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  notch: {
-    width: 25,
-    height: 25,
-    backgroundColor: '#333',
-    borderRadius: 12.5,
-    position: 'absolute',
-    left: '50%',
-    marginLeft: -12.5,
-  },
-  profileContainer: {
-    alignSelf: 'flex-end',
-    marginTop: 10,
+    backgroundColor: '#FAFAF8',
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 48,
+    gap: 14,
   },
-  welcomeText: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#5D4037',
-    marginBottom: 30,
-  },
-  categoryRow: {
+
+  headerRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    paddingVertical: 4,
   },
-  categoryItem: {
-    alignItems: 'center',
-    width: '22%',
-  },
-  categoryCircle: {
-    width: 65,
-    height: 65,
-    borderRadius: 35,
-    backgroundColor: '#FFCB45',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  iconImage: {
-    width: 35,
-    height: 35,
-    resizeMode: 'contain',
-  },
-  categoryLabel: {
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  statsCard: {
-    width: '48%',
-    height: 150,
-    borderRadius: 20,
-  },
-  streakCard: {
-    backgroundColor: '#FFCB45',
-    padding: 15,
-    justifyContent: 'center',
-  },
-  streakSmallText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#5D4037',
-  },
-  streakInfo: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
+    flex: 1,
   },
-  streakNumber: {
-    fontSize: 50,
-    fontWeight: '900',
-    color: '#333',
+  headerTextBlock: {
+    flexShrink: 1,
   },
-  flameIcon: {
-    fontSize: 35,
-    marginLeft: 5,
+  helloText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: MUTED_BROWN,
   },
-  streakMainText: {
-    fontSize: 16,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginTop: -10,
+  nameText: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: BROWN,
+    letterSpacing: -0.3,
   },
-  streakSubText: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 5,
+  subtitleText: {
+    fontSize: 11,
+    color: MUTED_BROWN,
+    fontWeight: '500',
+    marginTop: 1,
   },
-  wordCard: {
-    backgroundColor: '#E5E7EB',
-    borderRadius: 30,
-    padding: 40,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  wordCardTitle: {
+
+  discoverTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#5D4037',
-    marginBottom: 20,
+    color: '#1A1917',
+    letterSpacing: -0.4,
+    marginBottom: 2,
+  },
+
+  wordCard: {
+    backgroundColor: YELLOW,
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#C8960A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  wordCardBadge: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    marginBottom: 14,
+  },
+  wordCardBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: BROWN,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   mainWord: {
-    fontSize: 60,
+    fontSize: 42,
     fontWeight: '900',
-    color: '#333',
-    marginBottom: 20,
+    color: DARK_BROWN,
+    letterSpacing: -0.8,
+    textAlign: 'center',
+    marginBottom: 14,
   },
-  subWord: {
-    fontSize: 14,
+  wordDivider: {
+    width: '80%',
+    height: 1,
+    backgroundColor: 'rgba(93,64,55,0.15)',
+    marginBottom: 12,
+  },
+  wordMeaning: {
+    fontSize: 12,
     fontStyle: 'italic',
-    color: '#5D4037',
+    color: BROWN,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  wordUsage: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    color: MUTED_BROWN,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  streakRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  streakLeft: {
+    width: '45%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  streakYouText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: MUTED_BROWN,
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  numberCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: YELLOW,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 6,
+    shadowColor: '#C8960A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  streakNumberText: {
+    fontSize: 40,
+    fontWeight: '900',
+    color: BROWN,
+    letterSpacing: -1,
+  },
+  streakDaysText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: MUTED_BROWN,
+    marginTop: 8,
+    letterSpacing: 0.2,
+  },
+  streakRight: {
+    flex: 1,
+    backgroundColor: YELLOW,
+    borderRadius: 24,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#C8960A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  streakHint: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: BROWN,
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  flameImage: {
+    width: 52,
+    height: 52,
+  },
+  streakBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  streakBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: BROWN,
+  },
+
+  banner: {
+    backgroundColor: YELLOW,
+    borderRadius: 24,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+    shadowColor: '#C8960A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  bannerLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  bannerLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: BROWN,
+    letterSpacing: 0.2,
+  },
+  bannerTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: DARK_BROWN,
+    letterSpacing: -0.6,
+    marginBottom: 10,
+  },
+  exploreBtn: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 22,
+    alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  exploreBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: BROWN,
+  },
+  jeepneyImage: {
+    width: 100,
+    height: 100,
+    marginLeft: 8,
   },
 });
