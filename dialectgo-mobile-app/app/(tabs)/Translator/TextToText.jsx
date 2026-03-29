@@ -9,10 +9,62 @@ import cameraIcon from '../../../assets/icons/cameraIcon.png';
 import micIcon from '../../../assets/icons/micIcon.png';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+import { supabase } from '../../../shared/lib/supabase';
 
 const API_URL = 'http://192.168.1.43:5001/api/translate';
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
+
+function TranslationSection({ 
+  showResult, 
+  isFocused, 
+  inputText, 
+  setInputText, 
+  handleTranslate, 
+  sourceLang, 
+  handleToggleFocus, 
+  handleExit, 
+  icons 
+}) {
+  const inputContainerHeight = showResult ? HEIGHT_RESULT_SHOWN : HEIGHT_RESULT_HIDDEN;
+
+  return (
+    <View style={{ height: inputContainerHeight }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={{ flex: isFocused ? 0.59 : 1 }}
+      >
+        <TranslationInput 
+          value={inputText}
+          onChangeText={setInputText}
+          onTranslate={handleTranslate}
+          sourceLang={sourceLang}
+          isFocused={isFocused}
+          onFocus={() => handleToggleFocus(true)}
+          onBlur={() => handleToggleFocus(false)}
+          onExit={handleExit}
+          icons={icons}
+        />
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+function TranslationResult({ showResult, translatedText, targetLang, onClose }) {
+  if (!showResult) return null;
+
+  return (
+    <View style={styles.resultWrapper}>
+      <ResultCard 
+        translatedText={translatedText} 
+        targetLang={targetLang} 
+        onClose={onClose}
+        pronounceIcon={pronounceIcon}
+      />
+    </View>
+  );
+}
+
 
 export default function TextToText() {
   const [sourceLang, setSourceLang] = useState('English');
@@ -23,7 +75,6 @@ export default function TextToText() {
   const [translatedText, setTranslatedText] = useState('');
 
   const icons = useMemo(() => ({ camera: cameraIcon, mic: micIcon }), []);
-  const inputContainerHeight = showResult ? HEIGHT_RESULT_SHOWN : HEIGHT_RESULT_HIDDEN;
 
   const animateTransition = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -33,27 +84,47 @@ export default function TextToText() {
     if (!inputText.trim()) return;
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceText: inputText, sourceLang, targetLang }),
-      });
+        // 2. Get the current session/token
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+            Alert.alert("Authentication Required", "Please log in to use the translator.");
+            return;
+        }
 
-      const result = await response.json();
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                // 3. Attach the Bearer Token here
+                'Authorization': `Bearer ${session.access_token}` 
+            },
+            body: JSON.stringify({ 
+                sourceText: inputText, 
+                sourceLang, 
+                targetLang 
+            }),
+        });
 
-      if (response.ok) {
-        setTranslatedText(result.translatedText);
-        animateTransition();
-        setShowResult(true);
-      } else {
-        throw new Error('Translation failed');
-      }
+        const result = await response.json();
+
+        if (response.ok) {
+            setTranslatedText(result.translatedText);
+            animateTransition();
+            setShowResult(true);
+        } else {
+            // Check if it's an auth error specifically
+            if (response.status === 401) {
+                throw new Error("Session expired. Please log in again.");
+            }
+            throw new Error(result.message || 'Translation failed');
+        }
     } catch (error) {
-      Alert.alert("Error", "Network error. Please check your server connection.");
+        Alert.alert("Error", error.message);
     } finally {
-      Keyboard.dismiss();
+        Keyboard.dismiss();
     }
-  };
+};
 
   const handleExit = useCallback(() => {
     animateTransition();
@@ -86,38 +157,26 @@ export default function TextToText() {
         keyboardShouldPersistTaps="handled" 
         scrollEnabled={showResult}
       >
-        <View style={{ height: inputContainerHeight }}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-            style={{ flex: isFocused ? 0.59 : 1 }}
-          >
-            <TranslationInput 
-              value={inputText}
-              onChangeText={setInputText}
-              onTranslate={handleTranslate}
-              sourceLang={sourceLang}
-              isFocused={isFocused}
-              onFocus={() => handleToggleFocus(true)}
-              onBlur={() => handleToggleFocus(false)}
-              onExit={handleExit}
-              icons={icons}
-            />
-          </KeyboardAvoidingView>
-        </View>
-
-        {showResult && (
-          <View style={styles.resultWrapper}>
-            <ResultCard 
-              translatedText={translatedText} 
-              targetLang={targetLang} 
-              onClose={() => {
-                 animateTransition();
-                 setShowResult(false);
-              }}
-              pronounceIcon={pronounceIcon}
-            />
-          </View>
-        )}
+        <TranslationSection 
+          showResult={showResult}
+          isFocused={isFocused}
+          inputText={inputText}
+          setInputText={setInputText}
+          handleTranslate={handleTranslate}
+          sourceLang={sourceLang}
+          handleToggleFocus={handleToggleFocus}
+          handleExit={handleExit}
+          icons={icons}
+        />
+        <TranslationResult 
+          showResult={showResult}
+          translatedText={translatedText}
+          targetLang={targetLang}
+          onClose={() => {
+            animateTransition();
+            setShowResult(false);
+          }}
+        />
       </ScrollView>
     </SafeAreaView>
   );

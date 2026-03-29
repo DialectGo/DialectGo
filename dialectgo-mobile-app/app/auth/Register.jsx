@@ -10,11 +10,77 @@ import AuthInput from '../../shared/components/AuthInput';
 import SocialAuth from '../../shared/components/SocialAuth';
 import CustomButton from '../../shared/components/CustomButton';
 
-const { height, width } = Dimensions.get('window');
-
+const { height } = Dimensions.get('window');
 const SNAP_TOP = height * 0.05;    
-const SNAP_BOTTOM = height * 0.25; 
+const SNAP_BOTTOM = height * 0.29; 
 const DRAG_LOWER_LIMIT = SNAP_BOTTOM + 50;
+
+function WelcomeHeader({ style }) {
+  return (
+    <Animated.View style={[styles.headerContainer, style]} className="w-full px-10 pt-10">
+      <Text style={styles.greetingText} className="text-4xl font-black tracking-tighter">
+          Maayong pagbalik!
+      </Text>
+      <Text className="text-slate-500 text-base font-bold mt-1">
+          Learn More. Speak Better. Connect Easier.
+      </Text>
+      <Image 
+        source={require('@assets/logo/jeepLogo.png')} 
+        className="w-60 h-28 self-start mt-4 mr-[-20]"
+        resizeMode="contain" 
+      />
+    </Animated.View>
+  );
+}
+
+function RegisterForm({ form, setForm, agree, setAgree, onSignUp, loading, onLogin, panGesture }) {
+  return (
+    <ScrollView 
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={styles.scrollContent}
+      simultaneousHandlers={panGesture} 
+    >
+    <View className="items-center w-full">
+      <Text className="text-5xl font-black text-[#2D2D2D] mb-8 tracking-tighter">
+        SIGN UP
+      </Text>
+    </View>
+      <View className="space-y-1">
+        <View className="flex-row justify-between w-full">
+          <View className="w-[48%]">
+            <AuthInput label="First Name" onChangeText={(v) => setForm({...form, firstName: v})} style={styles.authArea} />
+          </View>
+          <View className="w-[48%]">
+            <AuthInput label="Last Name" onChangeText={(v) => setForm({...form, lastName: v})} style={styles.authArea} />
+          </View>
+        </View>
+        <AuthInput label="Email" keyboardType="email-address" onChangeText={(v) => setForm({...form, email: v})} style={styles.authArea} />
+        <AuthInput label="Age" keyboardType="numeric" onChangeText={(v) => setForm({...form, age: v})} style={styles.authArea} />
+        <AuthInput label="Password" secureTextEntry onChangeText={(v) => setForm({...form, password: v})} style={styles.authArea} />
+        <AuthInput label="Confirm Password" secureTextEntry onChangeText={(v) => setForm({...form, confirmPassword: v})} style={styles.authArea} />
+      </View>
+
+      <View className="flex-row items-center justify-content-start mt-0 mb-2">
+        <Text className="text-slate-700 font-bold text-sm">Agree on Terms?</Text>
+        <TouchableOpacity 
+           onPress={() => setAgree(!agree)}
+           className={`ml-3 w-6 h-6 rounded-md border-2 border-amber-400 ${agree ? 'bg-amber-400' : 'bg-transparent'}`}
+        />
+      </View>
+
+      <CustomButton title="SIGN UP" onPress={onSignUp} loading={loading} style={styles.signUpBtn} />
+      
+      <SocialAuth />
+
+      <View className="flex-row justify-center mt-8">
+        <Text className="text-slate-700 font-bold">Have an account? </Text>
+        <TouchableOpacity onPress={onLogin}>
+            <Text className="font-black underline text-black">Log In.</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
 
 export default function Register() {
   const router = useRouter();
@@ -24,9 +90,11 @@ export default function Register() {
     firstName: '', lastName: '', email: '', age: '', password: '', confirmPassword: '' 
   });
 
+  // Reanimated Shared Values
   const translateY = useSharedValue(SNAP_BOTTOM);
   const contextY = useSharedValue(0);
 
+  // Gesture Handling
   const panGesture = Gesture.Pan()
     .onStart(() => {
       contextY.value = translateY.value;
@@ -46,6 +114,7 @@ export default function Register() {
       }
     });
 
+  // Animated Styles
   const cardStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
@@ -84,19 +153,7 @@ export default function Register() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       
-      <Animated.View style={[styles.headerContainer, headerStyle]} className="w-full px-10 pt-10">
-        <Text style={styles.greetingText} className="text-[#FFBC00] text-amber-400 text-4xl font-black tracking-tighter">
-            Maayong pagbalik!
-        </Text>
-        <Text className="text-slate-500 text-base font-bold mt-1">
-            Learn More. Speak Better. Connect Easier.
-        </Text>
-        <Image 
-          source={require('@assets/logo/Logo.png')} 
-          className="w-64 h-32 self-end mt-4 mr-[-20]"
-          resizeMode="contain" 
-        />
-      </Animated.View>
+      <WelcomeHeader style={headerStyle} />
 
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.formCard, cardStyle]}>
@@ -104,49 +161,16 @@ export default function Register() {
             <View className="w-12 h-1.5 bg-slate-400 rounded-full" />
           </View>
 
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
-            contentContainerStyle={{ paddingHorizontal: 40, paddingBottom: 120 }}
-            simultaneousHandlers={panGesture} 
-          >
-            <Text className="text-center text-5xl font-black text-[#2D2D2D] mb-8 tracking-tighter">
-              SIGN UP
-            </Text>
-
-            <View className="space-y-1">
-              <View className="flex-row justify-between w-full">
-                <View className="w-[48%]">
-                  <AuthInput label="First Name" onChangeText={(v) => setForm({...form, firstName: v})} style={styles.authArea} />
-                </View>
-                <View className="w-[48%]">
-                  <AuthInput label="Last Name" onChangeText={(v) => setForm({...form, lastName: v})} style={styles.authArea} />
-                </View>
-              </View>
-              <AuthInput label="Email" keyboardType="email-address" onChangeText={(v) => setForm({...form, email: v})} style={styles.authArea} />
-              <AuthInput label="Age" keyboardType="numeric" onChangeText={(v) => setForm({...form, age: v})} style={styles.authArea} />
-              <AuthInput label="Password" secureTextEntry onChangeText={(v) => setForm({...form, password: v})} style={styles.authArea} />
-              <AuthInput label="Confirm Password" secureTextEntry onChangeText={(v) => setForm({...form, confirmPassword: v})} style={styles.authArea} />
-            </View>
-
-            <View className="flex-row items-center justify-center my-4">
-              <Text className="text-slate-700 font-bold text-sm">Agree on Terms?</Text>
-              <TouchableOpacity 
-                 onPress={() => setAgree(!agree)}
-                 className={`ml-3 w-6 h-6 rounded-md border-2 border-amber-400 ${agree ? 'bg-amber-400' : 'bg-transparent'}`}
-              />
-            </View>
-
-            <CustomButton title="SIGN UP" onPress={handleSignUp} loading={loading} style={styles.signUpBtn} />
-            
-            <SocialAuth />
-
-            <View className="flex-row justify-center mt-8">
-              <Text className="text-slate-700 font-bold">Have an account? </Text>
-              <TouchableOpacity onPress={() => router.push('/login')}>
-                  <Text className="font-black underline text-black">Log In.</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+          <RegisterForm 
+            form={form}
+            setForm={setForm}
+            agree={agree}
+            setAgree={setAgree}
+            onSignUp={handleSignUp}
+            loading={loading}
+            onLogin={() => router.push('/login')}
+            panGesture={panGesture}
+          />
         </Animated.View>
       </GestureDetector>
     </SafeAreaView>
@@ -164,6 +188,12 @@ const styles = StyleSheet.create({
     fontSize: 32,
     marginBottom: 8,
   },
+  formTitle: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
   formCard: {
     backgroundColor: '#FFF2C5',
     borderTopLeftRadius: 65,
@@ -172,11 +202,11 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'absolute',
     overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
     elevation: 24, 
+  },
+  scrollContent: {
+    paddingHorizontal: 40, 
+    paddingBottom: 120
   },
   authArea: {
     backgroundColor: '#ffffff',

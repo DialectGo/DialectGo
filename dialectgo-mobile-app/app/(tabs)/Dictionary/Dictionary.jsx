@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View, StyleSheet, TouchableOpacity, TextInput, Image, ActivityIndicator, Keyboard } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,10 +7,22 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ResultDictionary from './ResultDictionary';
 import finalLogoImg from '@assets/logo/Logo.png';
 
-function SearchHeader({ title }) {
+function SearchHeader({ title, onHistory, onSaved }) {
   return (
     <View style={styles.headerTitleContainer}>
-      <Text style={styles.headerTitle}>{title}</Text>
+      <View style={styles.titleWrapper}>
+        <Text style={styles.headerTitle}>{title}</Text>
+      </View>
+      
+      <View style={styles.headerButtons}>
+        <TouchableOpacity style={styles.roundBtn} onPress={onHistory}>
+          <MaterialCommunityIcons name="history" size={28} color="black" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.roundBtn} onPress={onSaved}>
+          <MaterialCommunityIcons name="star" size={28} color="black" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -66,6 +79,7 @@ export default function Dictionary() {
   const [showResult, setShowResult] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSearch = async () => {
     if (searchQuery.trim().length === 0) return;
@@ -100,7 +114,11 @@ export default function Dictionary() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <SearchHeader title="DialectoGo Dictionary" />
+      <SearchHeader 
+      title="DialectoGo Dictionary" 
+      onHistory={() => console.log("History Clicked")} 
+      onSaved={() => router.push('/Dictionary/SaveWords')}
+  />
 
       <SearchBar 
         value={searchQuery}
@@ -129,9 +147,46 @@ export default function Dictionary() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerTitleContainer: { paddingHorizontal: 25, paddingVertical: 15 },
-  headerTitle: { fontSize: 37, fontWeight: 'bold', color: '#333', fontWeight: '900' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFFFFF' 
+  },
+  headerTitleContainer: { 
+    flexDirection: 'row',       // Align children horizontally
+    alignItems: 'center',       // Center them vertically relative to each other
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20, 
+    paddingVertical: 15,
+    marginTop: 10,
+  },
+  titleWrapper: {
+    flex: 1,                    // Allow text to take up remaining space
+    marginRight: 10,            // Gap between text and buttons
+  },
+  headerTitle: { 
+    fontSize: 32,               // Adjusted slightly to fit better on one line
+    color: '#333', 
+    fontWeight: '900',
+    lineHeight: 36,
+  },
+  headerButtons: {
+    flexDirection: 'row',       // Align the two buttons horizontally
+    gap: 8,                     // Space between the two buttons
+  },
+  roundBtn: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: '#FFCB45',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,               // Shadow for Android
+    shadowColor: '#000',        // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  // ... keep the rest of your styles (searchContainer, input, etc.)
   searchContainer: { paddingHorizontal: 20, marginBottom: 15 },
   searchWrapper: {
     flexDirection: 'row',
