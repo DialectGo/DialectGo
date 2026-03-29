@@ -7,7 +7,7 @@ import AuthLayout from './AuthLayout';
 import AuthInput from '../../shared/components/AuthInput';
 import CustomButton from '../../shared/components/CustomButton';
 
-const OTP_LENGTH = 6; 
+const OTP_LENGTH = 8; 
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -25,29 +25,29 @@ export default function VerifyEmail() {
     }
   }, [countdown]);
 
-  const handleVerify = async () => {
+    const handleVerify = async () => {
     setError('');
-    if (token.length !== OTP_LENGTH) {
-      setError(`Verification code must be ${OTP_LENGTH} digits.`);
-      return;
-    }
-    
     setLoading(true);
+    try {
+        // Supabase V1 Syntax: verifyOtp(email, token, options)
+        const { error: sbError, session } = await supabase.auth.verifyOtp(
+        params.email, 
+        token, 
+        { type: 'recovery' }
+        );
 
-    const { error: sbError } = await supabase.auth.verifyOTP({
-      email: params.email,
-      token: token,
-      type: 'recovery',
-    });
-
-    setLoading(false);
-
-    if (sbError) {
-      setError("The verification code is incorrect or has expired.");
-    } else {
-      router.push('/auth/ChangePassword');
+        if (sbError) {
+        setError(sbError.message);
+        } else {
+        // If successful, V1 automatically sets the session
+        router.push('/auth/ChangePassword');
+        }
+    } catch (err) {
+        setError("Verification failed. Please try again.");
+    } finally {
+        setLoading(false);
     }
-  };
+    };
 
   const maskEmail = (email) => {
     if (!email) return 'your email';

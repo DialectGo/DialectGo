@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "^3.0.2",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-masked-view/masked-view": "0.3.2",
-    "@supabase/supabase-js": "^2.99.2",
+    "@supabase/supabase-js": "1.35.7",
     "babel-plugin-module-resolver": "^5.0.2",
     "expo": "^54.0.33",
     "expo-constants": "~18.0.13",
