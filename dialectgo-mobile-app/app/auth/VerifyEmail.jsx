@@ -25,29 +25,35 @@ export default function VerifyEmail() {
     }
   }, [countdown]);
 
-    const handleVerify = async () => {
-    setError('');
-    setLoading(true);
-    try {
-        // Supabase V1 Syntax: verifyOtp(email, token, options)
-        const { error: sbError, session } = await supabase.auth.verifyOtp(
-        params.email, 
-        token, 
-        { type: 'recovery' }
-        );
+const handleVerify = async () => {
+  setError('');
+  setLoading(true);
+  
+  // DEBUG LOGS - Check these in your terminal!
+  console.log("DEBUG: Attempting verification for:", params.email);
+  console.log("DEBUG: Using Token:", token);
 
-        if (sbError) {
-        setError(sbError.message);
-        } else {
-        // If successful, V1 automatically sets the session
-        router.push('/auth/ChangePassword');
-        }
-    } catch (err) {
-        setError("Verification failed. Please try again.");
-    } finally {
-        setLoading(false);
+  try {
+    const { error: sbError, session, user } = await supabase.auth.verifyOtp(
+      params.email, 
+      token, 
+      { type: 'recovery' } // For Forgot Password, this MUST be 'recovery'
+    );
+
+    if (sbError) {
+      console.error("SUPABASE ERROR LOG:", sbError); // This is the gold mine
+      setError(sbError.message);
+    } else {
+      console.log("SUCCESS: Session created for", user?.email);
+      router.push('/auth/ChangePassword');
     }
-    };
+  } catch (err) {
+    console.error("CATCH BLOCK ERROR:", err);
+    setError("An unexpected error occurred.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const maskEmail = (email) => {
     if (!email) return 'your email';

@@ -14,29 +14,38 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
 
   const handleSendCode = async () => {
-    setError('');
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    
-    setLoading(true);
+  if (!email) {
+    Alert.alert("Error", "Please enter your email address");
+    return;
+  }
+  
+  setLoading(true);
 
-    const { error: sbError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'http://dialectgo-colab.ngrok-free.dev/auth/ChangePassword',
-    });
-
-    setLoading(false);
+  try {
+    // Supabase V1 Syntax: .auth.api.resetPasswordForEmail()
+    const { data, error: sbError } = await supabase.auth.api.resetPasswordForEmail(
+      email.trim(), 
+      {
+        redirectTo: 'http://dialectgo-colab.ngrok-free.dev/auth/ChangePassword',
+      }
+    );
 
     if (sbError) {
       Alert.alert("Error", sbError.message);
     } else {
+      // Successfully sent! Navigate to verify screen
       router.push({
         pathname: '/auth/VerifyEmail',
-        params: { email: email.trim() },
+        params: { email: email.trim() }
       });
     }
-  };
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    Alert.alert("Error", "An unexpected error occurred.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <AuthLayout

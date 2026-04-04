@@ -2,8 +2,8 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Image, Text } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import dictionaryIcon from '../../assets/icons/dictionaryIcon.png';
-import translateIcon from '../../assets/icons/translateIcon.png';
-import learnIcon from '../../assets/icons/chatbotIcon.png';
+import translateIcon from '../../assets/icons/translateIcon1.png';
+import learnIcon from '../../assets/icons/profileIcon.png';
 import homeIcon from '../../assets/icons/homeIcon.png';
 import gameIcon from '../../assets/icons/gameIcon.png';
 
@@ -15,8 +15,8 @@ export default function BottomBar() {
     { key: 'dictionary', title: 'Dictionary', path: '/Dictionary/Dictionary', icon: dictionaryIcon },
     { key: 'translate', title: 'Translate', path: '/Translator/TextToText', icon: translateIcon },
     { key: 'home', title: 'Home', path: '/Home', icon: homeIcon },
-    { key: 'learn', title: 'Learn', path: '/Learn/Learn', icon: learnIcon },
     { key: 'games', title: 'Games', path: '/Games/Games', icon: gameIcon },
+    { key: 'profile', title: 'Profile', path: '/Account/Profile', icon: learnIcon },
   ];
 
   return (
@@ -88,10 +88,10 @@ const styles = StyleSheet.create({
   activeIcon: {
     width: 45, // Enlarged icon size
     height: 45,
-    tintColor: '#000', // Black font/icon
+    // tintColor: '#000', // Black font/icon
   },
   inactiveIcon: {
-    tintColor: '#000', // Black font/icon for inactive too
+    // tintColor: '#000', // Black font/icon for inactive too
   },
   label: {
     fontSize: 12,

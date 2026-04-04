@@ -111,10 +111,7 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signIn({
-    email: creds.email,
-    password: creds.password,
-    });
+    const { error } = await supabase.auth.signInWithPassword(creds);
     setLoading(false);
     if (error) alert(error.message);
     else router.replace('/(tabs)/Home');
