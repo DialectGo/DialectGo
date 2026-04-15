@@ -1,4 +1,4 @@
-import supabase from '../config/db.js';
+import { supabase, connectDB } from '../config/db.js';
 
 export const getAllUsersService = async () => {
     const { data: { users }, error } = await supabase.auth.admin.listUsers();

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createUser, getAllUsers, getUserById, updateUser, deleteUser } from '../controller/userController.js';
+import { createUser, getAllUsers, getUserById, updateUser, deleteUser, getProfile, updateProfile } from '../controller/userController.js';
 import validateUser from '../middlewares/inputValidator.js';
 import verifyToken from '../middlewares/auth.js';
 
@@ -13,5 +13,8 @@ router.get("/users", verifyToken, getAllUsers);
 router.get("/user/:id", verifyToken, getUserById);
 router.put("/user/:id", verifyToken, validateUser, updateUser);
 router.delete("/user/:id", verifyToken, deleteUser);
+
+router.get('/profile', verifyToken, getProfile);
+router.put('/profile', verifyToken, updateProfile);
 
 export default router;

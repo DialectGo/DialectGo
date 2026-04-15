@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../../shared/lib/supabase';
 
 // --- Sub-components ---
 
@@ -62,17 +63,17 @@ function InputField({ label, value, onChangeText, keyboardType = "default" }) {
 
 export default function Profile() {
   const router = useRouter();
-  const [view, setView] = useState('view'); // 'view', 'edit', 'avatar'
+  const [view, setView] = useState('view');
+  const [loading, setLoading] = useState(true); // New: Loading state
   
-  // State for user data
-    const [userData, setUserData] = useState({
-    firstName: 'Maria Clara',
-    lastName: 'Alba',
-    age: '24',
-    email: 'mariaclara@gmail.com',
-    // Add the dot here: .png
-    avatar: require('../../../assets/avatars/1.png') 
-    });
+  const [userData, setUserData] = useState({
+    firstName: '',
+    lastName: '',
+    age: '',
+    email: '',
+    avatar: require('../../../assets/avatars/1.png'), // Default
+    avatarId: 1 // Helper to track which index we are using
+  });
 
   const avatars = [
     require('../../../assets/avatars/1.png'),
@@ -80,6 +81,75 @@ export default function Profile() {
     require('../../../assets/avatars/3.png'),
     require('../../../assets/avatars/5.png'),
   ];
+
+  // --- APPLY useEffect HERE ---
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch('http://192.168.1.43:5001/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          age: userData.age,
+          avatar: userData.avatarId.toString(), // Store index as string
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh the local data to be sure and go back to view mode
+        await fetchProfileData(); 
+        setView('view');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Save Error:", error);
+    }
+  };
+
+  const fetchProfileData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch('http://192.168.1.43:5001/api/users/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUserData({
+          firstName: result.firstName || '',
+          lastName: result.lastName || '',
+          age: result.age || '',
+          email: result.email || '',
+          // Use result.avatar (e.g., "2") to pick from local array
+          avatar: avatars[parseInt(result.avatar) - 1] || avatars[0],
+          avatarId: parseInt(result.avatar) || 1
+        });
+      }
+    } catch (error) {
+      console.error("Profile Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     if (view === 'view') router.back();
@@ -115,13 +185,31 @@ export default function Profile() {
           <AvatarDisplay uri={userData.avatar} onEdit={() => setView('avatar')} />
           
           <View style={styles.formContainer}>
-            <InputField label="First Name" value={userData.firstName} />
-            <InputField label="Last Name" value={userData.lastName} />
-            <InputField label="Age" value={userData.age} keyboardType="numeric" />
-            <InputField label="Email" value={userData.email} keyboardType="email-address" />
+            <InputField 
+              label="First Name" 
+              value={userData.firstName} 
+              onChangeText={(text) => setUserData({ ...userData, firstName: text })} 
+            />
+            <InputField 
+              label="Last Name" 
+              value={userData.lastName} 
+              onChangeText={(text) => setUserData({ ...userData, lastName: text })} 
+            />
+            <InputField 
+              label="Age" 
+              value={userData.age} 
+              keyboardType="numeric" 
+              onChangeText={(text) => setUserData({ ...userData, age: text })} 
+            />
+            {/* Email is typically read-only; if you want to edit it, add onChangeText here too */}
+            <InputField 
+              label="Email" 
+              value={userData.email} 
+              keyboardType="email-address" 
+            />
           </View>
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setView('view')}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={handleSave}>
             <Text style={styles.primaryBtnText}>Save Information</Text>
           </TouchableOpacity>
         </ScrollView>
