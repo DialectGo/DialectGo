@@ -355,14 +355,14 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: '#E8F0F0',
+    backgroundColor: '#FFFFFF',
   },
 
   // Home 
   homeContent: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 48,
+    paddingTop: 200,
     alignItems: 'center',
   },
   homeLogo: {
@@ -430,11 +430,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // ── Game ── (full-screen, no card)
+  // ── Game 
   gameContent: {
     flex: 1,
     paddingHorizontal: 22,
-    paddingTop: 16,
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   dirTL: { backgroundColor: '#E8F0FF' },
   dirCB: { backgroundColor: '#FFF3E0' },
   directionText: { fontSize: 10, letterSpacing: 0.8, fontWeight: '700' },
-  dirTLText: { color: '#3B5BDB' },
+  dirTLText: { color: '#FFFFF' },
   dirCBText: { color: '#B8490A' },
 
   translateLabel: {
