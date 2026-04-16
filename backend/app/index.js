@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import supabase from './config/db.js';
+import { supabase, connectDB } from './config/db.js';
 import userRoutes from "./routes/userRoutes.js";
 import errorHandling from './middlewares/errorHandler.js';
 import translationRoutes from './routes/translationRoutes.js';
@@ -19,6 +19,7 @@ app.use(cors());
 
 // Routes
 app.use('/api', userRoutes);
+app.use('/api/users', userRoutes);
 
 app.use('/api', translationRoutes); // 2. Add this
 // ... other middlewares

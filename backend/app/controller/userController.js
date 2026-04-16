@@ -73,3 +73,45 @@ export async function deleteUser(req, res, next) {
         next(err);
     }
 }
+
+export async function getProfile(req, res, next) {
+    try {
+        // req.user.id comes from your verifyToken middleware
+        const userId = req.user.id; 
+        const user = await getUserByIdService(userId);
+        
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Format data for the frontend
+        const profile = {
+            id: user.id,
+            email: user.email,
+            firstName: user.user_metadata?.firstName || '',
+            lastName: user.user_metadata?.lastName || '',
+            age: user.user_metadata?.age || '',
+            avatar: user.user_metadata?.avatar || '1'
+        };
+
+        res.status(200).json(profile);
+    } catch (err) {
+        next(err);
+    }
+}
+
+// UPDATE PROFILE
+export async function updateProfile(req, res, next) {
+    try {
+        const userId = req.user.id;
+        const { firstName, lastName, age, avatar } = req.body;
+
+        // In Supabase Auth, we update the user_metadata
+        const updates = {
+            user_metadata: { firstName, lastName, age, avatar }
+        };
+
+        const updatedUser = await updateUserService(userId, updates);
+        res.status(200).json({ message: "Profile updated successfully", updatedUser });
+    } catch (err) {
+        next(err);
+    }
+}

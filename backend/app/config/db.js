@@ -15,17 +15,22 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// --- CONNECTION CHECK ---
-(async () => {
+const connectDB = async () => {
     try {
-        const { error } = await supabase.from('cebuano').select('id').limit(1);
-        
+        // check connection
+        const { error } = await supabase.auth.getSession();
         if (error) throw error;
 
-        console.log("Connection established with Supabase (PostgREST API)");
-    } catch (err) {
-        console.error("Failed to connect to Supabase:", err.message);
-    }
-})();
+        // Extract the host name 
+        const url = new URL(process.env.SUPABASE_URL);
+        const host = url.host;
 
-export default supabase;
+        console.log(`Supabase Connected: ${host}`);
+
+    } catch (err) {
+        console.error(`Error: ${err.message}`);
+        process.exit(1);
+    }
+};
+
+export { supabase, connectDB };
