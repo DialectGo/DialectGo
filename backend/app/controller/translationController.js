@@ -1,11 +1,45 @@
 import axios from 'axios';
+import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translationModel.js';
+
+export const translateImage = async (req, res) => {
+    try {
+        const { image, targetLang } = req.body;
+        
+        if (!image) return res.status(400).json({ message: "No image provided" });
+
+        console.log("1. Starting OCR...");
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+        const { data: { text } } = await Tesseract.recognize(
+            Buffer.from(base64Data, 'base64'), 
+            'eng'
+        );
+
+        console.log("2. OCR Text extracted:", text);
+        if (!text || text.trim().length === 0) throw new Error("OCR could not read text");
+
+        console.log("3. Calling AI Translation...");
+        const AI_ENDPOINT = process.env.COLAB_URL || "https://vaned-procompensation-enda.ngrok-free.dev/translate"; 
+
+        const aiResponse = await axios.post(AI_ENDPOINT, { // Use AI_ENDPOINT here
+            instruction: `Translate to ${targetLang}.`,
+            input: text
+        });
+
+        // Now aiResponse is defined and we can access aiResponse.data.translation
+        res.json({ status: 200, translatedText: aiResponse.data.translation });
+        
+    } catch (error) {
+        console.error("CRITICAL BACKEND ERROR:", error);
+        res.status(500).json({ message: "Processing failed: " + error.message });
+    }
+};
 
 export const translateText = async (req, res) => {
     const { sourceText, sourceLang, targetLang } = req.body;
     const userId = req.user.id; // Assuming your authMiddleware populates req.user
     
-    const COLAB_URL = "https://vaned-procompensation-enda.ngrok-free.dev/translate";
+    const COLAB_URL = "https://vaned-procompensation-enda.ngrok-free.dev/translate"; // Your Colab endpoint
 
     try {
         // 1. Call AI Engine

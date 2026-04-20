@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity,
 } from 'react-native';
@@ -6,12 +6,84 @@ import { Text, Avatar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../shared/lib/supabase';
 
+import { useRouter } from 'expo-router';
+
 const YELLOW = '#FFCB45';
 const BROWN = '#5D4037';
 const DARK_BROWN = '#3E2723';
 const MUTED_BROWN = '#8D6E63';
 
+function AvatarDisplay({ uri, onEdit }) {
+  return (
+    <View style={styles.avatarContainer}>
+      <View style={styles.avatarWrapper}>
+        <Image source={uri} style={styles.avatarImage} />
+        {onEdit && (
+          <TouchableOpacity style={styles.editBadge} onPress={onEdit}>
+            <Ionicons name="pencil" size={14} color="black" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function Home() {
+    const router = useRouter();
+    const [view, setView] = useState('view');
+    const [loading, setLoading] = useState(true); // New: Loading state
+
+    const [userData, setUserData] = useState({
+      firstName: '',
+      lastName: '',
+      age: '',
+      email: '',
+      avatar: require('../../assets/avatars/1.png'), // Default
+      avatarId: 1 // Helper to track which index we are using
+    });
+
+    const avatars = [
+      require('../../assets/avatars/1.png'),
+      require('../../assets/avatars/2.png'),
+      require('../../assets/avatars/3.png'),
+      require('../../assets/avatars/5.png'),
+    ];
+
+    const fetchProfileData = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+    
+          const response = await fetch('http://192.168.1.50:5001/api/users/profile', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+          });
+    
+          const result = await response.json();
+    
+          if (response.ok) {
+            setUserData({
+              firstName: result.firstName || '',
+              lastName: result.lastName || '',
+              age: result.age || '',
+              email: result.email || '',
+              // Use result.avatar (e.g., "2") to pick from local array
+              avatar: avatars[parseInt(result.avatar) - 1] || avatars[0],
+              avatarId: parseInt(result.avatar) || 1
+            });
+          }
+        } catch (error) {
+          console.error("Profile Fetch Error:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchProfileData();
+      }, []);
   // need pa ito from the database 
   const wordOfTheDay = {
     word: '"Puhon"',
@@ -57,15 +129,10 @@ export default function Home() {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             {/* dito lagay avatar — placeholder muna */}
-            <Avatar.Icon
-              size={54}
-              icon="account-circle"
-              backgroundColor="#FFF3C4"
-              color={BROWN}
-            />
+            <AvatarDisplay uri={userData.avatar} />
             <View style={styles.headerTextBlock}>
               <Text style={styles.helloText}>Hello,</Text>
-              <Text style={styles.nameText}>Maria Clara</Text>
+              <Text style={styles.nameText}>{userData.firstName}</Text>
               <Text style={styles.subtitleText}>Enjoy Translating and Learning!</Text>
             </View>
           </View>
@@ -395,5 +462,28 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginLeft: 8,
+  },
+    avatarContainer: { marginTop: 30, marginBottom: 15 },
+  avatarWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 75,
+    backgroundColor: '#FDE68A',
+    padding: 5,
+    borderWidth: 2,
+    borderColor: '#FBBF24',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 75 },
+  editBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: '#FFF',
+    padding: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#000'
   },
 });

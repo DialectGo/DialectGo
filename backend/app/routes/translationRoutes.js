@@ -1,5 +1,5 @@
 import express from 'express';
-import { translateText, getUserHistory, submitFeedback } from '../controller/translationController.js';
+import { translateText, getUserHistory, submitFeedback, translateImage } from '../controller/translationController.js';
 import verifyToken from '../middlewares/auth.js'; // Import your new auth middleware
 
 const router = express.Router();
@@ -8,5 +8,7 @@ const router = express.Router();
 router.post('/translate', verifyToken, translateText);
 router.get('/history', verifyToken, getUserHistory);
 router.post('/feedback', verifyToken, submitFeedback);
+
+router.post('/translate-image', verifyToken, translateImage);
 
 export default router;

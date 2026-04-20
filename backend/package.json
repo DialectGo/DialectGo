@@ -21,11 +21,12 @@
   "homepage": "https://github.com/garu10/DialectGo#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
-    "axios": "^1.13.6",
+    "axios": "^1.15.1",
     "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "joi": "^18.0.2"
+    "joi": "^18.0.2",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

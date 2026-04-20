@@ -13,8 +13,8 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.43:5001/api/translate';
-const FEEDBACK_URL = 'http://192.168.1.43:5001/api/feedback';
+const API_URL = 'http://192.168.1.50:5001/api/translate';
+const FEEDBACK_URL = 'http://192.168.1.50:5001/api/feedback';
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
@@ -46,7 +46,7 @@ function TranslationResult({ showResult, translatedText, targetLang, onClose, on
 
 export default function TextToText() {
   const router = useRouter();
-  const [sourceLang, setSourceLang] = useState('English');
+  const [sourceLang, setSourceLang] = useState('Tagalog');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -66,7 +66,7 @@ export default function TextToText() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            Alert.alert("Authentication Required", "Please log in to use the translator.");
+            Alert.alert("Authentication Required", "Please log in.");
             return;
         }
 
@@ -76,23 +76,25 @@ export default function TextToText() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session.access_token}` 
             },
-            body: JSON.stringify({ 
-                sourceText: inputText, 
-                sourceLang, 
-                targetLang 
-            }),
+            body: JSON.stringify({ sourceText: inputText, sourceLang, targetLang }),
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            setTranslatedText(result.translatedText);
-            // Save the ID returned from the backend (Tier 2 auto-saved this to Tier 3)
+            // --- APPLY REMOVAL HERE ---
+            // We use a regex with 'g' to catch all instances and .trim() for whitespace
+            const cleanText = result.translatedText
+                .replace(/<end_of_turn>/g, '')
+                .replace(/<start_of_turn>/g, '') // Good practice to catch this too
+                .trim();
+
+            setTranslatedText(cleanText);
+            
             setCurrentTranslationId(result.historyRecord?.id); 
             animateTransition();
             setShowResult(true);
         } else {
-            if (response.status === 401) throw new Error("Session expired. Please log in again.");
             throw new Error(result.message || 'Translation failed');
         }
     } catch (error) {
@@ -100,7 +102,7 @@ export default function TextToText() {
     } finally {
         Keyboard.dismiss();
     }
-  };
+};
 
   const handleFeedback = async (rating) => {
     if (!currentTranslationId) return;

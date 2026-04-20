@@ -92,7 +92,7 @@ export default function Profile() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch('http://192.168.1.43:5001/api/users/profile', {
+      const response = await fetch('http://192.168.1.50:5001/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ export default function Profile() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch('http://192.168.1.43:5001/api/users/profile', {
+      const response = await fetch('http://192.168.1.50:5001/api/users/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

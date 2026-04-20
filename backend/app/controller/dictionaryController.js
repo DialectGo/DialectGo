@@ -1,4 +1,5 @@
-import { supabase, connectDB } from '../config/db.js';
+import { supabase, connectDB }
+ from '../config/db.js';
 
 /**
  * @desc    Search for a word in the trilingual dictionary

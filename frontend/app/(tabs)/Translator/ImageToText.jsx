@@ -14,7 +14,7 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const API_URL = 'http://192.168.1.43:5001/api/ocr-translate';
+const API_URL = 'http://192.168.1.50:5001/api/ocr-translate';
 
 // --- Sub-components ---
 
@@ -149,6 +149,13 @@ export default function ImageToText() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scan & Translate</Text>
       </View>
+      <TouchableOpacity 
+        style={styles.liveModeBtn} 
+        onPress={() => router.push('/Translator/LiveCamera')}
+      >
+        <Ionicons name="scan-circle" size={28} color="#FBBF24" />
+        <Text>Switch to Live AR</Text>
+      </TouchableOpacity>
 
       <LanguageSelector 
         sourceLang={sourceLang} targetLang={targetLang}

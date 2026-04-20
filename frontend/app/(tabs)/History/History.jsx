@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, 
 import { supabase } from '../../../shared/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_BASE_URL = 'http://192.168.1.43:5001/api';
+const API_BASE_URL = 'http://192.168.1.50:5001/api';
 
 export default function History() {
     const [history, setHistory] = useState([]);
