@@ -1,117 +1,106 @@
-// Standardized response function
-import { 
-    getAllUsersService, 
-    getUserByIdService, 
-    createUserService, 
-    updateUserService, 
-    deleteUserService 
-} from '../models/userModel.js';
+import * as UserModel from '../models/userModel.js';
 
-const handleResponse = (res, status, message, data = null) => {
-    res.status(status).json({
-        status,
+/**
+ * Centralized response handler for consistent API output
+ */
+const handleResponse = (res, statusCode, message, data = null) => {
+    res.status(statusCode).json({
+        status: statusCode,
         message,
         data,
     });
 };
 
-export async function getUserById(req, res, next) {
-    const { id } = req.params; // Extracts the UUID from the URL path
-    try {
-        const user = await getUserByIdService(id);
-        
-        if (!user) {
-            return handleResponse(res, 404, "User not found");
-        }
+// --- AUTHENTICATION ---
 
+export const register = async (req, res, next) => {
+    try {
+        const { 
+            email, 
+            password, 
+            firstName, 
+            lastName,
+            middleName,
+            birthDate,
+            addressLine,
+            country,
+            province,
+            city,
+            username,
+            preferredLanguageCode
+        } = req.body;
+
+        const user = await UserModel.registerUser(email, password, { 
+            firstName, 
+            lastName,
+            middleName,
+            birthDate,
+            addressLine,
+            country,
+            province,
+            city,
+            username,
+            preferredLanguageCode
+        });
+
+        handleResponse(res, 201, "Registration successful", user);
+    } catch (err) { 
+        next(err); 
+    }
+};
+
+export const login = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+        const session = await UserModel.loginUser(email, password);
+        handleResponse(res, 200, "Login successful", session);
+    } catch (err) { next(err); }
+};
+
+// --- USER PROFILE (Authenticated User) ---
+
+export const getProfile = async (req, res, next) => {
+    try {
+        // Extract the token from the Authorization header
+        const token = req.headers.authorization.split(' ')[1];
+        const profile = await UserModel.getProfileById(req.user.id, token);
+        handleResponse(res, 200, "Profile fetched successfully", profile);
+    } catch (err) { next(err); }
+};
+
+export const updateProfile = async (req, res, next) => {
+    try {
+        const updatedProfile = await UserModel.updateProfileById(req.user.id, req.body);
+        handleResponse(res, 200, "Profile updated successfully", updatedProfile);
+    } catch (err) { next(err); }
+};
+
+// --- ADMIN CRUD FUNCTIONS ---
+
+export const getAllUsers = async (req, res, next) => {
+    try {
+        const users = await UserModel.getAllUsersService();
+        handleResponse(res, 200, "Users retrieved successfully", users);
+    } catch (err) { next(err); }
+};
+
+export const getUserById = async (req, res, next) => {
+    try {
+        const user = await UserModel.getUserByIdService(req.params.id);
         handleResponse(res, 200, "User fetched successfully", user);
-    } catch (err) {
-        next(err);
-    }
-}
+    } catch (err) { next(err); }
+};
 
-// CREATE
-export async function createUser(req, res, next) {
-    const { email, password, metadata } = req.body;
+export const updateUser = async (req, res, next) => {
     try {
-        const newUser = await createUserService(email, password, metadata);
-        handleResponse(res, 201, "User created successfully", newUser);
-    } catch (err) {
-        next(err);
-    }
-}
-
-// READ ALL
-export async function getAllUsers(req, res, next) {
-    try {
-        const users = await getAllUsersService();
-        handleResponse(res, 200, "Users fetched successfully", users);
-    } catch (err) {
-        next(err);
-    }
-}
-
-// UPDATE
-export async function updateUser(req, res, next) {
-    const { id } = req.params; // Get ID from URL /api/users/:id
-    const updates = req.body;  // Get update data from body
-    try {
-        const updatedUser = await updateUserService(id, updates);
+        const updatedUser = await UserModel.updateUserService(req.params.id, req.body);
         handleResponse(res, 200, "User updated successfully", updatedUser);
-    } catch (err) {
-        next(err);
-    }
-}
+    } catch (err) { next(err); }
+};
 
-// DELETE
-export async function deleteUser(req, res, next) {
-    const { id } = req.params;
+export const deleteUser = async (req, res, next) => {
     try {
-        await deleteUserService(id);
+        await UserModel.deleteUserService(req.params.id);
         handleResponse(res, 200, "User deleted successfully");
-    } catch (err) {
-        next(err);
-    }
-}
-
-export async function getProfile(req, res, next) {
-    try {
-        // req.user.id comes from your verifyToken middleware
-        const userId = req.user.id; 
-        const user = await getUserByIdService(userId);
-        
-        if (!user) return res.status(404).json({ message: "User not found" });
-
-        // Format data for the frontend
-        const profile = {
-            id: user.id,
-            email: user.email,
-            firstName: user.user_metadata?.firstName || '',
-            lastName: user.user_metadata?.lastName || '',
-            age: user.user_metadata?.age || '',
-            avatar: user.user_metadata?.avatar || '1'
-        };
-
-        res.status(200).json(profile);
-    } catch (err) {
-        next(err);
-    }
-}
-
-// UPDATE PROFILE
-export async function updateProfile(req, res, next) {
-    try {
-        const userId = req.user.id;
-        const { firstName, lastName, age, avatar } = req.body;
-
-        // In Supabase Auth, we update the user_metadata
-        const updates = {
-            user_metadata: { firstName, lastName, age, avatar }
-        };
-
-        const updatedUser = await updateUserService(userId, updates);
-        res.status(200).json({ message: "Profile updated successfully", updatedUser });
-    } catch (err) {
-        next(err);
-    }
-}
+    } catch (err) { next(err); }
+};

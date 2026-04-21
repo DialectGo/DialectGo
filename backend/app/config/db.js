@@ -11,7 +11,10 @@ dotenv.config();
 
 const supabase = createClient(
     process.env.SUPABASE_URL, 
-    // process.env.SUPABASE_ANON_KEY,
+    process.env.SUPABASE_ANON_KEY,
+);
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
@@ -32,5 +35,5 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-
-export { supabase, connectDB };
+console.log("Admin Key Loaded:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Yes" : "No");
+export { supabase, supabaseAdmin, connectDB };

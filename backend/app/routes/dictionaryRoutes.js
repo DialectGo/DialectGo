@@ -1,9 +1,18 @@
 import express from 'express';
-import { getWordDefinition } from '../controller/dictionaryController.js';
-// import verifyToken from '../middlewares/auth.js'; // Optional: if you want to protect this route
+import { 
+    getWordDefinition, 
+    saveWord, 
+    getSavedWords 
+} from '../controller/dictionaryController.js';
+import verifyToken from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.get('/:word', getWordDefinition);
+// Public routes
+router.get('/search/:term', verifyToken, getWordDefinition);
+
+// Protected routes
+router.post('/save', verifyToken, saveWord);
+router.get('/saved', verifyToken, getSavedWords);
 
 export default router;

@@ -1,20 +1,24 @@
 import express from 'express';
-import { createUser, getAllUsers, getUserById, updateUser, deleteUser, getProfile, updateProfile } from '../controller/userController.js';
-import validateUser from '../middlewares/inputValidator.js';
+import * as UserController from '../controller/userController.js';
 import verifyToken from '../middlewares/auth.js';
+// Assume you create/import an authorizeRole middleware
+import { authorizeRole } from '../middlewares/roleMiddleware.js'; 
 
 const router = express.Router();
 
-// Public: Anyone can sign up
-router.post("/users", validateUser, createUser);
+// Public Routes
+router.post("/auth/register", UserController.register);
+router.post("/auth/login", UserController.login);
 
-// Private: Only authenticated admins/users can see or modify data
-router.get("/users", verifyToken, getAllUsers);
-router.get("/user/:id", verifyToken, getUserById);
-router.put("/user/:id", verifyToken, validateUser, updateUser);
-router.delete("/user/:id", verifyToken, deleteUser);
+// Authenticated User Routes
+router.get("/profile", verifyToken, UserController.getProfile);
+router.put("/profile", verifyToken, UserController.updateProfile);
 
-router.get('/profile', verifyToken, getProfile);
-router.put('/profile', verifyToken, updateProfile);
+// Admin Restricted Routes
+// Chain the middlewares: verify user is logged in, then verify they are an admin
+router.get("/admin/users", verifyToken, authorizeRole('admin'), UserController.getAllUsers);
+router.get("/admin/user/:id", verifyToken, authorizeRole('admin'), UserController.getUserById);
+router.put("/admin/user/:id", verifyToken, authorizeRole('admin'), UserController.updateUser);
+router.delete("/admin/user/:id", verifyToken, authorizeRole('admin'), UserController.deleteUser);
 
 export default router;

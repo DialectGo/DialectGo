@@ -1,36 +1,42 @@
-import { supabase, connectDB }
- from '../config/db.js';
+import { DictionaryModel } from '../models/dictionaryModel.js';
 
-/**
- * @desc    Search for a word in the trilingual dictionary
- * @route   GET /api/dictionary/:word
- */
-export const getWordDefinition = async (req, res) => {
+export const getWordDefinition = async (req, res, next) => {
     try {
-        const { word } = req.params;
+        const { term } = req.params;
+        const { data, error } = await DictionaryModel.findWordByTerm(term);
 
-        if (!word) {
-            return res.status(400).json({ message: "Search term is required" });
-        }
+        if (error) throw error;
+        if (!data) return res.status(404).json({ message: "Word not found" });
 
-        // Search across English, Tagalog, and Cebuano columns
-        const { data, error } = await supabase
-            .from('dictionary')
-            .select('*')
-            .or(`english.ilike.%${word}%,tagalog.ilike.%${word}%,cebuano.ilike.%${word}%`)
-            .maybeSingle(); // This is safer than .single()
-
-        if (error) {
-            console.error("Supabase Error:", error.message);
-            return res.status(500).json({ error: error.message });
-        }
-
-        if (!data) {
-            return res.status(404).json({ message: "Word not found" });
+        // Optionally record history if user is logged in
+        if (req.user) {
+            await DictionaryModel.addSearchHistory(req.user.id, term);
         }
 
         res.status(200).json({ success: true, data });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        next(err);
+    }
+};
+
+export const saveWord = async (req, res, next) => {
+    try {
+        const { dictionary_id } = req.body;
+        const { data, error } = await DictionaryModel.saveWord(req.user.id, dictionary_id);
+        
+        if (error) throw error;
+        res.status(201).json({ success: true, data });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const getSavedWords = async (req, res, next) => {
+    try {
+        const { data, error } = await DictionaryModel.getSavedWordsByUserId(req.user.id);
+        if (error) throw error;
+        res.status(200).json({ success: true, data });
+    } catch (err) {
+        next(err);
     }
 };
