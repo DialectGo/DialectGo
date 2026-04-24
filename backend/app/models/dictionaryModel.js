@@ -16,14 +16,14 @@ export const DictionaryModel = {
 
     async saveWord(userId, dictionaryId) {
         return await supabaseAdmin
-            .from('saved_words')
+            .from('user_saved_words')
             .insert([{ user_id: userId, dictionary_id: dictionaryId }])
             .select();
     },
 
     async getSavedWordsByUserId(userId) {
         return await supabaseAdmin
-            .from('saved_words')
+            .from('user_saved_words')
             .select('*, entry:dictionary_entries(*)')
             .eq('user_id', userId);
     },

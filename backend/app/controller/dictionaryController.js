@@ -3,14 +3,18 @@ import { DictionaryModel } from '../models/dictionaryModel.js';
 export const getWordDefinition = async (req, res, next) => {
     try {
         const { term } = req.params;
-        const { data, error } = await DictionaryModel.findWordByTerm(term);
+
+        if (!term || !term.trim()) {
+            return res.status(400).json({ success: false, message: 'Search term is required' });
+        }
+
+        const { data, error } = await DictionaryModel.findWordByTerm(term.trim());
 
         if (error) throw error;
-        if (!data) return res.status(404).json({ message: "Word not found" });
+        if (!data) return res.status(404).json({ success: false, message: 'Word not found' });
 
-        // Optionally record history if user is logged in
         if (req.user) {
-            await DictionaryModel.addSearchHistory(req.user.id, term);
+            await DictionaryModel.addSearchHistory(req.user.id, term.trim());
         }
 
         res.status(200).json({ success: true, data });
@@ -22,6 +26,14 @@ export const getWordDefinition = async (req, res, next) => {
 export const saveWord = async (req, res, next) => {
     try {
         const { dictionary_id } = req.body;
+
+        if (!dictionary_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'dictionary_id is required in the request body'
+            });
+        }
+
         const { data, error } = await DictionaryModel.saveWord(req.user.id, dictionary_id);
         
         if (error) throw error;

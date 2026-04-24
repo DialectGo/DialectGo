@@ -1,10 +1,14 @@
 const errorHandling = (err, req, res, next) => {
-    console.log(err.stack);
-    res.status(500).json({
-        status: 500,
-        messages: "Something went wrong",
-        error: err.message
-    })
-}
+    console.error(err.stack || err);
+
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || 'Something went wrong';
+
+    res.status(status).json({
+        success: false,
+        status,
+        message,
+    });
+};
 
 export default errorHandling;
