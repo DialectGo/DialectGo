@@ -3,7 +3,7 @@ import {
     getWordDefinition, 
     saveWord, 
     getSavedWords 
-} from '../controllers/dictionaryController.js';
+} from '../controllers/dictionary.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
 import { validateDictionarySave } from '../middlewares/validate.middleware.js';
 
