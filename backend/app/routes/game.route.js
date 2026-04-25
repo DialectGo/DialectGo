@@ -2,7 +2,7 @@ import express from 'express';
 import { 
     getAllGames, 
     getGameChallenges 
-} from '../controllers/gameController.js';
+} from '../controllers/game.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
 
 const router = express.Router();

@@ -2,7 +2,7 @@ import express from 'express';
 import { 
     startSession, 
     completeSession 
-} from '../controllers/sessionController.js';
+} from '../controllers/session.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
 import { validateSessionStart, validateSessionComplete } from '../middlewares/validate.middleware.js';
 

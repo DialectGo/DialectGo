@@ -11,8 +11,8 @@ import errorHandler from './middlewares/error.middleware.js';
 import { supabase, connectDB } from './config/db.js';
 import translationRoutes from './routes/translationRoutes.js';
 import dictionaryRoutes from './routes/dictionary.route.js';
-import gameRoutes from './routes/gameRoutes.js';
-import sessionRoutes from './routes/sessionRoutes.js';
+import gameRoutes from './routes/game.route.js';
+import sessionRoutes from './routes/session.route.js';
 import progressRoutes from './routes/progressRoutes.js';
 
 const app = express();
