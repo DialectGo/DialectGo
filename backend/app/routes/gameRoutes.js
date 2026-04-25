@@ -2,8 +2,8 @@ import express from 'express';
 import { 
     getAllGames, 
     getGameChallenges 
-} from '../controller/gameController.js';
-import verifyToken from '../middlewares/auth.js';
+} from '../controllers/gameController.js';
+import verifyToken from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 

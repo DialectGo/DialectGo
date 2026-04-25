@@ -5,9 +5,9 @@ import {
     getLeaderboard,
     getOwnProgress,
     getProgressBySession
-} from '../controller/progressController.js';
-import verifyToken from '../middlewares/auth.js';
-import { validateProgressUpdate, validateUserIdParam, validateSessionIdParam } from '../middlewares/requestValidator.js';
+} from '../controllers/progressController.js';
+import verifyToken from '../middlewares/auth.middleware.js';
+import { validateProgressUpdate, validateUserIdParam, validateSessionIdParam } from '../middlewares/validate.middleware.js';
 
 const router = express.Router();
 

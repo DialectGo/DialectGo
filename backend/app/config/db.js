@@ -35,5 +35,5 @@ const connectDB = async () => {
         process.exit(1);
     }
 };
-console.log("Admin Key Loaded:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Yes" : "No");
+console.log("Admin Key Loaded:", process.env.SUPABASE_ANON_KEY ? "Yes" : "No");
 export { supabase, supabaseAdmin, connectDB };

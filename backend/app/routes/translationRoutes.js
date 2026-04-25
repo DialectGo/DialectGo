@@ -1,7 +1,7 @@
 import express from 'express';
-import { translateText, getUserHistory, submitFeedback, translateImage, submitUserTranslation } from '../controller/translationController.js';
-import verifyToken from '../middlewares/auth.js';
-import { validateTranslateText, validateTranslateImage, validateUserTranslationSubmit } from '../middlewares/requestValidator.js';
+import { translateText, getUserHistory, submitFeedback, translateImage, submitUserTranslation } from '../controllers/translationController.js';
+import verifyToken from '../middlewares/auth.middleware.js';
+import { validateTranslateText, validateTranslateImage, validateUserTranslationSubmit } from '../middlewares/validate.middleware.js';
 
 const router = express.Router();
 

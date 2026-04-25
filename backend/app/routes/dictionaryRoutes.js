@@ -3,9 +3,9 @@ import {
     getWordDefinition, 
     saveWord, 
     getSavedWords 
-} from '../controller/dictionaryController.js';
-import verifyToken from '../middlewares/auth.js';
-import { validateDictionarySave } from '../middlewares/requestValidator.js';
+} from '../controllers/dictionaryController.js';
+import verifyToken from '../middlewares/auth.middleware.js';
+import { validateDictionarySave } from '../middlewares/validate.middleware.js';
 
 const router = express.Router();
 

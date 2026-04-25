@@ -2,9 +2,9 @@ import express from 'express';
 import { 
     startSession, 
     completeSession 
-} from '../controller/sessionController.js';
-import verifyToken from '../middlewares/auth.js';
-import { validateSessionStart, validateSessionComplete } from '../middlewares/requestValidator.js';
+} from '../controllers/sessionController.js';
+import verifyToken from '../middlewares/auth.middleware.js';
+import { validateSessionStart, validateSessionComplete } from '../middlewares/validate.middleware.js';
 
 const router = express.Router();
 
