@@ -5,7 +5,7 @@ import {
     getLeaderboard,
     getOwnProgress,
     getProgressBySession
-} from '../controllers/progressController.js';
+} from '../controllers/progress.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
 import { validateProgressUpdate, validateUserIdParam, validateSessionIdParam } from '../middlewares/validate.middleware.js';
 

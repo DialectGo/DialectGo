@@ -13,7 +13,7 @@ import translationRoutes from './routes/translationRoutes.js';
 import dictionaryRoutes from './routes/dictionary.route.js';
 import gameRoutes from './routes/game.route.js';
 import sessionRoutes from './routes/session.route.js';
-import progressRoutes from './routes/progressRoutes.js';
+import progressRoutes from './routes/progress.route.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
