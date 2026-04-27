@@ -9,7 +9,7 @@ import rateLimit from 'express-rate-limit';
 import userRoutes from './routes/user.route.js';
 import errorHandler from './middlewares/error.middleware.js';
 import { supabase, connectDB } from './config/db.js';
-import translationRoutes from './routes/translationRoutes.js';
+import translationRoutes from './routes/translation.route.js';
 import dictionaryRoutes from './routes/dictionary.route.js';
 import gameRoutes from './routes/game.route.js';
 import sessionRoutes from './routes/session.route.js';

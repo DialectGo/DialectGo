@@ -1,116 +1,36 @@
 import axios from 'axios';
 import Tesseract from 'tesseract.js';
-import { TranslationModel } from '../models/translationModel.js';
+import { TranslationModel } from '../models/translation.model.js';
 
-export const translateImage = async (req, res) => {
+import * as TranslationService from '../services/translation.service.js';
+
+export const translateImage = async (req, res, next) => {
     try {
         const { image, targetLang, source_language_id, target_language_id } = req.body;
-
-        if (!image) {
-            return res.status(400).json({ success: false, message: 'Image data is required' });
-        }
-
-        if (!targetLang) {
-            return res.status(400).json({ success: false, message: 'targetLang is required' });
-        }
-
-        console.log('1. Starting OCR...');
-        const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-        const { data: { text } } = await Tesseract.recognize(
-            Buffer.from(base64Data, 'base64'),
-            'eng'
-        );
-
-        console.log('2. OCR Text extracted:', text);
-        if (!text || text.trim().length === 0) {
-            return res.status(400).json({ success: false, message: 'OCR could not read text from the image' });
-        }
-
-        console.log('3. Calling AI Translation...');
-        const AI_ENDPOINT = process.env.COLAB_URL || 'https://vaned-procompensation-enda.ngrok-free.dev/translate';
-
-        const aiResponse = await axios.post(AI_ENDPOINT, {
-            instruction: `Translate to ${targetLang}.`,
-            input: text,
-        });
-
-        const translatedText = aiResponse?.data?.translation;
-        if (!translatedText) {
-            throw new Error('Translation service returned no translated text');
-        }
+        const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
+        const translatedText = await TranslationService.performTranslation(text, targetLang);
 
         if (req.user?.id) {
-            await TranslationModel.saveHistory(req.user.id, {
-                sourceText: text,
-                translatedText,
-                sourceLanguageId: source_language_id ?? null,
-                targetLanguageId: target_language_id ?? null,
+            await TranslationService.saveHistory(req.user.id, {
+                sourceText: text, translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
             });
         }
-
         res.status(200).json({ success: true, translatedText });
-    } catch (error) {
-        console.error('CRITICAL BACKEND ERROR:', error);
-        res.status(500).json({ success: false, message: 'Processing failed: ' + error.message });
-    }
+    } catch (err) { next(err); }
 };
 
-export const translateText = async (req, res) => {
-    const { sourceText, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
-    const userId = req.user?.id;
-
-    const COLAB_URL = process.env.COLAB_URL || 'https://vaned-procompensation-enda.ngrok-free.dev/translate';
-
-    if (!sourceText || !sourceText.trim()) {
-        return res.status(400).json({ success: false, message: 'sourceText is required' });
-    }
-
-    if (!sourceLang) {
-        return res.status(400).json({ success: false, message: 'sourceLang is required' });
-    }
-
-    if (!targetLang) {
-        return res.status(400).json({ success: false, message: 'targetLang is required' });
-    }
-
+export const translateText = async (req, res, next) => {
     try {
-        const aiResponse = await axios.post(COLAB_URL, {
-            instruction: `Translate from ${sourceLang} to ${targetLang}.`,
-            input: sourceText,
+        const { sourceText, targetLang, source_language_id, target_language_id } = req.body;
+        const translatedText = await TranslationService.performTranslation(sourceText, targetLang);
+        
+        const { data, error } = await TranslationService.saveHistory(req.user.id, {
+            sourceText, translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
         });
-
-        const translatedText = aiResponse?.data?.translation;
-        if (!translatedText) {
-            throw new Error('Translation service returned no translation');
-        }
-
-        const sourceLanguageId = source_language_id ?? (Number.isInteger(sourceLang) ? sourceLang : Number.isInteger(parseInt(sourceLang, 10)) ? parseInt(sourceLang, 10) : null);
-        const targetLanguageId = target_language_id ?? (Number.isInteger(targetLang) ? targetLang : Number.isInteger(parseInt(targetLang, 10)) ? parseInt(targetLang, 10) : null);
-
-        if (!userId) {
-            return res.status(401).json({ success: false, message: 'Authenticated user is required' });
-        }
-
-        const { data, error } = await TranslationModel.saveHistory(userId, {
-            sourceText,
-            translatedText,
-            sourceLanguageId,
-            targetLanguageId,
-        });
-
-        if (error) {
-            throw error;
-        }
-
-        res.status(200).json({
-            success: true,
-            translatedText,
-            historyRecord: data?.[0] || null,
-        });
-    } catch (error) {
-        console.error('Translation Flow Error:', error);
-        res.status(500).json({ success: false, message: 'Translation failed: ' + error.message });
-    }
+        
+        if (error) throw error;
+        res.status(200).json({ success: true, translatedText, historyRecord: data?.[0] });
+    } catch (err) { next(err); }
 };
 
 // CRUD: View History

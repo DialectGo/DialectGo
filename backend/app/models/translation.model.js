@@ -1,78 +1,67 @@
-import { supabaseAdmin } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 export const TranslationModel = {
-    // Create: Save translation to history
     saveHistory: async (userId, data) => {
-        const { sourceText, translatedText, sourceLanguageId, targetLanguageId } = data;
-        return await supabaseAdmin
+        return await supabase
             .from('translation_history')
             .insert([{
                 user_id: userId,
-                source_text: sourceText,
-                translated_text: translatedText,
-                source_language_id: sourceLanguageId,
-                target_language_id: targetLanguageId
+                source_text: data.sourceText,
+                translated_text: data.translatedText,
+                source_language_id: data.sourceLanguageId,
+                target_language_id: data.targetLanguageId
             }])
             .select();
     },
 
-    // Read: Get all history for a user
     getHistory: async (userId) => {
-        return await supabaseAdmin
+        return await supabase
             .from('translation_history')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
     },
 
-    // Delete: Remove a specific history item
     deleteHistory: async (id, userId) => {
-        return await supabaseAdmin
+        return await supabase
             .from('translation_history')
             .delete()
             .eq('id', id)
-            .eq('user_id', userId); // Security: ensure user owns the record
+            .eq('user_id', userId);
     },
 
-    // Saved/Bookmarks: Toggle bookmark
     saveBookmark: async (userId, translationId) => {
-        return await supabaseAdmin
+        return await supabase
             .from('saved_translations')
             .insert([{ user_id: userId, translation_id: translationId }]);
     },
 
-    // Feedback: Add rating
     addFeedback: async (userId, translationId, rating) => {
-        return await supabaseAdmin
+        return await supabase
             .from('user_feedback')
             .insert([{ 
                 user_id: userId,
                 translation_id: translationId, 
-                rating: rating,
-                created_at: new Date() 
+                rating: rating
             }]);
     },
 
-    // User Contributions: Save user-submitted translation
     saveUserTranslation: async (userId, data) => {
-        const { sourceText, userTranslation, sourceLanguageId, targetLanguageId } = data;
-        return await supabaseAdmin
+        return await supabase
             .from('user_recommended_translations')
             .insert([{
                 user_id: userId,
-                source_text: sourceText,
-                user_translation: userTranslation,
-                source_language_id: sourceLanguageId,
-                target_language_id: targetLanguageId,
-                status: 'pending', // pending review/approval
-                created_at: new Date()
+                source_text: data.sourceText,
+                user_translation: data.userTranslation,
+                source_language_id: data.sourceLanguageId,
+                target_language_id: data.targetLanguageId,
+                status: 'pending'
             }])
             .select();
     },
 
-    // Get user-submitted translations for review (admin)
     getUserTranslations: async (filters = {}) => {
-        let query = supabaseAdmin.from('user_recommended_translations').select('*');
+        let query = supabase.from('user_recommended_translations').select('*');
         
         if (filters.status) {
             query = query.eq('status', filters.status);
@@ -83,4 +72,5 @@ export const TranslationModel = {
         
         return await query.order('created_at', { ascending: false });
     }
+
 };
