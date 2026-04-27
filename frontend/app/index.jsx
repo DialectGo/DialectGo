@@ -1,26 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { Redirect } from 'expo-router';
-import { supabase } from '../shared/lib/supabase';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
+import IntroSplash from '../shared/components/IntroSplash';
+import Onboarding from '../shared/components/Onboarding';
+import AuthTransition from './auth/AuthTransition'; // Yung code na ginawa natin kanina
 
-export default function Index() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function MainIndex() {
+  const [currentScreen, setCurrentScreen] = useState('splash');
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-  }, []);
+  // 1. Splash Logic: Kusang lilipat pagkatapos ng animation
+  const handleSplashFinish = () => {
+    setCurrentScreen('onboarding');
+  };
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#FBBF24' }}>
-        <ActivityIndicator color="#000" size="large" />
-      </View>
-    );
-  }
+  // 2. Onboarding Logic: Lilipat sa Welcome/Auth screen
+  const handleOnboardingFinish = () => {
+    setCurrentScreen('auth');
+  };
 
-  return session ? <Redirect href="/(tabs)/Home" /> : <Redirect href="/login" />;
+  return (
+    <View style={styles.container}>
+      {/* STEP 1: SPLASH (First thing to see) */}
+      {currentScreen === 'splash' && (
+        <IntroSplash onFinish={handleSplashFinish} />
+      )}
+
+      {/* STEP 2: ONBOARDING */}
+      {currentScreen === 'onboarding' && (
+        <Onboarding onFinish={handleOnboardingFinish} />
+      )}
+
+      {/* STEP 3: AUTH (Yung may Bee logo at Bottom Sheet) */}
+      {currentScreen === 'auth' && (
+        <AuthTransition />
+      )}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+});

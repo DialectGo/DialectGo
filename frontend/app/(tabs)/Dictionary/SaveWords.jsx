@@ -1,124 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
-import { Text, Surface, Checkbox } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import {
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { useRouter } from 'expo-router';
 
-const DUMMY_SAVED = [
-  { id: '1', main: 'Ugma', sub: 'Tomorrow/Bukas', lang: 'Cebuano', date: '2026-03-28 23:30' },
-  { id: '2', main: 'Eat/Kain', sub: 'Kaon', lang: 'English/Tagalog', date: '2026-03-01 15:28' },
-];
-
 export default function SaveWords() {
+  const [bookmarks, setBookmarks] = useState([]);
   const router = useRouter();
-  const [savedItems, setSavedItems] = useState(DUMMY_SAVED);
-  const [selectedIds, setSelectedIds] = useState([]);
 
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+  // Load bookmarks tuwing papasok sa screen
+  useEffect(() => {
+    fetchBookmarks();
+  }, []);
+
+  const fetchBookmarks = async () => {
+    try {
+      const data = await AsyncStorage.getItem('bookmarks_list');
+      if (data) {
+        setBookmarks(JSON.parse(data));
+      }
+    } catch (error) {
+      console.error("Error loading bookmarks:", error);
+    }
   };
 
   const renderItem = ({ item }) => (
-    <Surface style={styles.card} elevation={1}>
-      <View style={styles.cardContent}>
-        <View>
-          <Text style={styles.cardLang}>{item.lang}</Text>
-          <Text style={styles.cardMain}>{item.main}</Text>
-          <Text style={styles.cardSub}>{item.sub}</Text>
-        </View>
-        <View style={styles.cardRight}>
-          <Checkbox
-            status={selectedIds.includes(item.id) ? 'checked' : 'unchecked'}
-            onPress={() => toggleSelect(item.id)}
-            color="#FFCB45"
-          />
-          <Text style={styles.cardDate}>{item.date}</Text>
-        </View>
+    <TouchableOpacity 
+      activeOpacity={0.7}
+      style={styles.card} 
+      onPress={() => {
+        router.push({
+          pathname: '/Dictionary/ResultDictionary',
+          params: {
+            cebuano: item.cebuano,
+            english: item.english,
+            tagalog: item.tagalog,
+            pos: item.pos || item.part_of_speech || 'Word',
+            examples: item.examples ? JSON.stringify(item.examples) : JSON.stringify([])
+          }
+        });
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={styles.wordText}>{item.cebuano}</Text>
+        <Text style={styles.translationText}>{item.english} / {item.tagalog}</Text>
       </View>
-    </Surface>
+      <View style={styles.rightSection}>
+        <Text style={styles.posTag}>{item.pos || item.part_of_speech || 'WORD'}</Text>
+        <Image 
+          source={require('../../../assets/icons/star.png')} 
+          style={styles.starIcon} 
+        />
+      </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* HEADER SECTION */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <MaterialCommunityIcons name="arrow-left" size={30} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Save Word</Text>
-        <View style={{ width: 30 }} /> 
-      </View>
-
-      <FlatList
-        data={savedItems}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-      />
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.deleteBtn}>
-          <Text style={styles.deleteBtnText}>Delete</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.selectAllContainer}>
-          <Text style={styles.allText}>All</Text>
-          <Checkbox
-            status={selectedIds.length === savedItems.length ? 'checked' : 'unchecked'}
-            onPress={() => {
-              if (selectedIds.length === savedItems.length) setSelectedIds([]);
-              else setSelectedIds(savedItems.map(i => i.id));
-            }}
-            color="#FFCB45"
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+        >
+          <Image 
+            source={require('../../../assets/icons/back_arrow.png')} 
+            style={styles.backImg} 
           />
-        </View>
+        </TouchableOpacity>
+        <Text style={styles.title}>Saved Words</Text>
+        <View style={{ width: 40 }} /> 
       </View>
+
+      {/* LIST SECTION */}
+      {bookmarks.length > 0 ? (
+        <FlatList
+          data={bookmarks}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Image 
+            source={require('../../../assets/icons/star.png')} 
+            style={styles.emptyIcon} 
+          />
+          <Text style={styles.emptyText}>No saved words yet.</Text>
+          <Text style={styles.emptySubText}>
+            Tap the star icon on any word in the dictionary to save it here.
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFFDF5' 
   },
-  headerTitle: { fontSize: 22, fontWeight: 'bold' },
-  listContent: { padding: 15 },
-  card: {
-    backgroundColor: '#FFF9E7',
-    borderRadius: 20,
-    marginBottom: 15,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#F3F4F6'
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20, 
+    paddingTop: 20,
+    paddingBottom: 10,
+    alignItems: 'center' 
   },
-  cardContent: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardLang: { color: '#6B7280', fontSize: 12, textAlign: 'right', position: 'absolute', right: 0, top: -5 },
-  cardMain: { fontSize: 18, textDecorationLine: 'underline', color: '#374151' },
-  cardSub: { fontSize: 22, fontWeight: 'bold', color: '#000' },
-  cardRight: { justifyContent: 'space-between', alignItems: 'flex-end' },
-  cardDate: { fontSize: 10, color: '#9CA3AF', marginTop: 5 },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+  backButton: {
+    padding: 8,
   },
-  deleteBtn: {
-    backgroundColor: '#FFCB45',
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 25,
+  backImg: { 
+    width: 24, 
+    height: 24,
+    tintColor: '#421C00'
   },
-  deleteBtnText: { fontWeight: 'bold', fontSize: 16 },
-  selectAllContainer: { flexDirection: 'row', alignItems: 'center' },
-  allText: { fontSize: 16, color: '#6B7280', marginRight: 5 }
+  title: { 
+    fontSize: 22, 
+    fontFamily: 'Poppins-Bold', 
+    color: '#421C00' 
+  },
+  listContainer: { 
+    paddingHorizontal: 25, 
+    paddingTop: 10,
+    paddingBottom: 40 
+  },
+  card: { 
+    backgroundColor: '#FFF', 
+    padding: 20, 
+    borderRadius: 20, 
+    marginBottom: 15, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  wordText: { 
+    fontSize: 18, 
+    fontFamily: 'Poppins-Bold', 
+    color: '#421C00' 
+  },
+  translationText: { 
+    fontSize: 13, 
+    fontFamily: 'Poppins-Regular',
+    color: '#8E8E8E', 
+    marginTop: 2 
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+    marginLeft: 10,
+  },
+  posTag: {
+    fontSize: 9,
+    color: '#FFB800',
+    fontFamily: 'Poppins-Bold',
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  starIcon: { 
+    width: 18, 
+    height: 18, 
+    tintColor: '#FFD54F' 
+  },
+  emptyContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: 40 
+  },
+  emptyIcon: {
+    width: 60,
+    height: 60,
+    tintColor: '#E0E0E0',
+    marginBottom: 15
+  },
+  emptyText: { 
+    fontSize: 18, 
+    fontFamily: 'Poppins-Bold', 
+    color: '#421C00' 
+  },
+  emptySubText: {
+    textAlign: 'center',
+    color: '#ADB5BD',
+    fontFamily: 'Poppins-Regular',
+    marginTop: 8,
+    lineHeight: 20
+  }
 });
