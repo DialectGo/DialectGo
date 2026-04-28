@@ -1,40 +1,62 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Keyboard, KeyboardAvoidingView, Platform, LayoutAnimation, ScrollView, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
+import {
+  View,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  LayoutAnimation,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Text
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import TextShadow from '../../../shared/components/TextShadow';
 import LanguageSelector from '../../../shared/components/LanguageSelector';
 import TranslationInput from '../../../shared/components/TranslationInput';
 import ResultCard from '../../../shared/components/ResultCard';
+
 import cameraIcon from '../../../assets/icons/cameraIcon.png';
 import micIcon from '../../../assets/icons/micIcon.png';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.50:5001/api/translate';
+const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/translate';
 const FEEDBACK_URL = 'http://192.168.1.50:5001/api/feedback';
+
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
-function TranslationResult({ showResult, translatedText, targetLang, onClose, onFeedback, translationId }) {
+function TranslationResult({
+  showResult,
+  translatedText,
+  targetLang,
+  onClose,
+  onFeedback
+}) {
   if (!showResult) return null;
 
   return (
     <View style={{ marginTop: 20 }}>
-      <ResultCard 
-        translatedText={translatedText} 
-        targetLang={targetLang} 
+      <ResultCard
+        translatedText={translatedText}
+        targetLang={targetLang}
         onClose={onClose}
         pronounceIcon={pronounceIcon}
       />
-      {/* Feedback Buttons */}
+
       <View style={styles.feedbackContainer}>
         <TouchableOpacity style={styles.feedbackBtn} onPress={() => onFeedback(1)}>
           <Ionicons name="thumbs-up-outline" size={24} color="#4CAF50" />
           <Text style={styles.feedbackText}>Correct</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.feedbackBtn} onPress={() => onFeedback(0)}>
           <Ionicons name="thumbs-down-outline" size={24} color="#F44336" />
           <Text style={styles.feedbackText}>Incorrect</Text>
@@ -46,6 +68,7 @@ function TranslationResult({ showResult, translatedText, targetLang, onClose, on
 
 export default function TextToText() {
   const router = useRouter();
+
   const [sourceLang, setSourceLang] = useState('Tagalog');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [inputText, setInputText] = useState('');
@@ -60,69 +83,79 @@ export default function TextToText() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
-  const handleTranslate = async () => {
+  // MAIN TRANSLATION FUNCTION
+  const translateText = useCallback(async () => {
     if (!inputText.trim()) return;
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            Alert.alert("Authentication Required", "Please log in.");
-            return;
-        }
-
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}` 
-            },
-            body: JSON.stringify({ sourceText: inputText, sourceLang, targetLang }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            // --- APPLY REMOVAL HERE ---
-            // We use a regex with 'g' to catch all instances and .trim() for whitespace
-            const cleanText = result.translatedText
-                .replace(/<end_of_turn>/g, '')
-                .replace(/<start_of_turn>/g, '') // Good practice to catch this too
-                .trim();
-
-            setTranslatedText(cleanText);
-            
-            setCurrentTranslationId(result.historyRecord?.id); 
-            animateTransition();
-            setShowResult(true);
-        } else {
-            throw new Error(result.message || 'Translation failed');
-        }
-    } catch (error) {
-        Alert.alert("Error", error.message);
-    } finally {
-        Keyboard.dismiss();
-    }
-};
-
-  const handleFeedback = async (rating) => {
-    if (!currentTranslationId) return;
-    try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(FEEDBACK_URL, {
+
+      if (!session) {
+        Alert.alert("Authentication Required", "Please log in.");
+        return;
+      }
+
+      const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` 
+          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          translationId: currentTranslationId, 
-          rating 
+        body: JSON.stringify({
+          sourceText: inputText,
+          sourceLang,
+          targetLang
         }),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        Alert.alert("Thank you!", "Your feedback helps improve DialectoGo.");
+        const cleanText = result.translatedText
+          .replace(/<end_of_turn>/g, '')
+          .replace(/<start_of_turn>/g, '')
+          .trim();
+
+        setTranslatedText(cleanText);
+        setCurrentTranslationId(result.historyRecord?.id);
+
+        animateTransition();
+        setShowResult(true);
+      } else {
+        throw new Error(result.message || 'Translation failed');
       }
+
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      Keyboard.dismiss();
+    }
+  }, [inputText, sourceLang, targetLang]);
+
+  const handleTranslate = useCallback(() => {
+    translateText();
+  }, [translateText]);
+
+  const handleFeedback = async (rating) => {
+    if (!currentTranslationId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      await fetch(FEEDBACK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          translationId: currentTranslationId,
+          rating
+        }),
+      });
+
+      Alert.alert("Thank you!", "Your feedback helps improve DialectoGo.");
+
     } catch (error) {
       console.error("Feedback Error:", error);
     }
@@ -143,15 +176,16 @@ export default function TextToText() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Header with History Link */}
-      <View style={{marginTop: 10 , flexDirection: 'row', justifyContent: 'flex-center'}}>
+
+      {/* HEADER */}
+      <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
         <TextShadow />
         <TouchableOpacity onPress={() => router.push('/History/History')}>
-          <Ionicons name="time-outline" size={28} color="#333"/>
+          <Ionicons name="time-outline" size={28} color="#333" />
         </TouchableOpacity>
       </View>
-      
-      <LanguageSelector 
+
+      <LanguageSelector
         sourceLang={sourceLang}
         targetLang={targetLang}
         translateIcon={translateIcon}
@@ -161,20 +195,20 @@ export default function TextToText() {
         }}
       />
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer} 
-        keyboardShouldPersistTaps="handled" 
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
         scrollEnabled={showResult}
       >
         <View style={{ height: showResult ? HEIGHT_RESULT_SHOWN : HEIGHT_RESULT_HIDDEN }}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: isFocused ? 0.59 : 1 }}
           >
-            <TranslationInput 
+            <TranslationInput
               value={inputText}
               onChangeText={setInputText}
-              onTranslate={handleTranslate}
+              onTranslate={handleTranslate} 
               sourceLang={sourceLang}
               isFocused={isFocused}
               onFocus={() => handleToggleFocus(true)}
@@ -185,11 +219,10 @@ export default function TextToText() {
           </KeyboardAvoidingView>
         </View>
 
-        <TranslationResult 
+        <TranslationResult
           showResult={showResult}
           translatedText={translatedText}
           targetLang={targetLang}
-          translationId={currentTranslationId}
           onFeedback={handleFeedback}
           onClose={() => {
             animateTransition();
@@ -203,15 +236,8 @@ export default function TextToText() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    marginTop: 10
-  },
   scrollContainer: { paddingBottom: 20 },
-  resultWrapper: { marginTop: 20, paddingHorizontal: 20 },
+
   feedbackContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -220,6 +246,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12
   },
+
   feedbackBtn: { alignItems: 'center' },
-  feedbackText: { fontSize: 12, color: '#666', marginTop: 4 }
+
+  feedbackText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4
+  }
 });
