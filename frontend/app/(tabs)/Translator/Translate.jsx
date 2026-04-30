@@ -9,41 +9,100 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  LayoutAnimation,
+  View,
+  Keyboard,
+  Alert
 } from 'react-native';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import { styles } from '../../../shared/styles/TranslateStyles';
+import { supabase } from '../../../shared/lib/supabase';
+import { useRouter } from 'expo-router';
+
+const API_URL = 'http://192.168.0.104:5001/api/translate';
+const FEEDBACK_URL = 'http://192.168.0.104:5001/api/feedback';
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [selectingFor, setSelectingFor] = useState('source');
   const [inputText, setInputText] = useState('');
   const [translation, setTranslation] = useState('');
+  const [currentTranslationId, setCurrentTranslationId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const animateTransition = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
+  const [showResult, setShowResult] = useState(false);
 
-  const languages = ['English', 'Tagalog', 'Cebuano'];
+  const languages = [
+  { name: 'english', id: 1 },
+  { name: 'tagalog', id: 2 },
+  { name: 'cebuano', id: 3 },
+];
 
   // --- 1. MOCK TRANSLATE FUNCTION (Frontend Only) ---
-  const handleTranslate = (text) => {
-    if (!text.trim()) {
-      setTranslation('');
-      return;
+const handleTranslate = async (text) => {
+  if (!text.trim()) {
+    setTranslation('');
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        Alert.alert("Authentication Required", "Please log in.");
+        return;
+        }
+    const response = await fetch('http://192.168.0.104:5001/api/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 2. Use the fresh token
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({
+        sourceText: text,
+        // Try changing these keys to match your backend exactly
+        // If the backend says "sourceLang is not defined", it might actually
+        // be looking for "source_lang" or "sourceLanguage".
+        sourceLang: sourceLang, 
+        targetLang: targetLang,
+        source_language_id: languages.find(l => l.name === sourceLang)?.id, 
+        target_language_id: languages.find(l => l.name === targetLang)?.id,
+      }),
+    });
+
+    const data = await response.json();
+
+    const cleanAIOutput = (text) => {
+        return text
+            .replace(/model/gi, '') // Removes the word "model"
+            .replace(/user/gi, '')  // Removes the word "user"
+            .replace(/Translation:/gi, '')
+            .trim();
+    };
+
+    if (response.ok) {
+      const cleaned = cleanAIOutput(data.translatedText);
+      setTranslation(cleaned); // Assuming API returns { translatedText: "..." }
+    } else {
+      console.error("Translation error:", data);
+      setTranslation("Error: Could not translate.");
     }
-
-    setIsLoading(true);
-
-    // Mock delay para kunwari ay nag-iisip ang AI (1 second)
-    setTimeout(() => {
-      // Dito mo muna ilalagay ang static response para sa demo/testing
-      const mockResult = `[Static Translation] ${text}`; 
-      setTranslation(mockResult);
-      setIsLoading(false);
-    }, 1000);
-  };
+  } catch (error) {
+    console.error("Network error:", error);
+    setTranslation("Error: Check your connection.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // --- 2. DEBOUNCE EFFECT (Mananatili ito para sa UI feel) ---
   useEffect(() => {
@@ -60,16 +119,16 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     setModalVisible(true);
   };
 
-  const selectLanguage = (lang) => {
-    if (selectingFor === 'source') {
-      if (lang === targetLang) setTargetLang(sourceLang);
-      setSourceLang(lang);
-    } else {
-      if (lang === sourceLang) setSourceLang(targetLang);
-      setTargetLang(lang);
-    }
-    setModalVisible(false);
-  };
+const selectLanguage = (langObj) => {
+  if (selectingFor === 'source') {
+    if (langObj.name === targetLang) setTargetLang(sourceLang);
+    setSourceLang(langObj.name);
+  } else {
+    if (langObj.name === sourceLang) setSourceLang(targetLang);
+    setTargetLang(langObj.name);
+  }
+  setModalVisible(false);
+};
 
   const swapLanguages = () => {
     const temp = sourceLang;
@@ -142,10 +201,10 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             </View>
 
             <View style={styles.cardFooter}>
-              <TouchableOpacity onPress={() => console.log("OCR Pressed")}>
+              <TouchableOpacity onPress={() => router.push('/Translator/LiveCamera')}>
                 <Image source={require('../../../assets/icons/cameraIcon.png')} style={styles.footerIcon} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => console.log("Mic Pressed")}>
+              <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')}>
                 <Image source={require('../../../assets/icons/micIcon.png')} style={styles.footerIcon} />
               </TouchableOpacity>
             </View>
@@ -193,16 +252,16 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             <Text style={styles.modalTitle}>Select Language</Text>
             <FlatList
               data={languages}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => {
-                const isSelected = selectingFor === 'source' ? item === sourceLang : item === targetLang;
+                const isSelected = selectingFor === 'source' ? item.name === sourceLang : item.name === targetLang;
                 return (
                   <TouchableOpacity
                     style={[styles.dropdownItem, isSelected && { backgroundColor: '#FFFDE7' }]}
-                    onPress={() => selectLanguage(item)}
+                    onPress={() => selectLanguage(item)} // Pass the whole object
                   >
                     <Text style={[styles.dropdownItemText, isSelected && { color: '#FBC02D', fontWeight: 'bold' }]}>
-                      {item}
+                      {item.name}
                     </Text>
                     {isSelected && <Text style={{ color: '#FBC02D' }}>✓</Text>}
                   </TouchableOpacity>

@@ -14,6 +14,9 @@ import {
 } from 'react-native';
 import { styles } from '../shared/styles/LoginStyles';
 import { supabase } from '../shared/lib/supabase';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://192.168.0.104:5001/api/v1/users';
 
 export default function LogIn({ onSwitch, onSuccess }) {
   const [email, setEmail] = useState('');
@@ -21,37 +24,29 @@ export default function LogIn({ onSwitch, onSuccess }) {
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN LOGIC ---
-  const handleLogin = async () => {
+  const handleLogin = async (email, password) => {
     if (!email || !password) {
-      Alert.alert("Error", "Palihug isulod ang imong email ug password."); // Please enter email and password
+      Alert.alert("Error", "Palihug isulod ang imong email ug password.");
       return;
     }
 
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        // Mas specific na error messages
-        let msg = error.message;
-        if (msg === "Invalid login credentials") msg = "Sayop ang email o password.";
-        throw new Error(msg);
+        const response = await axios.post(`${API_BASE_URL}/login`, {
+          email,
+          password,
+        });
+        console.log("Login successful:", response.data);
+        if (onSuccess) onSuccess();
+        return response.data; // Should return { success: true, token: '...', ... }
+      } catch (error) {
+        // Extract server error message if available
+        throw new Error(error.response?.data?.message || 'Login failed');
       }
-
-      // Success! Dahil may listener tayo sa App.js, 
-      // automatic na mag-uupdate ang screen doon.
-      if (onSuccess) onSuccess();
-      
-    } catch (error) {
-      Alert.alert("Login Failed", error.message);
-    } finally {
-      setLoading(false);
+      finally {
+      setLoading(false); // 6. Stop loading spinner
     }
-  };
+    };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -115,7 +110,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
             <TouchableOpacity 
               style={styles.bubblePrimaryBtn} 
               activeOpacity={0.8}
-              onPress={handleLogin}
+              onPress={() => handleLogin(email, password)}
               disabled={loading}
             >
               {loading ? (

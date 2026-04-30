@@ -32,6 +32,11 @@ export default function TranslationInput({
           multiline
           value={value}
           onChangeText={onChangeText}
+          onSubmitEditing={() => {
+            console.log("Return key ignored");
+            return; // This ensures 'Enter' does nothing
+          }}
+          returnKeyType="none"
           onFocus={onFocus}
           onBlur={onBlur}
           mode="flat"
@@ -56,9 +61,17 @@ export default function TranslationInput({
       <View style={styles.footer}>
         <IconButton icon={icons.camera} size={28} onPress={() => router.push('/Translator/ImageToText')} />
         {value.length > 0 ? (
-          <Button mode="contained" buttonColor="#FBBF24" onPress={onTranslate} style={styles.btn}>
-            Translate
-          </Button>
+<Button 
+    mode="contained" 
+    buttonColor="red" // Bright red so we can't miss it
+    onPress={() => {
+      console.log("🔥 BUTTON CLICKED!");
+      onTranslate();
+    }} 
+    style={styles.btn}
+  >
+    Translate
+  </Button>
         ) : (
           <IconButton icon={icons.mic} size={32} onPress={() => router.push('/Translator/SpeechToText')} />
         )}
@@ -68,7 +81,14 @@ export default function TranslationInput({
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#FFF3D2', marginHorizontal: 15, borderRadius: 30, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 2 },
+  card: { 
+    backgroundColor: '#c0900e', 
+    marginHorizontal: 15, 
+    borderRadius: 30, 
+    padding: 20,
+    // Add flexGrow or remove fixed heights
+    flexShrink: 0 
+  },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   label: { color: '#4b5563' },
   exitBtn: { backgroundColor: '#FDE68A', borderRadius: 12 },
@@ -76,6 +96,11 @@ const styles = StyleSheet.create({
   chipGroup: { marginTop: 10 },
   chip: { backgroundColor: '#FDE68A', padding: 15, borderRadius: 25, marginBottom: 10, alignSelf: 'flex-start' },
   chipText: { color: '#1f2937' },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    marginTop: 'auto' // This forces the footer to the bottom of the card
+  },
   btn: { borderRadius: 20 }
 });

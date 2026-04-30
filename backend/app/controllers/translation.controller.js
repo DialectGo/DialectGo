@@ -19,11 +19,57 @@ export const translateImage = async (req, res, next) => {
     } catch (err) { next(err); }
 };
 
+export const translateAudio = async (req, res, next) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: "No audio file" });
+        
+        const { targetLang, sourceLang, source_language_id, target_language_id } = req.body;
+
+        // 1. Convert Audio to Text (Using the service)
+        const transcribedText = await TranslationService.performSpeechToText(req.file.path);
+        console.log("Transcribed text captured:", transcribedText);
+
+        // 2. Translate Text (Using the service)
+        const translatedText = await TranslationService.performTranslation(
+            transcribedText, 
+            sourceLang, 
+            targetLang
+        );
+
+        // 3. Save to History
+        if (req.user?.id) {
+            await TranslationService.saveHistory(req.user.id, {
+                sourceText: transcribedText, 
+                translatedText, 
+                sourceLanguageId: source_language_id, 
+                targetLanguageId: target_language_id
+            });
+        }
+
+        // Return the results
+        res.status(200).json({ 
+            success: true, 
+            translation: translatedText, 
+            transcript: transcribedText 
+        });
+    } catch (err) { 
+        console.error("Translate Audio Controller Error:", err);
+        next(err); 
+    }
+};
+
 export const translateText = async (req, res, next) => {
     try {
-        const { sourceText, targetLang, source_language_id, target_language_id } = req.body;
-        const translatedText = await TranslationService.performTranslation(sourceText, targetLang);
+        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
         
+        // Ensure sourceText is a clean string
+        if (!sourceText) return res.status(400).json({ message: "No text provided" });
+
+        const translatedText = await TranslationService.performTranslation(sourceText, sourceLang, targetLang);
+        
+        // Log the result here to verify if it's "clean" before saving to Supabase
+        console.log("Raw AI Output:", translatedText); 
+
         const { data, error } = await TranslationService.saveHistory(req.user.id, {
             sourceText, translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
         });

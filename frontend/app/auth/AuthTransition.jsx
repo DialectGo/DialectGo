@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { styles } from '../../shared/styles/AuthTransitionStyles';
 
-import LogIn from '../Login'; 
+import LogIn from '../login'; 
 import SignUp from './Register'; 
 
 const { height } = Dimensions.get('window');

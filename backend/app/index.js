@@ -40,6 +40,9 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/progress', progressRoutes);
 // babaguhin ko pa toh
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 app.use(errorHandler);
 
 const startServer = async () => {

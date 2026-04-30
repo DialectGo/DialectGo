@@ -1,28 +1,51 @@
+import fs from 'fs';
 import axios from 'axios';
 import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
+import FormDataLib from 'form-data';
 
 const COLAB_URL = process.env.COLAB_URL;
 
-export const performTranslation = async (text, targetLang) => {
-    // Adding a "strict" constraint to the prompt
-    const prompt = `You are a professional translator. Translate the following text into ${targetLang}. 
-    Provide ONLY the translation. Do not add quotes, introductory text, or any explanations. 
-    Source text: "${text}" 
-    Translation:`;
-
-    const response = await axios.post(COLAB_URL, { 
-        instruction: prompt, 
-        input: text 
-    });
+export const performTranslation = async (text, sourceLang, targetLang) => {
+    const payload = { 
+        input: text,
+        target_lang: targetLang 
+    };
     
-    // Clean the output just in case
-    return response?.data?.translation?.trim();
+    console.log("Sending to Flask:", payload); // Log this
+
+    try {
+        const response = await axios.post(`${COLAB_URL}/translate`, payload);
+        return response.data.translation;
+    } catch (error) {
+        if (error.response) {
+            // This will show you exactly what Flask thinks is wrong
+            console.error("Flask Error Details:", error.response.data);
+        }
+        throw error;
+    }
 };
 
 export const performOCR = async (base64Image) => {
     const { data: { text } } = await Tesseract.recognize(Buffer.from(base64Image, 'base64'), 'eng');
     return text;
+};
+
+export const performSpeechToText = async (audioPath) => {
+    // 2. Instantiate FormData from the library
+    const form = new FormDataLib();
+    
+    // 3. Append the file stream
+    form.append('audio', fs.createReadStream(audioPath));
+
+    const response = await axios.post(`${COLAB_URL}/translate`, form, {
+        headers: {
+            ...form.getHeaders(), // Now this method will exist
+        },
+    });
+    console.log("DEBUG: Flask response structure:", response.data);
+
+    return response.data.transcript || response.data.text;
 };
 
 export const saveHistory = async (userId, data) => await TranslationModel.saveHistory(userId, data);

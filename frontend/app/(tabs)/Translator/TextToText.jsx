@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect} from 'react';
 import { View, Keyboard, KeyboardAvoidingView, Platform, LayoutAnimation, ScrollView, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -13,8 +13,8 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.50:5001/api/translate';
-const FEEDBACK_URL = 'http://192.168.1.50:5001/api/feedback';
+const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/api/translate';
+const FEEDBACK_URL = 'http://192.168.1.50:5000/api/feedback';
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
@@ -60,13 +60,18 @@ export default function TextToText() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
+  const [isLoading, setIsLoading] = useState(false);
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
+
+    setIsLoading(true);
+    console.log("🚀 Attempting to translate:", inputText); // This will show in terminal
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
             Alert.alert("Authentication Required", "Please log in.");
+            setIsLoading(false);
             return;
         }
 
@@ -76,31 +81,40 @@ export default function TextToText() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session.access_token}` 
             },
-            body: JSON.stringify({ sourceText: inputText, sourceLang, targetLang }),
+            body: JSON.stringify({ 
+                sourceText: inputText, 
+                sourceLang: sourceLang,
+                targetLang: targetLang,
+                source_language_id: 2,
+                target_language_id: 3
+            }),
         });
 
-        const result = await response.json();
+        console.log("📡 API Response Status:", response.status);
 
-        if (response.ok) {
-            // --- APPLY REMOVAL HERE ---
-            // We use a regex with 'g' to catch all instances and .trim() for whitespace
-            const cleanText = result.translatedText
-                .replace(/<end_of_turn>/g, '')
-                .replace(/<start_of_turn>/g, '') // Good practice to catch this too
-                .trim();
-
-            setTranslatedText(cleanText);
-            
-            setCurrentTranslationId(result.historyRecord?.id); 
-            animateTransition();
-            setShowResult(true);
-        } else {
-            throw new Error(result.message || 'Translation failed');
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
         }
+
+        const result = await response.json();
+        console.log("✅ Full API Response:", result);
+
+        const cleanText = result.translatedText
+            .replace(/<end_of_turn>/g, '')
+            .replace(/<start_of_turn>/g, '')
+            .trim();
+
+        setTranslatedText(cleanText || "No translation returned");
+        setCurrentTranslationId(result.historyRecord?.id); 
+        animateTransition();
+        setShowResult(true);
+
     } catch (error) {
-        Alert.alert("Error", error.message);
+        console.error("❌ Translation Error:", error);
+        Alert.alert("Engine Unavailable", "The translation server is currently unreachable.");
     } finally {
         Keyboard.dismiss();
+        setIsLoading(false);
     }
 };
 
