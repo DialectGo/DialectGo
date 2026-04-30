@@ -24,40 +24,38 @@ export default function ARTranslator({ targetLang }) {
   const takePictureAndTranslate = async () => {
     if (cameraRef.current && !isProcessing) {
       setIsProcessing(true);
-      setTranslationResult(null); // Clear previous result
+      setTranslationResult(null);
 
       try {
-        // 1. Get session for Auth
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          Alert.alert("Authentication Required", "Please log in to use translation.");
+          Alert.alert("Authentication Required", "Please log in.");
           return;
         }
 
-        // 2. Capture image
         const photo = await cameraRef.current.takePictureAsync({
           base64: true,
-          quality: 0.8,
+          quality: 0.3,
+          width: 800,
+          doNotSave: true,
         });
 
-        // 3. Send to backend
-        const response = await axios.post('http://192.168.1.50:5001/api/translate-image', {
+        // Update the URL and include the required ID fields
+        const response = await axios.post('http://192.168.0.104:5001/api/translate/image', {
           image: photo.base64,
-          targetLang: targetLang
+          targetLang: targetLang,
+          source_language_id: 1, // Ensure these map to your language list
+          target_language_id: 3  // Example: 1=English, 3=Cebuano
         }, {
           headers: { 
             'Authorization': `Bearer ${session.access_token}` 
-          },
-          timeout: 60000,
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity
+          }
         });
 
-        // 4. Update UI with result
         setTranslationResult(response.data.translatedText);
       } catch (e) {
-        console.error("Translation error:", e);
-        Alert.alert("Error", "Failed to translate image. Please try again.");
+        console.error("Translation error:", e.response?.data || e.message);
+        Alert.alert("Error", "Failed to translate image.");
       } finally {
         setIsProcessing(false);
       }

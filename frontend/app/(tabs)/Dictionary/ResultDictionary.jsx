@@ -1,166 +1,117 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Text, Surface, Button } from 'react-native-paper';
-import pronounceIcon from '@assets/icons/pronounceIcon.png';
+import React, { useState } from 'react';
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-function WordHeader({ word, phonetic, onPronounce }) {
-  return (
-    <Surface style={styles.wordCard} elevation={0}>
-      <Text style={styles.mainWord}>{word}</Text>
-      <Text style={styles.phonetic}>{phonetic || 'pronunciation N/A'}</Text>
-      <TouchableOpacity style={styles.speakerBtn} onPress={onPronounce}>
-        <Image source={pronounceIcon} style={styles.speakerIcon} />
-      </TouchableOpacity>
-    </Surface>
-  );
-}
+import BottomNav from '../../../shared/components/BottomNav';
+import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 
-function TranslationBox({ label, language, text }) {
-  return (
-    <View style={styles.defCol}>
-      <Text style={styles.partOfSpeech}>{language}</Text>
-      <Surface style={styles.defBox} elevation={0}>
-        <Text style={styles.defLabel}>{label || 'Translation'}</Text>
-        <Text style={styles.defText}>{text}</Text>
-      </Surface>
-    </View>
-  );
-}
+export default function ResultDictionary() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
-function ExampleLine({ label, text }) {
-  return (
-    <View style={styles.exampleLine}>
-      <Text style={styles.langLabel}>{label}: </Text>
-      <Text style={styles.exampleText}>{text}</Text>
-    </View>
-  );
-}
-
-function ExampleSection({ examples }) {
-  const hasValidExamples = examples && examples.length >= 3;
+  let parsedExamples = [];
+  try {
+    parsedExamples = params.examples ? JSON.parse(params.examples) : [];
+  } catch (e) {
+    parsedExamples = [];
+  }
 
   return (
-    <View style={styles.exampleSection}>
-      <Text style={styles.exampleHeader}>Example Sentences:</Text>
-      {hasValidExamples ? (
-        <>
-          <ExampleLine label="Cebuano" text={examples[2]} />
-          <ExampleLine label="Tagalog" text={examples[1]} />
-          <ExampleLine label="English" text={examples[0]} />
-        </>
-      ) : (
-        <Text style={styles.exampleText}>No examples available for this word.</Text>
-      )}
-    </View>
-  );
-}
-
-export default function ResultDictionary({ data }) {
-  if (!data) return null;
-
-  const { 
-    english, 
-    tagalog, 
-    cebuano, 
-    example_usage, 
-    phonetic, 
-    category,
-    id 
-  } = data;
-
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={[styles.container, { flex: 1 }]}>
       
-      <WordHeader 
-        word={cebuano} 
-        phonetic={phonetic} 
-        onPronounce={() => console.log('Playing audio...')} 
-      />
+      {/* --- HEADER SECTION --- */}
+      <View style={[styles.headerAction, { zIndex: 100 }]}>
+        {/* Left Side: Back Button */}
+        <TouchableOpacity 
+          style={styles.backCircle} 
+          onPress={() => router.back()}
+        >
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
+        </TouchableOpacity>
 
-      <View style={styles.definitionRow}>
-        <TranslationBox 
-          language="Tagalog" 
-          label={category} 
-          text={tagalog} 
-        />
-        <TranslationBox 
-          language="English" 
-          label={category} 
-          text={english} 
-        />
+        {/* Center: Title - Inalis ang flex para hindi sumakop ng space sa kanan */}
+        <Text style={[styles.topLabel, { flex: 0, marginHorizontal: 10 }]}>DICTIONARY</Text>
+
+        {/* Right Side: History & Saved Words Icons */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.backCircle, { marginLeft: 8 }]} 
+            onPress={() => {
+              console.log("Navigating to History...");
+              // SIGURADUHIN na tama ang path: Folder/FileName
+              router.push('/Dictionary/History'); 
+            }}
+          >
+            <Image 
+              source={require('../../../assets/images/history.png')} 
+              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            style={[styles.backCircle, { marginLeft: 8 }]} 
+            onPress={() => router.push('/Dictionary/SaveWords')}
+          >
+            <Image 
+              source={require('../../../assets/icons/star.png')} 
+              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ExampleSection examples={example_usage} />
-
-      <View style={styles.buttonRow}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         
-        <Button 
-          mode="contained" 
-          icon="star-outline"
-          buttonColor="#FFCB45" 
-          textColor="white"
-          style={styles.actionBtn} 
-          labelStyle={styles.btnLabel}
-          onPress={() => console.log('Saved')}
-        >
-          Save
-        </Button>
+        {/* HERO CARD */}
+        <View style={styles.yellowHeroCard}>
+          <TouchableOpacity 
+            style={styles.bookmarkBadge} 
+            onPress={() => setIsBookmarked(!isBookmarked)}
+          >
+            <Image 
+              source={require('../../../assets/icons/star.png')} 
+              style={[styles.starIcon, { tintColor: isBookmarked ? '#421C00' : '#FFFFFF' }]} 
+            />
+            <Text style={styles.bookmarkText}>{isBookmarked ? 'Saved' : 'Save Word'}</Text>
+          </TouchableOpacity>
 
-        <Button 
-          mode="contained" 
-          icon="history"
-          buttonColor="#E5E7EB"
-          textColor="black"
-          style={styles.actionBtn} 
-          labelStyle={styles.btnLabel}
-          onPress={() => console.log('History')}
-        >
-          History
-        </Button>
-        
-      </View>
-    </ScrollView>
+          <Text style={styles.displayWord}>{params.cebuano || 'No Word'}</Text>
+          <Text style={styles.syllableText}>[ {params.pos || 'Word'} ]</Text>
+        </View>
+
+        {/* TRANSLATIONS SECTION */}
+        <View style={styles.contentSection}>
+          <Text style={styles.sectionTitle}>TRANSLATIONS</Text>
+          <View style={styles.descriptionBox}>
+            <View style={{ marginBottom: 10 }}>
+              <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>ENGLISH</Text>
+              <Text style={styles.descriptionText}>{params.english}</Text>
+            </View>
+            <View>
+              <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>TAGALOG</Text>
+              <Text style={styles.descriptionText}>{params.tagalog}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* USAGE SECTION */}
+        {parsedExamples.length > 0 && (
+          <View style={styles.contentSection}>
+            <Text style={styles.sectionTitle}>USAGE IN SENTENCES</Text>
+            {parsedExamples.map((ex, index) => (
+              <View key={index} style={styles.usageCard}>
+                <Text style={styles.exampleText}>• {ex.cebuano}</Text>
+                <Text style={[styles.exampleText, { color: '#8E8E8E', fontSize: 13 }]}>{ex.english}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      <BottomNav activeTab="Dictionary" />
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: 20, alignItems: 'center' },
-  wordCard: {
-    width: '100%',
-    backgroundColor: '#FFCB45',
-    borderRadius: 25,
-    padding: 30,
-    alignItems: 'center',
-    position: 'relative',
-    marginBottom: 20,
-  },
-  mainWord: { fontSize: 48, fontWeight: '900', color: '#333' },
-  phonetic: { fontSize: 18, fontStyle: 'italic', color: '#5D4037' },
-  speakerBtn: { position: 'absolute', bottom: 15, right: 15 },
-  speakerIcon: { width: 25, height: 25, resizeMode: 'contain' },
-  definitionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 30 },
-  defCol: { width: '48%', alignItems: 'center' },
-  partOfSpeech: { fontSize: 16, fontStyle: 'italic', marginBottom: 10, color: '#5D4037' },
-  defBox: {
-    backgroundColor: '#E5E7EB',
-    borderRadius: 20,
-    padding: 20,
-    width: '100%',
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  defLabel: { fontWeight: 'bold', fontSize: 14, marginBottom: 10, color: '#5D4037' },
-  defText: { fontSize: 16, color: '#333', textAlign: 'center' },
-  exampleSection: { width: '100%', marginBottom: 40 },
-  exampleHeader: { fontWeight: 'bold', fontSize: 18, marginBottom: 10, color: '#333' },
-  exampleLine: { flexDirection: 'row', marginBottom: 5, paddingLeft: 10 },
-  langLabel: { fontWeight: 'bold', color: '#5D4037' },
-  exampleText: { color: '#333', flexShrink: 1 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 20, gap: 10,                    
-},
-  actionBtn: { flex: 1, borderRadius: 25, height: 50, justifyContent: 'center',},
-  saveBtnLabel: { fontSize: 14, fontWeight: 'bold', },
-  saveBtnLabel: { fontSize: 18, fontWeight: 'bold' },
-});
