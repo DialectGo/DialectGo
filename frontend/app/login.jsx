@@ -16,7 +16,7 @@ import { styles } from '../shared/styles/LoginStyles';
 import { supabase } from '../shared/lib/supabase';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.0.104:5001/api/v1/users';
+const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users';
 
 export default function LogIn({ onSwitch, onSuccess }) {
   const [email, setEmail] = useState('');
@@ -36,16 +36,29 @@ export default function LogIn({ onSwitch, onSuccess }) {
           email,
           password,
         });
-        console.log("Login successful:", response.data);
+        
+        // 1. Extract the session info from your backend response
+        const { session } = response.data.data; 
+
+        // 2. CRITICAL: Manually set the session in the Supabase client
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+
+        if (sessionError) throw sessionError;
+
+        console.log("Supabase session synced successfully");
+
         if (onSuccess) onSuccess();
-        return response.data; // Should return { success: true, token: '...', ... }
+        return response.data; 
+
       } catch (error) {
-        // Extract server error message if available
-        throw new Error(error.response?.data?.message || 'Login failed');
+        console.error("Login Error:", error);
+        Alert.alert("Error", error.response?.data?.message || error.message || 'Login failed');
+      } finally {
+        setLoading(false); 
       }
-      finally {
-      setLoading(false); // 6. Stop loading spinner
-    }
     };
 
   return (

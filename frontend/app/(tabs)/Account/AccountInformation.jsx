@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -12,141 +13,208 @@ import {
 } from 'react-native';
 import { styles } from '../../../shared/styles/AccountStyles';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Assuming you use this for token
+import { supabase } from '../../../shared/lib/supabase';
 
-// Listahan ng mga avatars - Siguraduhin na tama ang mga paths na ito
+const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users/profile';
+
+// List of avatars matching filenames in your DB
 const availableAvatars = [
-  { id: 1, source: require('../../../assets/avatars/maria_clara.png') },
-  { id: 2, source: require('../../../assets/avatars/1.png') },
-  { id: 3, source: require('../../../assets/avatars/2.png') },
-  { id: 4, source: require('../../../assets/avatars/3.png') },
-  { id: 5, source: require('../../../assets/avatars/4.png') },
+  { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
+  { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
+  { id: 3, name: '2.png', source: require('../../../assets/avatars/2.png') },
+  { id: 4, name: '3.png', source: require('../../../assets/avatars/3.png') },
+  { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
 ];
 
 export default function AccountInformation() {
   const router = useRouter();
-  
+  const [loading, setLoading] = useState(true);
+
   // FORM STATES
-  const [firstName, setFirstName] = useState('Maria Clara');
-  const [lastName, setLastName] = useState('Alba');
-  const [age, setAge] = useState('24');
-  const [email, setEmail] = useState('mariaclara@gmail.com');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState(''); // Combined display string
 
   // AVATAR STATES
-  const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0].source);
+  const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0]);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // LOGIC PARA SA PAG-SAVE
-  const handleSave = () => {
-    // Dito pwedeng mag-insert ng logic para i-update ang global state o database sa future
-    console.log("Saved Info:", { firstName, lastName, age, email });
+  // 1. FETCH PROFILE DATA ON MOUNT
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-    Alert.alert(
-      "Success", 
-      "Your information has been updated!",
-      [
-        { 
-          text: "OK", 
-          onPress: () => router.back() // FIXED: Babalik sa Profile page gamit ang expo-router
+const fetchProfile = async () => {
+    try {
+      // 1. Give Supabase a moment to initialize storage (optional but helpful)
+      // await new Promise(resolve => setTimeout(resolve, 500)); 
+
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      
+      // DEBUG: Let's see what is actually happening
+      console.log("Session Data:", data.session);
+      console.log("Session Error:", sessionError);
+
+      if (sessionError || !data.session) {
+          // If session is null, try to refresh it once
+          const { data: refreshData } = await supabase.auth.refreshSession();
+          if (!refreshData.session) {
+            Alert.alert("Authentication Required", "Please log in again.");
+            setLoading(false);
+            return;
+          }
+          // If refresh worked, use that session
+          var session = refreshData.session;
+      } else {
+          var session = data.session;
+      }
+
+      // 2. Make the fetch call
+      const response = await fetch(API_BASE_URL, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         }
-      ]
-    );
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const user = result.data;
+        setFirstName(user.first_name || '');
+        setLastName(user.last_name || '');
+        setBirthDate(user.birth_date || '');
+        setEmail(user.email || '');
+        
+        const addr = [user.country, user.province, user.city].filter(Boolean).join(', ');
+        setAddress(addr);
+
+        if (user.profile_avatar_url) {
+          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
+          if (matched) setCurrentAvatar(matched);
+        }
+      } else {
+        Alert.alert("Error", result.message || "Failed to load profile.");
+      }
+    } catch (error) {
+      console.error("Fetch Profile Error:", error);
+      Alert.alert("Error", "Could not connect to the server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAvatarSelect = (newSource) => {
-    setCurrentAvatar(newSource);
+  // 2. SAVE LOGIC
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+          Alert.alert("Authentication Required", "Please log in.");
+          setLoading(false);
+          return;
+      }
+      
+      // Parse address back into components if user edited the single string
+      const [country, province, city] = address.split(',').map(s => s.trim());
+
+      const response = await fetch(API_BASE_URL, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          birthDate,
+          country,
+          province,
+          city,
+          profile_avatar_url: currentAvatar.name // Saving the filename string
+        }),
+      });
+
+      if (response.ok) {
+        Alert.alert("Success", "Information updated!", [{ text: "OK", onPress: () => router.back() }]);
+      } else {
+        throw new Error("Update failed");
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarSelect = (avatarObj) => {
+    setCurrentAvatar(avatarObj);
     setIsModalVisible(false);
   };
+
+  if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
-      {/* HEADER SECTION */}
+      {/* HEADER */}
       <View style={styles.header}>
-        {/* FIXED: Back button using router.back() */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={styles.backIcon} 
-          />
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Account Information</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* AVATAR SECTION */}
+        {/* AVATAR */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarCircle}>
-            <Image source={currentAvatar} style={styles.avatarImg} />
+            <Image source={currentAvatar.source} style={styles.avatarImg} />
           </View>
-          <TouchableOpacity 
-            style={styles.editAvatarBtn} 
-            onPress={() => setIsModalVisible(true)}
-          >
-            <Image 
-              source={require('../../../assets/icons/edit_icon.png')} 
-              style={styles.editIcon} 
-            />
+          <TouchableOpacity style={styles.editAvatarBtn} onPress={() => setIsModalVisible(true)}>
+            <Image source={require('../../../assets/icons/edit_icon.png')} style={styles.editIcon} />
           </TouchableOpacity>
         </View>
 
-        {/* FORM SECTION */}
+        {/* FORM */}
         <View style={styles.formSection}>
           <Text style={styles.inputLabel}>First Name</Text>
-          <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.textInput} 
-              value={firstName} 
-              onChangeText={setFirstName} 
-            />
-          </View>
+          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={firstName} onChangeText={setFirstName} /></View>
 
           <Text style={styles.inputLabel}>Last Name</Text>
-          <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.textInput} 
-              value={lastName} 
-              onChangeText={setLastName} 
-            />
-          </View>
+          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={lastName} onChangeText={setLastName} /></View>
 
-          <Text style={styles.inputLabel}>Age</Text>
+          <Text style={styles.inputLabel}>Birth Date</Text>
+          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD"/></View>
+
+          <Text style={styles.inputLabel}>Address (Country, Province, City)</Text>
           <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.textInput} 
-              value={age} 
-              onChangeText={setAge} 
-              keyboardType="numeric" 
-            />
+            <TextInput style={styles.textInput} value={address} onChangeText={setAddress} placeholder="Philippines, Laguna, Calamba" />
           </View>
 
           <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputContainer}>
-            <TextInput 
-              style={styles.textInput} 
-              value={email} 
-              onChangeText={setEmail} 
-              autoCapitalize="none" 
-            />
+          <View style={[styles.inputContainer, { backgroundColor: '#f0f0f0' }]}>
+            <TextInput style={styles.textInput} value={email} editable={false} />
           </View>
 
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={handleSave}
-          >
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#424242', marginBottom: 10 }]} onPress={() => {}}>
+            <Text style={styles.saveButtonText}>Change Password</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save Information</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* AVATAR SELECTION MODAL */}
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
+      {/* AVATAR MODAL */}
+      <Modal visible={isModalVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Avatar</Text>
@@ -154,20 +222,14 @@ export default function AccountInformation() {
               {availableAvatars.map((item) => (
                 <TouchableOpacity 
                   key={item.id} 
-                  onPress={() => handleAvatarSelect(item.source)}
-                  style={[
-                    styles.avatarOption,
-                    currentAvatar === item.source && styles.activeAvatarOption
-                  ]}
+                  onPress={() => handleAvatarSelect(item)}
+                  style={[styles.avatarOption, currentAvatar.id === item.id && styles.activeAvatarOption]}
                 >
                   <Image source={item.source} style={styles.modalAvatarImg} />
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity 
-              style={styles.closeBtn} 
-              onPress={() => setIsModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setIsModalVisible(false)}>
               <Text style={styles.closeBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
