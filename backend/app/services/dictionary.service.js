@@ -1,14 +1,15 @@
 import { DictionaryModel } from '../models/dictionary.model.js';
 
 export const findWord = async (term, userId) => {
-    const { data, error } = await DictionaryModel.findWordByTerm(term);
-    if (error) throw error;
+    // Remove the { data, error } destructuring
+    const wordData = await DictionaryModel.findWordByTerm(term);
     
-    // Business logic: Track history only if user is logged in
-    if (userId && data) {
+    // Check if wordData exists
+    if (userId && wordData) {
         await DictionaryModel.addSearchHistory(userId, term);
     }
-    return data;
+    
+    return wordData; 
 };
 
 export const saveWord = async (userId, dictionaryId) => {
