@@ -19,7 +19,7 @@ export const registerSchema = Joi.object({
 
   birthDate: Joi.date().iso().required(),
 
-  addressLine: Joi.string().min(5).required(),
+  // addressLine: Joi.string().min(5).required(),
   country: Joi.string().required(),
   province: Joi.string().required(),
   city: Joi.string().required(),

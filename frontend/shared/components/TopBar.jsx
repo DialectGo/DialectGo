@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { supabase } from '../../shared/lib/supabase';
 
 const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const onSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <View style={styles.container}>
@@ -57,7 +61,7 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
               {/* Option 4: Logout (With Touch of Yellow/Orange) */}
               <TouchableOpacity 
                 style={[styles.menuItem, styles.lastItem]} 
-                onPress={() => { setMenuVisible(false); onLogout?.(); }}
+                onPress={onSignOut}
               >
                 <Text style={[styles.menuText, { color: '#FFB300', fontWeight: 'bold' }]}>Logout</Text>
               </TouchableOpacity>
