@@ -7,12 +7,18 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../../shared/lib/supabase';
+
+const SAVED_WORDS_API = 'http://192.168.1.52:5001/api/dictionary/saved';
 
 export default function SaveWords() {
   const [bookmarks, setBookmarks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   // Load bookmarks tuwing papasok sa screen
@@ -21,79 +27,114 @@ export default function SaveWords() {
   }, []);
 
   const fetchBookmarks = async () => {
+    setLoading(true);
     try {
-      const data = await AsyncStorage.getItem('bookmarks_list');
-      if (data) {
-        setBookmarks(JSON.parse(data));
+      // 1. Get the current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // console.error("No active session found");
+        // Alert.alert("Authentication Required", "Please log in to view saved words.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch from your backend API
+      const response = await fetch(SAVED_WORDS_API, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data && result.data.data) {
+        // Based on your backend structure, the word data is likely nested in 'entry'
+        setBookmarks(result.data.data);
+      } 
+      else {
+        setBookmarks([]);
       }
     } catch (error) {
-      console.error("Error loading bookmarks:", error);
+      console.error("Error loading bookmarks from API:", error);
+    } finally {
+      setLoading(false);
     }
   };
+  const renderItem = ({ item }) => {
+    // Accessing the nested dictionary entry from the saved_words join
+    const entry = item.entry || {};
+    
+    // Extract translations for display
+    const translations = entry.translations || [];
+    const trans1 = translations[0]?.target_entry?.word_term || '';
+    const trans2 = translations[1]?.target_entry?.word_term || '';
+    const translationDisplay = [trans1, trans2].filter(Boolean).join(' / ') || 'No translation';
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      activeOpacity={0.7}
-      style={styles.card} 
-      onPress={() => {
-        router.push({
-          pathname: '/Dictionary/ResultDictionary',
-          params: {
-            cebuano: item.cebuano,
-            english: item.english,
-            tagalog: item.tagalog,
-            pos: item.pos || item.part_of_speech || 'Word',
-            examples: item.examples ? JSON.stringify(item.examples) : JSON.stringify([])
-          }
-        });
-      }}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.wordText}>{item.cebuano}</Text>
-        <Text style={styles.translationText}>{item.english} / {item.tagalog}</Text>
-      </View>
-      <View style={styles.rightSection}>
-        <Text style={styles.posTag}>{item.pos || item.part_of_speech || 'WORD'}</Text>
-        <Image 
-          source={require('../../../assets/icons/star.png')} 
-          style={styles.starIcon} 
-        />
-      </View>
-    </TouchableOpacity>
-  );
+    return (
+      <TouchableOpacity 
+        activeOpacity={0.7}
+        style={styles.card} 
+        onPress={() => {
+          router.push({
+            pathname: '/Dictionary/ResultDictionary',
+            params: {
+              id: entry.id,
+              wordTerm: entry.word_term,
+              definition: entry.definition,
+              partOfSpeech: entry.part_of_speech,
+              phoneticTranscription: entry.phonetic_transcription,
+              exampleUsage: entry.example_usage,
+              translation1: trans1,
+              translation2: trans2
+            }
+          });
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.wordText}>{entry.word_term}</Text>
+          <Text style={styles.translationText}>{translationDisplay}</Text>
+        </View>
+        <View style={styles.rightSection}>
+          <Text style={styles.posTag}>{entry.part_of_speech?.toUpperCase() || 'WORD'}</Text>
+          <Image 
+            source={require('../../../assets/icons/star.png')} 
+            style={styles.starIcon} 
+          />
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* HEADER SECTION */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={styles.backImg} 
-          />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
         </TouchableOpacity>
         <Text style={styles.title}>Saved Words</Text>
         <View style={{ width: 40 }} /> 
       </View>
 
       {/* LIST SECTION */}
-      {bookmarks.length > 0 ? (
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#FFD54F" />
+        </View>
+      ) : bookmarks.length > 0 ? (
         <FlatList
           data={bookmarks}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Image 
-            source={require('../../../assets/icons/star.png')} 
-            style={styles.emptyIcon} 
-          />
+          <Image source={require('../../../assets/icons/star.png')} style={styles.emptyIcon} />
           <Text style={styles.emptyText}>No saved words yet.</Text>
           <Text style={styles.emptySubText}>
             Tap the star icon on any word in the dictionary to save it here.
