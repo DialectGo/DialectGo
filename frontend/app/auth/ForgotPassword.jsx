@@ -6,10 +6,12 @@ import { supabase } from '../../shared/lib/supabase';
 import AuthLayout from './AuthLayout';
 import AuthInput from '../../shared/components/AuthInput';
 import CustomButton from '../../shared/components/CustomButton';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function ForgotPassword() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const { email: initialEmail } = useLocalSearchParams();
+  const [email, setEmail] = useState(initialEmail || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,10 +24,11 @@ export default function ForgotPassword() {
   setLoading(true);
 
   try {
-    // Supabase V1 Syntax: .auth.api.resetPasswordForEmail()
-    const { data, error: sbError } = await supabase.auth.api.resetPasswordForEmail(
+    // FIX: Remove '.api' from the call
+    const { data, error: sbError } = await supabase.auth.resetPasswordForEmail(
       email.trim(), 
       {
+        // Ensure this URL is added to your Supabase Redirect URLs in the dashboard
         redirectTo: 'http://dialectgo-colab.ngrok-free.dev/auth/ChangePassword',
       }
     );
@@ -33,7 +36,7 @@ export default function ForgotPassword() {
     if (sbError) {
       Alert.alert("Error", sbError.message);
     } else {
-      // Successfully sent! Navigate to verify screen
+      // Successfully sent!
       router.push({
         pathname: '/auth/VerifyEmail',
         params: { email: email.trim() }
