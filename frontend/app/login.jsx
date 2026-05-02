@@ -13,12 +13,14 @@ import {
   View
 } from 'react-native';
 import { styles } from '../shared/styles/LoginStyles';
+import { useRouter } from 'expo-router'; 
 import { supabase } from '../shared/lib/supabase';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users';
 
 export default function LogIn({ onSwitch, onSuccess }) {
+  const router = useRouter(); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,8 +52,14 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
         console.log("Supabase session synced successfully");
 
-        if (onSuccess) onSuccess();
-        return response.data; 
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          // Replace '/(tabs)' with whatever your home/dashboard route is
+          router.replace('../(tabs)'); 
+        }
+
+        return response.data;
 
       } catch (error) {
         console.error("Login Error:", error);
@@ -116,7 +124,14 @@ export default function LogIn({ onSwitch, onSuccess }) {
               />
             </View>
 
-            <TouchableOpacity style={styles.forgotBtn}>
+            <TouchableOpacity style={styles.forgotBtn}
+            onPress={() => {
+              router.push({
+                pathname: '../auth/ForgotPassword',
+                params: { email }
+              });
+            }}
+            >
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
