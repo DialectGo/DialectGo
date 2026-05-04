@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
-import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React from 'react';
+import { Image, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router'; // 1. Import ang router
 
-const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
-  const [menuVisible, setMenuVisible] = useState(false);
+const TopBar = () => {
+  const router = useRouter(); // 2. Initialize ang router
+
+  const handlePress = () => {
+    // 3. I-navigate sa path ng iyong ChatOnboarding
+    router.push('/Chatbot/ChatOnboarding'); 
+  };
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.topBar}>
-          {/* Logo Section */}
           <View style={styles.leftSection}>
             <Image
               source={require('../../assets/logo/bee.png')}
@@ -17,54 +22,21 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
             />
           </View>
 
-          {/* Right Section (Kebab Dots) */}
           <View style={styles.rightSection}>
             <TouchableOpacity 
-              style={styles.menuBtn} 
-              onPress={() => setMenuVisible(true)} // Dito lalabas ang menu
+              style={styles.chatbotBtn} 
+              onPress={handlePress} // 4. Connect ang function dito
               activeOpacity={0.6}
             >
-              <View style={styles.kebabContainer}>
-                <View style={styles.kebabDot} />
-                <View style={styles.kebabDot} />
-                <View style={styles.kebabDot} />
-              </View>
+              <Image
+                source={require('../../assets/icons/botIcon.png')} 
+                style={styles.chatbotIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
-
-      {/* --- MENU OPTIONS MODAL --- */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.menuCard}>
-              {/* Option 1: Profile */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onProfile?.(); }}>
-                <Text style={styles.menuText}>Profile</Text>
-              </TouchableOpacity>
-
-              {/* Option 2: About */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onAbout?.(); }}>
-                <Text style={styles.menuText}>About the App</Text>
-              </TouchableOpacity>
-
-              {/* Option 3: Settings */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onSettings?.(); }}>
-                <Text style={styles.menuText}>Settings</Text>
-              </TouchableOpacity>
-
-              {/* Option 4: Logout (With Touch of Yellow/Orange) */}
-              <TouchableOpacity 
-                style={[styles.menuItem, styles.lastItem]} 
-                onPress={() => { setMenuVisible(false); onLogout?.(); }}
-              >
-                <Text style={[styles.menuText, { color: '#FFB300', fontWeight: 'bold' }]}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
     </View>
   );
 };
@@ -72,85 +44,51 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFD54F', // Solid Yellow
+    // Subtle shadow para sa depth
     shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 5,
+    zIndex: 1000,
   },
   safeArea: {
-    backgroundColor: '#ffffff', // Ginawang Yellow para match sa container mo
+    backgroundColor: '#FFD54F',
   },
   topBar: {
     flexDirection: 'row',
-    height: 60,
+    height: 65, // In-adjust para maging komportable ang size
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
   },
   leftSection: {
     flex: 1,
+    justifyContent: 'center',
   },
   miniLogoHeader: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
   },
   rightSection: {
     flex: 1,
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
-  menuBtn: {
-    width: 40,
-    height: 40,
+  chatbotBtn: {
+    width: 45,
+    height: 45,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  kebabContainer: {
-    height: 20,
-    width: 20,
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
-  kebabDot: {
-    width: 5,
-    height: 5,
-    backgroundColor: '#000000', // Black dots gaya ng request mo
-    borderRadius: 5,
-  },
-  
-  // --- MENU STYLES ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)', // Sobrang light na shadow lang
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-  },
-  menuCard: {
-    marginTop: 60, // Sa ilalim ng TopBar lalabas
-    marginRight: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    width: 160,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)', // Translucent white box gaya ng back button mo
+    borderRadius: 15, // Bubbly/Rounded corners
     borderWidth: 1,
-    borderColor: '#FFD54F', // Touch of Yellow border
-    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  menuItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#f0f0f0',
-  },
-  lastItem: {
-    borderBottomWidth: 0,
-    backgroundColor: '#FFFDE7', // Touch of light yellow para sa logout area
-  },
-  menuText: {
-    fontSize: 14,
-    color: '#333',
-    fontFamily: 'System', // Pwede mong palitan ng Poppins kung naka-install
+  chatbotIcon: {
+    width: 28,
+    height: 28,
+    // tintColor: '#2D1606', // Opsyonal: gamitin ito kung monochrome ang icon mo
   },
 });
 

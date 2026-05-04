@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
@@ -9,107 +11,155 @@ export default function ResultDictionary() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(params.cebuano || "");
 
   let parsedExamples = [];
+  let parsedPronunciation = {};
+
   try {
     parsedExamples = params.examples ? JSON.parse(params.examples) : [];
+    parsedPronunciation = params.pronunciation ? JSON.parse(params.pronunciation) : {};
   } catch (e) {
-    parsedExamples = [];
+    console.error("Error parsing JSON params:", e);
   }
 
+  useEffect(() => {
+    if (params.cebuano) {
+      saveToHistory();
+      checkIfBookmarked();
+    }
+  }, [params.cebuano]);
+
+  const saveToHistory = async () => {
+    try {
+      const existingData = await AsyncStorage.getItem('history_list');
+      let history = existingData ? JSON.parse(existingData) : [];
+      const newItem = {
+        cebuano: params.cebuano,
+        tagalog: params.tagalog,
+        english: params.english,
+        pos: params.pos,
+        pronunciation: parsedPronunciation,
+        examples: parsedExamples,
+        timestamp: new Date().getTime(),
+      };
+      history = history.filter(item => item.cebuano !== newItem.cebuano);
+      history.unshift(newItem);
+      if (history.length > 50) history.pop();
+      await AsyncStorage.setItem('history_list', JSON.stringify(history));
+    } catch (e) { console.error(e); }
+  };
+
+  const checkIfBookmarked = async () => {
+    try {
+      const data = await AsyncStorage.getItem('bookmarks_list');
+      if (data) {
+        const bookmarks = JSON.parse(data);
+        setIsBookmarked(bookmarks.some(item => item.cebuano === params.cebuano));
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleBookmark = async () => {
+    try {
+      const data = await AsyncStorage.getItem('bookmarks_list');
+      let bookmarks = data ? JSON.parse(data) : [];
+      if (isBookmarked) {
+        bookmarks = bookmarks.filter(item => item.cebuano !== params.cebuano);
+      } else {
+        bookmarks.unshift({ ...params, pronunciation: parsedPronunciation, examples: parsedExamples });
+      }
+      await AsyncStorage.setItem('bookmarks_list', JSON.stringify(bookmarks));
+      setIsBookmarked(!isBookmarked);
+    } catch (e) { console.error(e); }
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { flex: 1 }]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       
-      {/* --- HEADER SECTION --- */}
-      <View style={[styles.headerAction, { zIndex: 100 }]}>
-        {/* Left Side: Back Button */}
-        <TouchableOpacity 
-          style={styles.backCircle} 
-          onPress={() => router.back()}
-        >
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
-        </TouchableOpacity>
-
-        {/* Center: Title - Inalis ang flex para hindi sumakop ng space sa kanan */}
-        <Text style={[styles.topLabel, { flex: 0, marginHorizontal: 10 }]}>DICTIONARY</Text>
-
-        {/* Right Side: History & Saved Words Icons */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity 
-            activeOpacity={0.7}
-            style={[styles.backCircle, { marginLeft: 8 }]} 
-            onPress={() => {
-              console.log("Navigating to History...");
-              // SIGURADUHIN na tama ang path: Folder/FileName
-              router.push('/Dictionary/History'); 
-            }}
-          >
+      <View style={styles.topHeader}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtnNoBg}>
             <Image 
-              source={require('../../../assets/images/history.png')} 
-              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
+              source={require('../../../assets/icons/back_arrow.png')} 
+              style={styles.backImgLarge} 
             />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            activeOpacity={0.7}
-            style={[styles.backCircle, { marginLeft: 8 }]} 
-            onPress={() => router.push('/Dictionary/SaveWords')}
-          >
-            <Image 
-              source={require('../../../assets/icons/star.png')} 
-              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
-            />
-          </TouchableOpacity>
+          <View>
+            <Text style={styles.brandYellow}>DialectGo</Text>
+            <Text style={styles.brandBlack}>Dictionary</Text>
+          </View>
+        </View>
+
+        <View style={styles.headerIcons}>
+           <TouchableOpacity style={styles.iconCircle} onPress={() => router.push('/Dictionary/History')}>
+              <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
+           </TouchableOpacity>
+           <TouchableOpacity style={styles.iconCircle} onPress={() => router.push('/Dictionary/SaveWords')}>
+              <Image source={require('../../../assets/images/star.png')} style={styles.topIcon} />
+           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        
-        {/* HERO CARD */}
-        <View style={styles.yellowHeroCard}>
-          <TouchableOpacity 
-            style={styles.bookmarkBadge} 
-            onPress={() => setIsBookmarked(!isBookmarked)}
-          >
-            <Image 
-              source={require('../../../assets/icons/star.png')} 
-              style={[styles.starIcon, { tintColor: isBookmarked ? '#421C00' : '#FFFFFF' }]} 
-            />
-            <Text style={styles.bookmarkText}>{isBookmarked ? 'Saved' : 'Save Word'}</Text>
-          </TouchableOpacity>
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchContainer}>
+          <TextInput 
+            style={styles.searchInput} 
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search..."
+          />
+          <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
+        </View>
+      </View>
 
-          <Text style={styles.displayWord}>{params.cebuano || 'No Word'}</Text>
-          <Text style={styles.syllableText}>[ {params.pos || 'Word'} ]</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
+        <View style={styles.mainWordCard}>
+          <Text style={styles.heroWord}>{params.cebuano || '---'}</Text>
+          <Text style={styles.heroPronounce}>{parsedPronunciation.cebuano || 'un-sa'}</Text>
         </View>
 
-        {/* TRANSLATIONS SECTION */}
-        <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>TRANSLATIONS</Text>
-          <View style={styles.descriptionBox}>
-            <View style={{ marginBottom: 10 }}>
-              <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>ENGLISH</Text>
-              <Text style={styles.descriptionText}>{params.english}</Text>
+        <View style={styles.definitionsRow}>
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(pronoun)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>Definition</Text>
+              <Text style={styles.defText}>{params.english || 'what'}</Text>
             </View>
-            <View>
-              <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>TAGALOG</Text>
-              <Text style={styles.descriptionText}>{params.tagalog}</Text>
+          </View>
+
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(noun)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>Definition</Text>
+              <Text style={styles.defText}>{params.tagalog || 'ano'}</Text>
             </View>
           </View>
         </View>
 
-        {/* USAGE SECTION */}
-        {parsedExamples.length > 0 && (
-          <View style={styles.contentSection}>
-            <Text style={styles.sectionTitle}>USAGE IN SENTENCES</Text>
-            {parsedExamples.map((ex, index) => (
-              <View key={index} style={styles.usageCard}>
-                <Text style={styles.exampleText}>• {ex.cebuano}</Text>
-                <Text style={[styles.exampleText, { color: '#8E8E8E', fontSize: 13 }]}>{ex.english}</Text>
-              </View>
-            ))}
+        <View style={styles.exampleSection}>
+          <Text style={styles.exampleTitle}>Example:</Text>
+          <View style={styles.exampleContent}>
+            <Text style={styles.exampleLine}><Text style={styles.boldLabel}>Cebuano: </Text>{parsedExamples[0]?.cebuano || 'Unsay ngalan mo?'}</Text>
+            <Text style={styles.exampleLine}><Text style={styles.boldLabel}>Tagalog: </Text>{parsedExamples[0]?.tagalog || 'Ano ang pangalan mo?'}</Text>
+            <Text style={styles.exampleLine}><Text style={styles.boldLabel}>English: </Text>{parsedExamples[0]?.english || 'What is your name?'}</Text>
           </View>
-        )}
+        </View>
       </ScrollView>
+
+      <TouchableOpacity 
+        style={[styles.floatingSaveBtn, isBookmarked && styles.activeSaveBtn]}
+        onPress={toggleBookmark}
+      >
+        <Image 
+          source={require('../../../assets/icons/star.png')} 
+          style={[styles.starIcon, { tintColor: isBookmarked ? '#FFD54F' : '#FFFFFF' }]} 
+        />
+        <Text style={[styles.bookmarkText, { color: isBookmarked ? '#FFD54F' : '#FFFFFF' }]}>
+          {isBookmarked ? 'SAVED' : 'SAVE WORD'}
+        </Text>
+      </TouchableOpacity>
 
       <BottomNav activeTab="Dictionary" />
     </SafeAreaView>

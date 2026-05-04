@@ -17,36 +17,37 @@ const TabItem = ({ icon, label, isActive, onPress }) => {
     Animated.spring(animatedValue, {
       toValue: isActive ? 1 : 0,
       useNativeDriver: true,
-      friction: 4,
+      friction: 7,
       tension: 40,
     }).start();
   }, [isActive]);
 
-  const translateY = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -22], 
-  });
-
   const scale = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.25], 
+    outputRange: [1, 1.35], 
+  });
+
+  const translateY = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -10], 
   });
 
   return (
     <TouchableOpacity 
       onPress={onPress} 
       style={styles.tabItem} 
-      activeOpacity={0.7} 
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      activeOpacity={1} 
     >
-      <Animated.View style={[styles.iconContainer, { transform: [{ translateY }, { scale }] }]}>
-        <View style={[styles.iconCircle, isActive && styles.activeCircle]}>
-          <Image 
-            source={icon} 
-            style={styles.tabIcon} 
-            resizeMode="contain" 
-          />
-        </View>
+      <Animated.View style={[
+        styles.iconWrapper,
+        { transform: [{ scale }, { translateY }] },
+        isActive && styles.activeShadow 
+      ]}>
+        <Image 
+          source={icon} 
+          style={styles.tabIcon} 
+          resizeMode="contain" 
+        />
       </Animated.View>
       
       <Text style={[styles.tabLabel, isActive && styles.activeLabel]}>
@@ -61,10 +62,10 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const tabs = [
-    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionary_icon.png') },
-    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translate_icon.png') },
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/home_icon.png') }, 
-    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/game_icon.png') },
+    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png') },
+    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png') },
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png') }, 
+    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png') },
     { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png') },
   ];
   
@@ -72,18 +73,8 @@ export default function BottomNav() {
     <View style={styles.navContainer}>
       <View style={styles.bottomTab}>
         {tabs.map((tab) => {
-          // --- PINALAKAS NA MATCHING LOGIC ---
           const currentPath = pathname.toLowerCase();
-          const tabName = tab.name.toLowerCase();
-          
-          // Magiging true kung:
-          // 1. Ang path ay exact match (e.g. /home)
-          // 2. Ang path ay root "/" at ito ang Home tab
-          // 3. Ang current path ay naglalaman ng tab name (para sa (tabs) groups)
-          const isTabActive = 
-            currentPath === tab.path.toLowerCase() || 
-            (currentPath === '/' && tabName === 'home') ||
-            currentPath.includes(tabName);
+          const isTabActive = currentPath.includes(tab.name.toLowerCase()) || (currentPath === '/' && tab.name === 'Home');
 
           return (
             <TabItem
@@ -106,62 +97,53 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     backgroundColor: 'transparent',
-    zIndex: 1000, 
-    elevation: 20, 
+    zIndex: 1000,
   },
   bottomTab: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    height: 90, 
-    borderTopLeftRadius: 30, 
-    borderTopRightRadius: 30,
+    backgroundColor: '#FFD54F', 
+    height: 80, // Binabaan ang height mula 95
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 25 : 15,
-    shadowColor: '#421C00',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    // Binawasan ang paddingBottom para bumaba ang pwesto ng icons at labels
+    paddingBottom: Platform.OS === 'ios' ? 15 : 5, 
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconContainer: {
+  iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 50,
-  },
-  iconCircle: {
-    width: 55, 
-    height: 55,
-    borderRadius: 27.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent', 
-  },
-  activeCircle: {
-    backgroundColor: '#FFD54F', 
-    elevation: 8,
-    shadowColor: '#FFD54F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
+    marginBottom: 2, // Binawasan mula 5 para mas malapit sa label
   },
   tabIcon: {
-    width: 30, 
-    height: 30,
+    width: 38, // Binawasan nang bahagya para hindi masyadong siksik dahil binabaan ang height
+    height: 38,
+  },
+  activeShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 8,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9E9E9E', 
-    marginTop: 4,
+    fontSize: 11, // Binabaan ang size para sa cleaner look
+    fontWeight: '800',
+    color: '#5D4037',
+    marginTop: 2,
     textAlign: 'center',
   },
   activeLabel: {
-    color: '#421C00', 
+    color: '#212121',
     fontWeight: '900',
+    fontSize: 11.5,
   }
 });

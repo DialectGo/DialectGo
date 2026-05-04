@@ -3,107 +3,127 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFD54F', // Base yellow para sa StatusBar at Bottom area
+    backgroundColor: '#FFFFFF',
   },
-  header: {
-    backgroundColor: '#FFD54F',
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    backgroundColor: '#FFD54F',
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    position: 'relative',
   },
   backButton: {
-    backgroundColor: '#FFF9C4',
-    padding: 10,
-    borderRadius: 12,
-    elevation: 3,
+    position: 'absolute',
+    left: 20,
+    padding: 5,
   },
-  backIcon: { 
-    width: 20, 
-    height: 20,
-    resizeMode: 'contain'
+  backIcon: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain',
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 24,
+    color: '#2D1606',
+    fontFamily: 'Poppins-Bold',
+    fontWeight: '900',
   },
-  whiteBackground: {
+  scrollBody: {
     backgroundColor: '#FFFFFF',
-    paddingBottom: 60, // Space para sa kurbada ng menu
+    paddingHorizontal: 25, // Dinagdagan para hindi dikit sa gilid ang mga menu text
   },
-  avatarSection: {
+  profileHeader: {
     alignItems: 'center',
-    marginTop: 20,
+    paddingVertical: 30,
   },
-  avatarCircle: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
+  avatarWrapper: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: '#FFD54F',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 10,
-    overflow: 'hidden',
-    borderWidth: 5,
-    borderColor: '#FFFFFF',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
   },
   avatarImg: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
   },
   userName: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#000000',
     marginTop: 15,
+    fontFamily: 'Poppins-Bold',
   },
   streakText: {
-    fontSize: 14,
-    color: '#8E8E8E',
+    fontSize: 16,
+    color: '#777',
     fontWeight: '600',
+    fontFamily: 'Poppins-Regular',
   },
-  menuContainer: {
-    flex: 1,
-    backgroundColor: '#FFD54F',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
-    paddingTop: 40,
-    paddingHorizontal: 25,
-    marginTop: -50, // Hinihila ang menu paitaas para sa radius effect
-  },
+
+  // ==========================================
+  // UPDATED MENU ITEMS (NO CONTAINER)
+  // ==========================================
   menuItem: {
-    backgroundColor: '#FFF9C4',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 22,
-    marginBottom: 12,
-    elevation: 3,
+    paddingVertical: 20, // Tinaasan ang vertical padding para sa spacing
+    marginBottom: 5,     // Konting gap sa ilalim ng bawat line
+    borderBottomWidth: 1, // Optional: Manipis na linya para sa separation
+    borderBottomColor: '#F0F0F0', 
   },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 15,
+    width: 28,
+    height: 28,
+    marginRight: 20,
     resizeMode: 'contain',
   },
   menuText: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#421C00',
+    fontSize: 18,
+    color: '#2D1606',
+    fontFamily: 'Poppins-Bold',
+    fontWeight: '700',
   },
   arrowIcon: {
-    width: 18,
-    height: 18,
-    tintColor: '#421C00',
+    width: 14,
+    height: 14,
+    resizeMode: 'contain',
+    opacity: 0.3, // Ginawang subtle ang arrow
+  },
+
+  // ==========================================
+  // UPDATED LOGOUT (NO CONTAINER)
+  // ==========================================
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 25,
+    marginTop: 10,
+  },
+  logoutIcon: {
+    width: 28,
+    height: 28,
+    marginRight: 20,
+    resizeMode: 'contain',
+  },
+  logoutText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#D32F2F',
+    fontFamily: 'Poppins-Bold',
   },
 });

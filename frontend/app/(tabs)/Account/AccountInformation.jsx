@@ -8,12 +8,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  SafeAreaView
 } from 'react-native';
-import { styles } from '../../../shared/styles/AccountStyles';
 import { useRouter } from 'expo-router';
+import { styles } from '../../../shared/styles/AccountInformationStyles';
 
-// Listahan ng mga avatars - Siguraduhin na tama ang mga paths na ito
+// Listahan ng iyong available avatars
 const availableAvatars = [
   { id: 1, source: require('../../../assets/avatars/maria_clara.png') },
   { id: 2, source: require('../../../assets/avatars/1.png') },
@@ -25,30 +26,19 @@ const availableAvatars = [
 export default function AccountInformation() {
   const router = useRouter();
   
-  // FORM STATES
+  // States para sa user info at avatar replacement
   const [firstName, setFirstName] = useState('Maria Clara');
   const [lastName, setLastName] = useState('Alba');
   const [age, setAge] = useState('24');
   const [email, setEmail] = useState('mariaclara@gmail.com');
-
-  // AVATAR STATES
   const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0].source);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // LOGIC PARA SA PAG-SAVE
   const handleSave = () => {
-    // Dito pwedeng mag-insert ng logic para i-update ang global state o database sa future
-    console.log("Saved Info:", { firstName, lastName, age, email });
-
     Alert.alert(
       "Success", 
       "Your information has been updated!",
-      [
-        { 
-          text: "OK", 
-          onPress: () => router.back() // FIXED: Babalik sa Profile page gamit ang expo-router
-        }
-      ]
+      [{ text: "OK", onPress: () => router.back() }]
     );
   };
 
@@ -58,43 +48,42 @@ export default function AccountInformation() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
-      {/* HEADER SECTION */}
-      <View style={styles.header}>
-        {/* FIXED: Back button using router.back() */}
+      {/* HEADER ROW - No background on back button */}
+      <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
+            source={require('../../../assets/icons/backArrow.png')} 
             style={styles.backIcon} 
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account Information</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Account</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* AVATAR SECTION */}
+        {/* AVATAR SECTION - Replaceable */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
+          <View style={styles.avatarWrapper}>
             <Image source={currentAvatar} style={styles.avatarImg} />
+            <TouchableOpacity 
+              style={styles.editBadge} 
+              onPress={() => setIsModalVisible(true)}
+            >
+              <Image 
+                source={require('../../../assets/icons/edit_icon.png')} 
+                style={styles.editIcon} 
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity 
-            style={styles.editAvatarBtn} 
-            onPress={() => setIsModalVisible(true)}
-          >
-            <Image 
-              source={require('../../../assets/icons/edit_icon.png')} 
-              style={styles.editIcon} 
-            />
-          </TouchableOpacity>
+          <Text style={styles.changeText}>Tap to change avatar</Text>
         </View>
 
-        {/* FORM SECTION */}
-        <View style={styles.formSection}>
-          <Text style={styles.inputLabel}>First Name</Text>
-          <View style={styles.inputContainer}>
+        {/* FORM SECTION - Yellow Rounded Container */}
+        <View style={styles.settingsContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>First Name</Text>
             <TextInput 
               style={styles.textInput} 
               value={firstName} 
@@ -102,8 +91,8 @@ export default function AccountInformation() {
             />
           </View>
 
-          <Text style={styles.inputLabel}>Last Name</Text>
-          <View style={styles.inputContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Last Name</Text>
             <TextInput 
               style={styles.textInput} 
               value={lastName} 
@@ -111,8 +100,8 @@ export default function AccountInformation() {
             />
           </View>
 
-          <Text style={styles.inputLabel}>Age</Text>
-          <View style={styles.inputContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Age</Text>
             <TextInput 
               style={styles.textInput} 
               value={age} 
@@ -121,8 +110,8 @@ export default function AccountInformation() {
             />
           </View>
 
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Email Address</Text>
             <TextInput 
               style={styles.textInput} 
               value={email} 
@@ -131,12 +120,11 @@ export default function AccountInformation() {
             />
           </View>
 
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>Save Information</Text>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>Save Changes</Text>
           </TouchableOpacity>
+          
+          <View style={{ height: 50 }} />
         </View>
       </ScrollView>
 
@@ -144,12 +132,12 @@ export default function AccountInformation() {
       <Modal
         visible={isModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Avatar</Text>
+            <Text style={styles.modalTitle}>Choose Avatar</Text>
             <View style={styles.avatarGrid}>
               {availableAvatars.map((item) => (
                 <TouchableOpacity 
@@ -164,15 +152,12 @@ export default function AccountInformation() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity 
-              style={styles.closeBtn} 
-              onPress={() => setIsModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setIsModalVisible(false)}>
               <Text style={styles.closeBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

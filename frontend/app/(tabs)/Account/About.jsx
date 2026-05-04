@@ -1,164 +1,203 @@
-import React, { useState } from 'react';
-import { Image, Modal, ScrollView, StatusBar, Switch, Text, TouchableOpacity, View } from 'react-native';
-import { styles } from '../../../shared/styles/SettingsStyles';
-import { useRouter } from 'expo-router'; // 1. I-import ang useRouter
+import React from 'react';
+import {
+  Image,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+  SafeAreaView,
+  StyleSheet
+} from 'react-native';
+import { useRouter } from 'expo-router';
 
-export default function Settings() { // Alisin ang onNavigate prop
-  const router = useRouter(); // 2. I-initialize ang router
-  const [isNotifEnabled, setIsNotifEnabled] = useState(true);
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
-  
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState(''); 
-
-  const toggleNotif = () => setIsNotifEnabled(previousState => !previousState);
-
-  const handlePress = (type) => {
-    setModalType(type);
-    setModalVisible(true);
-  };
-
-  const SettingItem = ({ icon, title, subtitle, type = 'arrow', value, onValueChange, color, onPress }) => (
-    <TouchableOpacity 
-      style={styles.menuItem} 
-      onPress={onPress}
-      disabled={type === 'switch'}
-    >
-      <View style={styles.menuLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-           <Image source={icon} style={{ width: 20, height: 20, tintColor: color }} />
-        </View>
-        <View>
-          <Text style={styles.menuText}>{title}</Text>
-          {subtitle && <Text style={styles.subtitleText}>{subtitle}</Text>}
-        </View>
-      </View>
-      
-      {type === 'arrow' && (
-        <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
-      )}
-      {type === 'switch' && (
-        <Switch
-          trackColor={{ false: "#D1D1D1", true: "#FFD54F" }}
-          thumbColor={value ? "#FFF" : "#F4F3F4"}
-          onValueChange={onValueChange}
-          value={value}
-        />
-      )}
-    </TouchableOpacity>
-  );
+export default function AboutDialectGo() {
+  const router = useRouter();
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="transparent" barStyle="dark-content" translucent={true} />
-
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
+      
       {/* HEADER */}
-      <View style={styles.header}>
-        {/* 3. Gamitin ang router.back() sa halip na onNavigate */}
+      <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
+          <Image 
+            source={require('../../../assets/icons/backArrow.png')} 
+            style={styles.backIcon} 
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>About</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* PREFERENCES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Preferences</Text>
-          <View style={styles.menuCard}>
-            <SettingItem 
-              icon={require('../../../assets/icons/language_icon.png')} 
-              title="App Language" 
-              subtitle={selectedLanguage}
-              color="#2196F3"
-              onPress={() => handlePress('language')}
-            />
-            <SettingItem 
-              icon={require('../../../assets/icons/notif_icon.png')} 
-              title="Push Notifications" 
-              type="switch" 
-              value={isNotifEnabled}
-              onValueChange={toggleNotif}
-              color="#FF8F00"
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
+        <View style={styles.topSection}>
+          <View style={styles.logoWrapper}>
+            <Image 
+              source={require('../../../assets/logo/bee.png')} 
+              style={styles.mainLogo} 
             />
           </View>
+          <Text style={styles.appName}>DialectGo</Text>
+          <Text style={styles.versionTag}>Version 1.0.4</Text>
         </View>
 
-        {/* GUIDES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Guides & Help</Text>
-          <View style={styles.menuCard}>
-            <SettingItem 
-              icon={require('../../../assets/icons/help_icon.png')} 
-              title="How to Use DialectGo" 
-              subtitle="Learn the basics of the app"
-              color="#9C27B0"
-              onPress={() => handlePress('guide')}
-            />
+        {/* YELLOW BUBBLY CONTAINER */}
+        <View style={styles.contentContainer}>
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>Our Mission</Text>
+            <Text style={styles.cardText}>
+              Ang DialectGo ay binuo upang mapadali ang komunikasyon sa pagitan ng mga gumagamit ng Cebuano, Tagalog, at English. Gamit ang Neural Machine Translation (NMT), layunin naming magbigay ng tumpak at mabilis na pagsasalin.
+            </Text>
           </View>
-        </View>
 
-        {/* SUPPORT */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Support & Legal</Text>
-          <View style={styles.menuCard}>
-            <SettingItem 
-              icon={require('../../../assets/icons/info_icon.png')} 
-              title="Privacy Policy" 
-              color="#4CAF50"
-              onPress={() => handlePress('privacy')}
-            />
-            <SettingItem 
-              icon={require('../../../assets/icons/logout_icon.png')} 
-              title="Clear Cache" 
-              color="#D32F2F"
-              onPress={() => handlePress('cache')}
-            />
+          <View style={styles.infoCard}>
+            <Text style={styles.cardTitle}>Key Features</Text>
+            <View style={styles.featureItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.featureText}>Trilingual Translation (Cebuano-Tagalog-English)</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.featureText}>Daily Streak Tracking para sa tuloy-tuloy na pag-aaral</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.featureText}>User-friendly na interface para sa madaling pag-navigate</Text>
+            </View>
           </View>
-        </View>
 
-        <Text style={styles.versionText}>DialectGo Version 1.0.4</Text>
+          <View style={styles.footerInfo}>
+            <Text style={styles.devText}>Developed by 3-1</Text>
+            <Text style={styles.copyrightText}>© 2026 DialectGo Project</Text>
+          </View>
+          
+          <View style={{ height: 60 }} />
+        </View>
       </ScrollView>
-
-      {/* --- UNIVERSAL MODAL (REMAINS THE SAME) --- */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            
-            {/* CONTENT: LANGUAGE */}
-            {modalType === 'language' && (
-              <>
-                <Text style={styles.modalTitle}>App Language</Text>
-                {['English', 'Tagalog', 'Cebuano'].map((lang) => (
-                  <TouchableOpacity 
-                    key={lang} 
-                    style={styles.modalOption} 
-                    onPress={() => { setSelectedLanguage(lang); setModalVisible(false); }}
-                  >
-                    <Text style={[styles.optionText, selectedLanguage === lang && { color: '#FFB300' }]}>{lang}</Text>
-                    {selectedLanguage === lang && <View style={styles.activeDot} />}
-                  </TouchableOpacity>
-                ))}
-              </>
-            )}
-
-            {/* ... other modal contents (guide, privacy, cache) ... */}
-
-            {modalType !== 'cache' && (
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeBtnText}>CLOSE</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFD54F',
+    paddingVertical: 20,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    padding: 5,
+  },
+  backIcon: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain',
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: '#2D1606',
+    fontWeight: '900',
+  },
+  scrollBody: {
+    backgroundColor: '#FFFFFF',
+  },
+  topSection: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  logoWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+    backgroundColor: '#FFD54F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  mainLogo: {
+    width: 90,
+    height: 90,
+    resizeMode: 'contain',
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2D1606',
+    marginTop: 15,
+  },
+  versionTag: {
+    fontSize: 14,
+    color: '#777',
+  },
+  contentContainer: {
+    backgroundColor: '#FFD54F',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    paddingHorizontal: 25,
+    paddingTop: 40,
+    flex: 1,
+    minHeight: 500,
+  },
+  infoCard: {
+    backgroundColor: '#FFF176', 
+    borderRadius: 25,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D1606',
+    marginBottom: 10,
+  },
+  cardText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#2D1606',
+    textAlign: 'justify',
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bullet: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2D1606',
+    marginRight: 10,
+  },
+  featureText: {
+    fontSize: 14,
+    color: '#2D1606',
+  },
+  footerInfo: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  devText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2D1606',
+  },
+  copyrightText: {
+    fontSize: 12,
+    color: '#2D1606',
+    opacity: 0.6,
+    marginTop: 5,
+  },
+});

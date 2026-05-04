@@ -1,13 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, SafeAreaView, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+import BottomNav from '../../../shared/components/BottomNav';
+import { styles } from '../../../shared/styles/HistoryStyles';
 
 export default function History() {
   const [historyItems, setHistoryItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   const router = useRouter();
 
-  // Load history pagbukas ng screen
   useEffect(() => {
     loadHistory();
   }, []);
@@ -15,161 +19,114 @@ export default function History() {
   const loadHistory = async () => {
     try {
       const data = await AsyncStorage.getItem('history_list');
-      if (data) {
-        setHistoryItems(JSON.parse(data));
-      }
+      if (data) setHistoryItems(JSON.parse(data));
     } catch (e) {
       console.error("Failed to load history", e);
     }
   };
 
-  const clearHistory = async () => {
-    try {
-      await AsyncStorage.removeItem('history_list');
-      setHistoryItems([]);
-    } catch (e) {
-      console.error("Failed to clear history", e);
+  const toggleSelect = (index) => {
+    if (selectedItems.includes(index)) {
+      setSelectedItems(selectedItems.filter(i => i !== index));
+    } else {
+      setSelectedItems([...selectedItems, index]);
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      activeOpacity={0.7}
-      style={styles.historyCard} 
-      onPress={() => {
-        // I-navigate pabalik sa ResultDictionary gamit ang data mula sa history
-        router.push({
-          pathname: '/Dictionary/ResultDictionary',
-          params: {
-            cebuano: item.cebuano,
-            tagalog: item.tagalog,
-            english: item.english,
-            pos: item.part_of_speech || 'Word',
-            examples: item.examples ? JSON.stringify(item.examples) : JSON.stringify([])
-          }
-        });
-      }} 
-    >
-      <View>
-        <Text style={styles.wordText}>{item.cebuano}</Text>
-        <Text style={styles.typeText}>{item.part_of_speech || 'WORD'}</Text>
+  const handleSelectAll = () => {
+    if (selectedItems.length === historyItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(historyItems.map((_, index) => index));
+    }
+  };
+
+  const handleRemove = async () => {
+    if (selectedItems.length === 0) return;
+    Alert.alert("Remove History", "Delete selected items?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+          const updated = historyItems.filter((_, index) => !selectedItems.includes(index));
+          await AsyncStorage.setItem('history_list', JSON.stringify(updated));
+          setHistoryItems(updated);
+          setSelectedItems([]);
+      }}
+    ]);
+  };
+
+  const renderItem = ({ item, index }) => {
+    const isSelected = selectedItems.includes(index);
+    return (
+      <View style={styles.historyCard}>
+        <View style={styles.cardTop}>
+          <Text style={styles.labelUnderline}>{item.cebuano ? 'Ugma' : 'Eat/Kain'}</Text>
+          <Text style={styles.cardCategory}>{item.cebuano ? 'Cebuano' : 'English/Tagalog'}</Text>
+          <View style={styles.cardActions}>
+             <Image source={require('../../../assets/icons/star.png')} style={[styles.cardStar, {tintColor: '#FFD54F'}]} />
+             <TouchableOpacity onPress={() => toggleSelect(index)} style={[styles.cardCheckbox, isSelected && styles.checkedBox]} />
+          </View>
+        </View>
+
+        <View style={styles.cardBody}>
+          <Text style={styles.mainWordText}>{item.cebuano || item.tagalog}</Text>
+          <Text style={styles.timestampText}>2026-03-28 23:30</Text>
+        </View>
       </View>
-      <Image 
-        source={require('../../../assets/icons/back_arrow.png')} 
-        style={styles.arrowIcon} 
-      />
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
-          style={styles.backBtn}
-        >
-           <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
-        </TouchableOpacity>
-        
-        <Text style={styles.title}>Recent History</Text>
-        
-        <TouchableOpacity onPress={clearHistory}>
-          <Text style={styles.clearBtn}>Clear</Text>
-        </TouchableOpacity>
+      <StatusBar style="dark" />
+      
+      {/* Brand Header */}
+      <View style={styles.topHeader}>
+        <View>
+          <Text style={styles.brandYellow}>DialectGo</Text>
+          <Text style={styles.brandBlack}>Dictionary</Text>
+        </View>
+        <View style={styles.headerIcons}>
+           <View style={styles.iconCircleActive}>
+              <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
+           </View>
+           <TouchableOpacity style={styles.iconCircle} onPress={() => router.push('/Dictionary/SaveWords')}>
+              <Image source={require('../../../assets/images/star.png')} style={styles.topIcon} />
+           </TouchableOpacity>
+        </View>
       </View>
 
-      {/* LIST SECTION */}
-      {historyItems.length > 0 ? (
-        <FlatList
-          data={historyItems}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listPadding}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No recent searches yet.</Text>
-        </View>
-      )}
+      {/* Nav Title Row */}
+      <View style={styles.navRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
+        </TouchableOpacity>
+        <Text style={styles.screenTitle}>See History</Text>
+        <View style={{ width: 45 }} />
+      </View>
+
+      <FlatList
+        data={historyItems}
+        keyExtractor={(_, index) => index.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listPadding}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* FLOATING ACTION BAR gaya ng sa image */}
+      <View style={styles.floatingActionBar}>
+         <TouchableOpacity style={styles.deleteMainBtn} onPress={handleRemove}>
+            <Text style={styles.deleteBtnText}>Delete</Text>
+         </TouchableOpacity>
+         <View style={styles.selectAllRow}>
+            <Text style={styles.allLabel}>All</Text>
+            <TouchableOpacity 
+              style={[styles.cardCheckbox, selectedItems.length === historyItems.length && styles.checkedBox]} 
+              onPress={handleSelectAll} 
+            />
+         </View>
+      </View>
+
+      <BottomNav activeTab="Dictionary" />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#FFFDF5' 
-  },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 25,
-    paddingTop: 20,
-    paddingBottom: 15,
-  },
-  title: { 
-    fontSize: 22, 
-    fontFamily: 'Poppins-Bold', 
-    color: '#421C00' 
-  },
-  clearBtn: { 
-    color: '#FF5252', 
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14 
-  },
-  historyCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 25,
-    marginBottom: 12,
-    padding: 20,
-    borderRadius: 20, 
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#421C00',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  wordText: { 
-    fontSize: 18, 
-    fontFamily: 'Poppins-Bold', 
-    color: '#421C00' 
-  },
-  typeText: { 
-    fontSize: 12, 
-    color: '#8E8E8E', 
-    textTransform: 'uppercase', 
-    fontFamily: 'Poppins-Medium' 
-  },
-  arrowIcon: { 
-    width: 16, 
-    height: 16, 
-    transform: [{ rotate: '180deg' }], 
-    tintColor: '#FFD54F' 
-  },
-  listPadding: { 
-    paddingBottom: 30, 
-    paddingTop: 10 
-  },
-  emptyState: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  emptyText: { 
-    color: '#ADB5BD', 
-    fontFamily: 'Poppins-Medium' 
-  },
-  backBtn: { 
-    padding: 5 
-  },
-  backImg: { 
-    width: 22, 
-    height: 22,
-    tintColor: '#421C00'
-  }
-});

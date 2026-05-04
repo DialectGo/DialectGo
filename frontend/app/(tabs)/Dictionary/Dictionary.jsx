@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { FlatList, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router'; 
+import { StatusBar } from 'expo-status-bar';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import { styles } from '../../../shared/styles/DictionaryStyles';
-import dictionaryData from '../../../data/dictionary/cebuano_dictionary.json';
+import dictionaryData from '../../../data/dictionary/Dictionary.json';
 
 export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +32,7 @@ export default function Dictionary() {
             cebuano: item.cebuano,
             english: item.english,
             tagalog: item.tagalog,
+            pronunciation: JSON.stringify(item.pronunciation || {}),
             pos: item.part_of_speech || 'Word',
             examples: JSON.stringify(item.examples || []) 
           }
@@ -51,45 +53,73 @@ export default function Dictionary() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
+    <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
+      <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
+      
+      <TopBar 
+        onLogout={() => console.log("Logout")}
+        onProfile={() => console.log("Profile")}
+      />
 
-      <View style={{ flex: 1 }}>
-        {/* Header section na hindi dikit sa taas */}
-        <View style={[styles.header, { marginTop: 10 }]}>
-          <View>
-            <Text style={styles.headerTitleYellow}>DialectGo</Text>
-            <Text style={styles.headerTitleBlack}>Dictionary</Text>
-          </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconCircle}>
-              <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
-            </TouchableOpacity>
-          </View>
-        </View>
+      <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
+        <View style={{ flex: 1 }}>
+          
+          {/* Header section na may aligned text at icons */}
+          <View style={styles.header}>
+            <View style={styles.titleWrapper}>
+              <Text style={styles.headerTitleYellow}>DialectGo</Text>
+              <Text style={styles.headerTitleBlack}>Dictionary</Text>
+            </View>
+            
+            <View style={styles.headerIcons}>
+              {/* Bookmark Star Icon */}
+              <TouchableOpacity 
+                style={styles.iconCircle} 
+                onPress={() => router.push('/Dictionary/Bookmarks')}
+              >
+                <Image 
+                  source={require('../../../assets/images/star.png')} 
+                  style={styles.topIcon} 
+                />
+              </TouchableOpacity>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search words..."
-            placeholderTextColor="#421C00"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+              {/* History Icon */}
+              <TouchableOpacity 
+                style={styles.iconCircle} 
+                onPress={() => router.push('/Dictionary/History')}
+              >
+                <Image 
+                  source={require('../../../assets/images/history.png')} 
+                  style={styles.topIcon} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search words..."
+              placeholderTextColor="#421C00"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
+          </View>
+
+          {/* List of Words */}
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
+            showsVerticalScrollIndicator={false}
           />
-          <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
         </View>
-
-        <FlatList
-          data={filteredData}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+      </SafeAreaView>
 
       <BottomNav activeTab="Dictionary" />
-    </SafeAreaView>
+    </View>
   );
 }
