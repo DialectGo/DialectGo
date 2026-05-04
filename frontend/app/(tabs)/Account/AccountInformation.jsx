@@ -9,16 +9,17 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  SafeAreaView
 } from 'react-native';
-import { styles } from '../../../shared/styles/AccountStyles';
+import { styles } from '../../../shared/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Assuming you use this for token
 import { supabase } from '../../../shared/lib/supabase';
 
 const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users/profile';
 
-// List of avatars matching filenames in your DB
+// Listahan ng iyong available avatars
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
   { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
@@ -159,71 +160,118 @@ const fetchProfile = async () => {
   if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
-      {/* HEADER */}
-      <View style={styles.header}>
+      {/* HEADER ROW - No background on back button */}
+      <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
+          <Image 
+            source={require('../../../assets/icons/back_arrow.png')} 
+            style={styles.backIcon} 
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account Information</Text>
-        <View style={{ width: 40 }} />
+        <Text style={styles.headerTitle}>Account</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* AVATAR */}
+        {/* AVATAR SECTION - Replaceable */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
+          <View style={styles.avatarWrapper}>
             <Image source={currentAvatar.source} style={styles.avatarImg} />
+            <TouchableOpacity 
+              style={styles.editBadge} 
+              onPress={() => setIsModalVisible(true)}
+            >
+              <Image 
+                source={require('../../../assets/icons/edit_icon.png')} 
+                style={styles.editIcon} 
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.editAvatarBtn} onPress={() => setIsModalVisible(true)}>
-            <Image source={require('../../../assets/icons/edit_icon.png')} style={styles.editIcon} />
-          </TouchableOpacity>
+          <Text style={styles.changeText}>Tap to change avatar</Text>
         </View>
 
-        {/* FORM */}
-        <View style={styles.formSection}>
-          <Text style={styles.inputLabel}>First Name</Text>
-          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={firstName} onChangeText={setFirstName} /></View>
-
-          <Text style={styles.inputLabel}>Last Name</Text>
-          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={lastName} onChangeText={setLastName} /></View>
-
-          <Text style={styles.inputLabel}>Birth Date</Text>
-          <View style={styles.inputContainer}><TextInput style={styles.textInput} value={birthDate} onChangeText={setBirthDate} placeholder="YYYY-MM-DD"/></View>
-
-          <Text style={styles.inputLabel}>Address (Country, Province, City)</Text>
-          <View style={styles.inputContainer}>
-            <TextInput style={styles.textInput} value={address} onChangeText={setAddress} placeholder="Philippines, Laguna, Calamba" />
+        {/* FORM SECTION - Yellow Rounded Container */}
+        <View style={styles.settingsContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>First Name</Text>
+            <TextInput 
+              style={styles.textInput} 
+              value={firstName} 
+              onChangeText={setFirstName} 
+            />
           </View>
 
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={[styles.inputContainer, { backgroundColor: '#f0f0f0' }]}>
-            <TextInput style={styles.textInput} value={email} editable={false} />
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Last Name</Text>
+            <TextInput 
+              style={styles.textInput} 
+              value={lastName} 
+              onChangeText={setLastName} 
+            />
           </View>
 
-          <TouchableOpacity style={[styles.saveButton, { backgroundColor: '#424242', marginBottom: 10 }]} onPress={() => {}}>
-            <Text style={styles.saveButtonText}>Change Password</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Birth Date</Text>
+            <TextInput 
+              style={styles.textInput} 
+              value={birthDate} 
+              onChangeText={setBirthDate} 
+              placeholder="YYYY-MM-DD"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Address (Country, Province, City)</Text>
+            <TextInput 
+              style={styles.textInput} 
+              value={address} 
+              onChangeText={setAddress} 
+              placeholder="Philippines, Laguna, Calamba"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.fieldLabel}>Email Address</Text>
+            <TextInput 
+              style={styles.textInput} 
+              value={email} 
+              editable={false}
+            />
+          </View>
+
+          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: '#424242', marginBottom: 10 }]} onPress={() => {}}>
+            <Text style={styles.saveBtnText}>Change Password</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save Information</Text>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>Save Changes</Text>
           </TouchableOpacity>
+          
+          <View style={{ height: 50 }} />
         </View>
       </ScrollView>
 
-      {/* AVATAR MODAL */}
-      <Modal visible={isModalVisible} transparent={true} animationType="slide">
+      {/* AVATAR SELECTION MODAL */}
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Avatar</Text>
+            <Text style={styles.modalTitle}>Choose Avatar</Text>
             <View style={styles.avatarGrid}>
               {availableAvatars.map((item) => (
                 <TouchableOpacity 
                   key={item.id} 
                   onPress={() => handleAvatarSelect(item)}
-                  style={[styles.avatarOption, currentAvatar.id === item.id && styles.activeAvatarOption]}
+                  style={[
+                    styles.avatarOption,
+                    currentAvatar.id === item.id && styles.activeAvatarOption
+                  ]}
                 >
                   <Image source={item.source} style={styles.modalAvatarImg} />
                 </TouchableOpacity>
@@ -235,6 +283,6 @@ const fetchProfile = async () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

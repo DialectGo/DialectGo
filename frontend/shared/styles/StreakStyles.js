@@ -1,189 +1,180 @@
-import { Platform, StatusBar as RNStatusBar, StyleSheet } from 'react-native';
-
-const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 44 : RNStatusBar.currentHeight;
+import { StyleSheet, Platform } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8' // Mas "fresh" na light blue-grey
+    backgroundColor: '#FFFFFF',
   },
-  header: {
-    paddingTop: STATUSBAR_HEIGHT,
-    height: Platform.OS === 'ios' ? 90 : 64 + STATUSBAR_HEIGHT,
-    backgroundColor: '#FFD54F',
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    zIndex: 1000,
-    // INALIS ANG BORDER RADIUS DITO PARA MAGING FLAT
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#424242',
-    letterSpacing: 0.5
+    justifyContent: 'center',
+    backgroundColor: '#FFD54F', // Pinanatili ang yellow header base sa image_fc6bc3.png
+    height: 80,
+    position: 'relative',
   },
   backButton: {
+    position: 'absolute',
+    left: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Subtle circle background
-    borderRadius: 20,
+    borderRadius: 12,
   },
   backIcon: {
     width: 20,
     height: 20,
     resizeMode: 'contain',
-    tintColor: '#333'
+    tintColor: '#2D1606',
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 60
-  },
-
-  // MAIN STREAK CARD (The "Fire" Card)
-  mainCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 30,
-    paddingVertical: 35,
-    alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#FF8F00',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
-    marginBottom: 25,
-    borderWidth: 1,
-    borderColor: '#FFF8E1',
-  },
-  bigFireIcon: {
-    width: 110,
-    height: 110,
-    marginBottom: 5,
-    resizeMode: 'contain',
-    // Tip: Pwede mong lagyan ng glow effect dito sa assets mo
-  },
-  streakNumber: {
-    fontSize: 64,
+  headerTitle: {
+    fontSize: 24,
+    color: '#2D1606',
+    fontFamily: 'Poppins-Bold',
     fontWeight: '900',
-    color: '#FF6F00', // Mas matapang na orange
-    textShadowColor: 'rgba(255, 111, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
-  streakSubtext: {
-    fontSize: 22,
-    color: '#455A64',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1
+  scrollBody: {
+    backgroundColor: '#FFFFFF',
   },
-  motivationText: {
-    textAlign: 'center',
-    marginTop: 15,
-    color: '#78909C',
-    fontSize: 15,
-    fontWeight: '500',
-    paddingHorizontal: 30,
-    lineHeight: 22
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 30,
   },
-
-  // WEEK GRID
-  sectionContainer: {
-    marginBottom: 30,
-    backgroundColor: '#FFF',
-    padding: 20,
-    borderRadius: 25,
+  avatarWrapper: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#F5F5F5', // Ginawang light grey ang circle background ng avatar
+    justifyContent: 'center',
+    alignItems: 'center',
     elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 20,
-    color: '#263238'
+  bigFireIcon: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+  },
+  userName: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#2D1606',
+    marginTop: 10,
+    fontFamily: 'Poppins-Bold',
+  },
+  streakSubtext: {
+    fontSize: 18,
+    color: '#777',
+    fontWeight: '600',
+  },
+  settingsContainer: {
+    backgroundColor: '#F8F9FA', // Mula Yellow, ginawang Light Grey/White background
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    paddingHorizontal: 20,
+    paddingTop: 35,
+    flex: 1,
+    minHeight: 500,
+    // Dagdag shadow para lumitaw ang card section
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+  },
+  whiteCard: {
+    backgroundColor: '#FFFFFF', // Ginawang pure white ang cards
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+  },
+  cardLabel: {
+    fontSize: 13,
+    fontFamily: 'Poppins-Bold',
+    color: '#2D1606',
+    marginBottom: 15,
+    opacity: 0.5,
   },
   weekGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
-  dayColumn: { alignItems: 'center' },
+  dayColumn: {
+    alignItems: 'center',
+  },
   dayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    marginBottom: 8,
+    width: 35,
+    height: 35,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2.5
+    marginBottom: 5,
   },
   activeDayCircle: {
-    backgroundColor: '#FFD54F',
-    borderColor: '#FFCA28',
-    elevation: 4,
-    shadowColor: '#FFCA28',
-    shadowOpacity: 0.4,
+    backgroundColor: '#FFD54F', // Dito na lang itinira ang yellow bilang accent
+    borderWidth: 0,
   },
   inactiveDayCircle: {
-    backgroundColor: '#ECEFF1',
-    borderColor: '#CFD8DC'
+    backgroundColor: '#F0F0F0',
   },
-  checkIcon: { width: 20, height: 20, tintColor: '#FFF' },
-  dayLabel: { fontSize: 14, color: '#546E7A', fontWeight: '700' },
-
-  // STATS
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
-  statBox: {
-    backgroundColor: '#FFF',
-    width: '47%',
-    padding: 20,
-    borderRadius: 25,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    borderBottomWidth: 5,
-    borderBottomColor: '#FFD54F', // Parang Duolingo style button
+  checkIcon: {
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
+    tintColor: '#2D1606',
   },
-  statValue: { fontSize: 26, fontWeight: '900', color: '#263238' },
-  statLabel: { fontSize: 13, color: '#90A4AE', fontWeight: '600', marginTop: 2 },
-
-  // MILESTONE
-  milestoneCard: {
-    backgroundColor: '#263238',
-    padding: 25,
-    borderRadius: 25,
-    elevation: 8,
-    shadowColor: '#263238',
-    shadowOpacity: 0.3,
-  },
-  milestoneTitle: {
-    color: '#FFD54F',
-    fontWeight: '900',
-    fontSize: 18,
-    textTransform: 'uppercase'
+  dayLabel: {
+    fontSize: 12,
+    fontFamily: 'Poppins-Bold',
+    color: '#2D1606',
   },
   milestoneDesc: {
-    color: '#B0BEC5',
-    fontSize: 14,
-    marginTop: 6,
-    marginBottom: 20,
-    fontWeight: '500'
+    fontSize: 16,
+    color: '#2D1606',
+    fontFamily: 'Poppins-Medium',
+    marginBottom: 15,
   },
   progressBarBg: {
-    height: 14,
-    backgroundColor: '#37474F',
-    borderRadius: 10,
-    overflow: 'hidden'
+    height: 10,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 5,
+    overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFD54F',
-    borderRadius: 10,
-    // Tip: Pwede mo itong lagyan ng "shine" effect sa UI
+    backgroundColor: '#FFD54F', // Yellow progress bar para sa visual pop
+    borderRadius: 5,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+  },
+  statItem: {
+    backgroundColor: '#FFFFFF', // Puti na rin ang stat boxes
+    width: '48%',
+    padding: 15,
+    borderRadius: 20,
+    alignItems: 'center',
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  statNumber: {
+    fontSize: 22,
+    fontFamily: 'Poppins-Bold',
+    color: '#2D1606',
+  },
+  statSub: {
+    fontSize: 12,
+    color: '#2D1606',
+    opacity: 0.5,
   },
 });
