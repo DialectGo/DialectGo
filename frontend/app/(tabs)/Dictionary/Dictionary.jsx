@@ -81,6 +81,8 @@ export default function Dictionary() {
     const translations = item.translations || [];
     const trans1 = translations[0]?.target_entry?.word_term || '';
     const trans2 = translations[1]?.target_entry?.word_term || '';
+    const usage1 = translations[0]?.target_entry?.example_usage || '';
+    const usage2 = translations[1]?.target_entry?.example_usage || '';
     const translationDisplay = [trans1, trans2].filter(Boolean).join(' / ') || 'No translation';
 
     return (
@@ -91,15 +93,16 @@ export default function Dictionary() {
           router.push({
             pathname: '/Dictionary/ResultDictionary', 
             params: { 
-              id: item.id, // CRITICAL: Added the word ID here
+              id: item.id,
               wordTerm: item.word_term || '',
               definition: item.definition || '',
               partOfSpeech: item.part_of_speech || 'Word',
-              exampleUsage: item.example_usage || '',
+              exampleUsage: item.example_usage || '', 
               phoneticTranscription: item.phonetic_transcription || '',
               translation1: trans1,
               translation2: trans2,
-              fullData: JSON.stringify(item)
+              usage1: usage1, // Matched
+              usage2: usage2  // Matched
             }
           });
         }} 
@@ -130,7 +133,10 @@ export default function Dictionary() {
             <Text style={styles.headerTitleBlack}>Dictionary</Text>
           </View>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconCircle}>
+            <TouchableOpacity 
+            style={styles.iconCircle}
+            onPress={() => router.push('/Dictionary/History')}
+            >
               <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
             </TouchableOpacity>
             <TouchableOpacity 

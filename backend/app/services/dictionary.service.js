@@ -19,3 +19,29 @@ export const saveWord = async (userId, dictionaryId) => {
 export const getSavedWords = async (userId) => {
     return await DictionaryModel.getSavedWordsByUserId(userId);
 };
+
+export const deleteSavedWords = async (userId, ids) => {
+    if (!ids || ids.length === 0) {
+        throw new Error('No items selected for deletion');
+    }
+    
+    const { data, error } = await DictionaryModel.deleteMultipleSavedWords(userId, ids);
+    
+    if (error) throw error;
+    return data;
+};
+
+export const getSearchHistory = async (userId) => {
+    return await DictionaryModel.getHistoryByUserId(userId);
+};
+
+export const deleteHistoryItems = async (userId, ids) => {
+    if (!ids || ids.length === 0) {
+        throw new Error('No history items selected');
+    }
+    
+    const { data, error } = await DictionaryModel.deleteMultipleHistory(userId, ids);
+    
+    if (error) throw error;
+    return data;
+};

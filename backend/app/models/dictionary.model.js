@@ -13,7 +13,8 @@ export const DictionaryModel = {
                     target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
                         word_term,
                         definition,
-                        part_of_speech
+                        part_of_speech,
+                        example_usage
                     )
                 )
             `)
@@ -52,12 +53,21 @@ export const DictionaryModel = {
                         target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
                             word_term,
                             definition,
-                            part_of_speech
+                            part_of_speech,
+                            example_usage
                         )
                     )
                 )
             `)
             .eq('user_id', userId);
+    },
+
+    async deleteMultipleSavedWords(userId, ids) {
+        return await supabase
+            .from('user_saved_words')
+            .delete()
+            .eq('user_id', userId)
+            .in('id', ids);
     },
 
     async addSearchHistory(userId, term) {
@@ -69,5 +79,23 @@ export const DictionaryModel = {
         
         if (result.error) console.error("Database Insert Error:", result.error);
         return result;
-    }
+    },
+    async getHistoryByUserId(userId) {
+        const { data, error } = await supabase
+            .from('search_history')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false }); // Show newest first
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteMultipleHistory(userId, ids) {
+        return await supabase
+            .from('search_history')
+            .delete()
+            .eq('user_id', userId)
+            .in('id', ids);
+    },
 };
