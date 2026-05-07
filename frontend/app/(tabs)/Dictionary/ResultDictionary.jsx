@@ -6,7 +6,7 @@ import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 
-const SAVE_API_URL = 'http://192.168.1.52:5001/api/dictionary/save';
+const SAVE_API_URL = 'http://192.168.1.53:5001/api/dictionary/save';
 
 export default function ResultDictionary() {
   const router = useRouter();

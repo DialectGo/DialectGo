@@ -39,6 +39,15 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
+export const getStreakData = async (req, res, next) => {
+  try {
+    const data = await UserService.getStreakInfo(req.user.id);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ADMIN
 export const getAllUsers = async (req, res, next) => {
   try {

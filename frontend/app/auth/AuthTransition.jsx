@@ -11,6 +11,9 @@ import {
 import { useRouter } from 'expo-router';
 import { styles } from '../../shared/styles/AuthTransitionStyles';
 
+// FIXED IMPORTS: 
+// 1. '../login' dahil nasa app/login.jsx (lowercase 'l')
+// 2. './Register' dahil magkatabi sila sa auth/ folder
 import LogIn from '../login'; 
 import SignUp from './Register'; 
 
@@ -73,7 +76,6 @@ export default function AuthTransition() {
     <View style={styles.container}>
       {/* Background Content */}
       <View style={styles.content}>
-        {/* IMAGE PATH: Labas sa app (../), pasok sa assets/logo */}
         <Image 
           source={require('../../assets/logo/bee.png')} 
           style={styles.logo} 

@@ -1,76 +1,81 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Image,
-  ScrollView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-  SafeAreaView
+  Image, ScrollView, StatusBar, Text, TouchableOpacity, View, SafeAreaView, ActivityIndicator
 } from 'react-native';
 import { styles } from '../../../shared/styles/StreakStyles';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../../shared/lib/supabase';
 
-export default function Streaks({ streak = 24 }) { 
+export default function Streaks() { 
   const router = useRouter(); 
-  
-  const currentStreak = streak;
+  const [loading, setLoading] = useState(true);
+  const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
+
+  useEffect(() => {
+    fetchStreak();
+  }, []);
+
+  const fetchStreak = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('http://192.168.0.104:5001/api/v1/user/streak', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      if (result.success) setStreakData(result.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentStreak = streakData.streak;
+  // Logic: Every 7 days = 1 week
+  const currentWeekNum = Math.floor(currentStreak / 7) + 1;
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  // Halimbawa: Active mula Sunday hanggang Wednesday (based sa 24 days streak)
-  const activeDays = [true, true, true, true, false, false, false]; 
+
+  // Check if current day of week was an "active day" (3+ translations)
+  const getWeeklyStatus = () => {
+    const status = [false, false, false, false, false, false, false];
+    // logic to map streakData.activeDays to S-M-T-W-T-F-S for the current week
+    return status;
+  };
+
+  if (loading) return <ActivityIndicator style={{flex:1}} />;
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-
-      {/* YELLOW HEADER - Consistent with Profile */}
       <View style={styles.headerRow}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Image 
-            source={require('../../../assets/icons/backArrow.png')} 
-            style={styles.backIcon} 
-          />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Streaks</Text>
       </View>
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
-        style={styles.scrollBody}
-      >
-        {/* MAIN STREAK DISPLAY */}
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
-            <Image 
-              source={require('../../../assets/images/flame.png')} 
-              style={styles.bigFireIcon} 
-            />
+            <Image source={require('../../../assets/images/flame.png')} style={styles.bigFireIcon} />
           </View>
           <Text style={styles.userName}>{currentStreak}</Text>
           <Text style={styles.streakSubtext}>Day Streak!</Text>
+          <Text style={styles.weekIndicator}>Week {currentWeekNum}</Text>
         </View>
 
-        {/* YELLOW CONTAINER - Bubbly Style */}
         <View style={styles.settingsContainer}>
-          
-          {/* WEEKLY TRACKER */}
           <View style={styles.whiteCard}>
-            <Text style={styles.cardLabel}>THIS WEEK</Text>
+            <Text style={styles.cardLabel}>WEEK {currentWeekNum} PROGRESS</Text>
             <View style={styles.weekGrid}>
               {daysOfWeek.map((day, index) => (
                 <View key={index} style={styles.dayColumn}>
                   <View style={[
                     styles.dayCircle, 
-                    activeDays[index] ? styles.activeDayCircle : styles.inactiveDayCircle
+                    getWeeklyStatus()[index] ? styles.activeDayCircle : styles.inactiveDayCircle
                   ]}>
-                    {activeDays[index] && (
-                      <Image 
-                        source={require('../../../assets/icons/check_icon.png')} 
-                        style={styles.checkIcon} 
-                      />
+                    {getWeeklyStatus()[index] && (
+                      <Image source={require('../../../assets/icons/check_icon.png')} style={styles.checkIcon} />
                     )}
                   </View>
                   <Text style={styles.dayLabel}>{day}</Text>
@@ -79,35 +84,19 @@ export default function Streaks({ streak = 24 }) {
             </View>
           </View>
 
-          {/* PROGRESS MILESTONE */}
+          {/* PROGRESS TO NEXT 7-DAY MILESTONE */}
           <View style={styles.whiteCard}>
-            <Text style={styles.cardLabel}>NEXT MILESTONE: 30 DAYS</Text>
+            <Text style={styles.cardLabel}>NEXT WEEK: WEEK {currentWeekNum + 1}</Text>
             <Text style={styles.milestoneDesc}>
-              {30 - currentStreak > 0 
-                ? `${30 - currentStreak} days left to unlock the Badge!` 
-                : "Milestone Reached! 🎉"}
+              {7 - (currentStreak % 7)} days left until your next week milestone!
             </Text>
             <View style={styles.progressBarBg}>
               <View style={[
                 styles.progressBarFill, 
-                { width: `${Math.min((currentStreak / 30) * 100, 100)}%` }
+                { width: `${((currentStreak % 7) / 7) * 100}%` }
               ]} />
             </View>
           </View>
-
-          {/* QUICK STATS */}
-          <View style={styles.statsRow}>
-             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>156</Text>
-                <Text style={styles.statSub}>Words</Text>
-             </View>
-             <View style={styles.statItem}>
-                <Text style={styles.statNumber}>12</Text>
-                <Text style={styles.statSub}>Lessons</Text>
-             </View>
-          </View>
-
-          <View style={{ height: 50 }} />
         </View>
       </ScrollView>
     </SafeAreaView>

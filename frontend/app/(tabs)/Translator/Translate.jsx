@@ -9,20 +9,25 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  LayoutAnimation,
   View,
-  Keyboard,
-  Alert
+  Alert,
+  Dimensions,
+  LayoutAnimation
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import { styles } from '../../../shared/styles/TranslateStyles';
-import { supabase } from '../../../shared/lib/supabase';
-import { useRouter } from 'expo-router';
+import { supabase } from '../../../shared/lib/supabase'; // Connected to your lib
 
-const API_URL = 'http://192.168.0.104:5001/api/translate';
-const FEEDBACK_URL = 'http://192.168.0.104:5001/api/feedback';
+const { width } = Dimensions.get('window');
+
+// API Endpoints
+const API_URL = 'http://192.168.1.53:5001/api/translate';
+const FEEDBACK_URL = 'http://192.168.1.53:5001/api/feedback';
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
   const router = useRouter();
@@ -32,79 +37,115 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [selectingFor, setSelectingFor] = useState('source');
   const [inputText, setInputText] = useState('');
   const [translation, setTranslation] = useState('');
-  const [currentTranslationId, setCurrentTranslationId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const animateTransition = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  };
-  const [showResult, setShowResult] = useState(false);
 
+  const [error, setError] = useState(false); 
+  const [feedback, setFeedback] = useState(null); 
+  const [suggestionText, setSuggestionText] = useState('');
+
+  // Backend Language Mapping
   const languages = [
-  { name: 'english', id: 1 },
-  { name: 'tagalog', id: 2 },
-  { name: 'cebuano', id: 3 },
-];
+    { name: 'English', id: 1 },
+    { name: 'Tagalog', id: 2 },
+    { name: 'Cebuano', id: 3 },
+  ];
 
-  // --- 1. MOCK TRANSLATE FUNCTION (Frontend Only) ---
-const handleTranslate = async (text) => {
-  if (!text.trim()) {
-    setTranslation('');
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        Alert.alert("Authentication Required", "Please log in.");
-        return;
-        }
-    const response = await fetch('http://192.168.0.104:5001/api/translate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // 2. Use the fresh token
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        sourceText: text,
-        // Try changing these keys to match your backend exactly
-        // If the backend says "sourceLang is not defined", it might actually
-        // be looking for "source_lang" or "sourceLanguage".
-        sourceLang: sourceLang, 
-        targetLang: targetLang,
-        source_language_id: languages.find(l => l.name === sourceLang)?.id, 
-        target_language_id: languages.find(l => l.name === targetLang)?.id,
-      }),
-    });
-
-    const data = await response.json();
-
-    const cleanAIOutput = (text) => {
-        return text
-            .replace(/model/gi, '') // Removes the word "model"
-            .replace(/user/gi, '')  // Removes the word "user"
-            .replace(/Translation:/gi, '')
-            .trim();
-    };
-
-    if (response.ok) {
-      const cleaned = cleanAIOutput(data.translatedText);
-      setTranslation(cleaned); // Assuming API returns { translatedText: "..." }
-    } else {
-      console.error("Translation error:", data);
-      setTranslation("Error: Could not translate.");
+  // --- BACKEND INTEGRATION: TRANSLATE FUNCTION ---
+  const handleTranslate = async (text) => {
+    if (!text.trim()) {
+      setTranslation('');
+      setError(false);
+      return;
     }
-  } catch (error) {
-    console.error("Network error:", error);
-    setTranslation("Error: Check your connection.");
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-  // --- 2. DEBOUNCE EFFECT (Mananatili ito para sa UI feel) ---
+    setIsLoading(true);
+    setFeedback(null);
+    setError(false);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        Alert.alert("Authentication Required", "Please log in.");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          sourceText: text,
+          sourceLang: sourceLang, 
+          targetLang: targetLang,
+          source_language_id: languages.find(l => l.name === sourceLang)?.id, 
+          target_language_id: languages.find(l => l.name === targetLang)?.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      // Clean output (Logic from your backend-connected file)
+      const cleanAIOutput = (text) => {
+        return text
+          .replace(/model/gi, '')
+          .replace(/user/gi, '') 
+          .replace(/Translation:/gi, '')
+          .trim();
+      };
+
+      if (response.ok) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        const cleaned = cleanAIOutput(data.translatedText);
+        setTranslation(cleaned);
+      } else {
+        console.error("Translation error:", data);
+        setError(true);
+        setTranslation("Error: Could not translate.");
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      setError(true);
+      setTranslation("Error: Check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- BACKEND INTEGRATION: FEEDBACK FUNCTION ---
+  const submitSuggestion = async () => {
+    if (!suggestionText.trim() && feedback !== 'unlike') return;
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch(FEEDBACK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                original_text: inputText,
+                translated_text: translation,
+                suggested_text: suggestionText,
+                rating: feedback === 'like' ? 5 : 1
+            })
+        });
+
+        if (response.ok) {
+            Alert.alert("Salamat!", "Nai-save na ang iyong suggestion para sa DialectGo.");
+            setSuggestionText('');
+            setFeedback(null);
+        }
+    } catch (err) {
+        Alert.alert("Error", "Could not send feedback.");
+    }
+  };
+
+  // Debounce Effect
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (inputText) handleTranslate(inputText);
@@ -113,22 +154,22 @@ const handleTranslate = async (text) => {
     return () => clearTimeout(delayDebounceFn);
   }, [inputText, targetLang, sourceLang]);
 
-  // --- 3. LANGUAGE PICKER LOGIC ---
   const openPicker = (type) => {
     setSelectingFor(type);
     setModalVisible(true);
   };
 
-const selectLanguage = (langObj) => {
-  if (selectingFor === 'source') {
-    if (langObj.name === targetLang) setTargetLang(sourceLang);
-    setSourceLang(langObj.name);
-  } else {
-    if (langObj.name === sourceLang) setSourceLang(targetLang);
-    setTargetLang(langObj.name);
-  }
-  setModalVisible(false);
-};
+  // Logic to handle language object and swap prevention
+  const selectLanguage = (langObj) => {
+    if (selectingFor === 'source') {
+      if (langObj.name === targetLang) setTargetLang(sourceLang);
+      setSourceLang(langObj.name);
+    } else {
+      if (langObj.name === sourceLang) setSourceLang(targetLang);
+      setTargetLang(langObj.name);
+    }
+    setModalVisible(false);
+  };
 
   const swapLanguages = () => {
     const temp = sourceLang;
@@ -138,6 +179,7 @@ const selectLanguage = (langObj) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
       <ScrollView 
@@ -146,130 +188,159 @@ const selectLanguage = (langObj) => {
       >
         <View style={styles.content}>
 
-          {/* HEADER SECTION */}
+          {/* HEADER */}
           <View style={styles.headerRow}>
-            <View style={styles.textContainer}>
               <Text style={styles.headerTitle}>
                 Translate <Text style={styles.yellowText}>Now!</Text>
               </Text>
-              <View style={styles.titleUnderline} />
-            </View>
+              <Text style={styles.subHeader}>TEXT MODE</Text>
           </View>
 
-          {/* LANGUAGE SELECTOR BAR */}
-          <View style={styles.selectorBar}>
-            <TouchableOpacity style={styles.langButton} onPress={() => openPicker('source')}>
-              <Text style={styles.langText}>{sourceLang}</Text>
-              <Text style={styles.dropdownArrow}>▼</Text>
+          {/* SELECTOR BAR */}
+          <View style={styles.newSelectorBar}>
+            <TouchableOpacity style={styles.langPill} onPress={() => openPicker('source')}>
+              <Text style={styles.langPillText}>{sourceLang}</Text>
+              <Ionicons name="caret-down" size={12} color="#1F2937" style={{ marginLeft: 4 }} />
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={swapLanguages}>
-              <Image source={require('../../../assets/icons/translateIcon.png')} style={styles.swapIcon} />
+            <TouchableOpacity style={styles.newSwapButton} onPress={swapLanguages}>
+              <Ionicons name="swap-horizontal" size={20} color="#1F2937" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.langButton} onPress={() => openPicker('target')}>
-              <Text style={styles.langText}>{targetLang}</Text>
-              <Text style={styles.dropdownArrow}>▼</Text>
+            <TouchableOpacity style={styles.langPill} onPress={() => openPicker('target')}>
+              <Text style={styles.langPillText}>{targetLang}</Text>
+              <Ionicons name="caret-down" size={12} color="#1F2937" style={{ marginLeft: 4 }} />
             </TouchableOpacity>
           </View>
 
           {/* INPUT CARD */}
-          <View style={[
-            styles.translateCard,
-            { minHeight: inputText.length > 0 ? 220 : 400 }
-          ]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>{sourceLang}</Text>
-              <TextInput
-                style={styles.mainInput}
-                placeholder="Enter your text"
-                placeholderTextColor="#BDBDBD"
-                multiline
-                value={inputText}
-                onChangeText={(text) => setInputText(text)}
-              />
-
-              {!inputText && (
-                <View style={styles.suggestionInsideCard}>
-                  {['Kumusta?', 'Maayong buntag'].map((txt, i) => (
-                    <TouchableOpacity key={i} style={styles.chip} onPress={() => setInputText(txt)}>
-                      <Text style={styles.chipText}>{txt}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+          <View style={styles.translateCard}>
+            <View style={styles.cardHeader}>
+               <Text style={styles.inputLabel}>{sourceLang.toUpperCase()}</Text>
+               <TouchableOpacity onPress={() => setInputText('')}>
+                 <Ionicons name="close-circle" size={20} color="#D1D5DB" />
+               </TouchableOpacity>
             </View>
-
+            
+            <TextInput
+              style={styles.mainInput}
+              placeholder="Type something to translate..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              value={inputText}
+              onChangeText={setInputText}
+            />
+            
             <View style={styles.cardFooter}>
-              <TouchableOpacity onPress={() => router.push('/Translator/LiveCamera')}>
-                <Image source={require('../../../assets/icons/cameraIcon.png')} style={styles.footerIcon} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')}>
-                <Image source={require('../../../assets/icons/micIcon.png')} style={styles.footerIcon} />
-              </TouchableOpacity>
-            </View>
-          </View> 
+              <View style={styles.shortcutIcons}>
+                <TouchableOpacity onPress={() => router.push('/Translator/LiveCamera')} style={styles.iconBtn}>
+                  <Ionicons name="camera" size={22} color="#1F2937" />
+                </TouchableOpacity>
 
-          {/* RESULT CARD */}
-          {inputText.length > 0 && (
-            <View style={[styles.translateCard, { marginTop: 15, minHeight: 200 }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>{targetLang}</Text>
-                {isLoading ? (
-                  <View style={{ marginTop: 20, alignItems: 'center' }}>
-                    <ActivityIndicator size="small" color="#FBC02D" />
-                    <Text style={{ marginTop: 5, color: '#8E8E8E', fontSize: 12 }}>DialectGo is thinking...</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.resultText}>{translation || "Waiting for translation..."}</Text>
-                )}
-              </View>
-
-              <View style={styles.cardFooter}>
-                <View />
-                <TouchableOpacity onPress={() => console.log("Copy Pressed")}>
-                  <Text style={{ color: '#8E8E8E', fontSize: 12 }}>Copy</Text>
+                <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')} style={styles.iconBtn}>
+                  <Ionicons name="mic" size={22} color="#1F2937" />
                 </TouchableOpacity>
               </View>
+              
+              <Text style={styles.charCount}>{inputText.length} characters</Text>
+            </View>
+          </View>
+
+          {/* RESULT CARD (Conditional Rendering based on Backend Response) */}
+          {inputText.length > 0 && !error && (
+            <View style={[styles.translateCard, styles.resultCardExtra]}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.inputLabel}>{targetLang.toUpperCase()}</Text>
+                <Ionicons name="volume-high" size={20} color="#FBBF24" />
+              </View>
+
+              {isLoading ? (
+                <View style={styles.loadingArea}>
+                  <ActivityIndicator size="small" color="#FBBF24" />
+                  <Text style={{ marginTop: 8, color: '#9CA3AF', fontSize: 12 }}>DialectGo is thinking...</Text>
+                </View>
+              ) : (
+                <Text style={styles.resultText}>{translation || "Waiting for translation..."}</Text>
+              )}
+              
+              <View style={styles.cardFooter}>
+                <View />
+                <TouchableOpacity style={styles.copyBtn} onPress={() => Alert.alert("Copied", "Text copied to clipboard")}>
+                  <Ionicons name="copy-outline" size={16} color="#FBBF24" />
+                  <Text style={styles.copyBtnText}>COPY</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* FEEDBACK SECTION */}
+          {inputText.length > 0 && !isLoading && (
+            <View style={styles.feedbackContainer}>
+              <Text style={styles.feedbackAsk}>
+                {error ? "Translation failed. Try again?" : "Is this translation correct?"}
+              </Text>
+              
+              {!error && (
+                <View style={styles.feedbackIcons}>
+                  <TouchableOpacity 
+                    onPress={() => setFeedback('like')} 
+                    style={[styles.miniFeedbackBtn, feedback === 'like' && styles.activeYellow]}
+                  >
+                    <Ionicons name="thumbs-up" size={18} color={feedback === 'like' ? "#1F2937" : "#9CA3AF"} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    onPress={() => setFeedback('unlike')} 
+                    style={[styles.miniFeedbackBtn, feedback === 'unlike' && styles.activeYellow]}
+                  >
+                    <Ionicons name="thumbs-down" size={18} color={feedback === 'unlike' ? "#1F2937" : "#9CA3AF"} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {(feedback === 'unlike' || error) && (
+                <View style={styles.suggestionBox}>
+                  <TextInput 
+                    style={styles.suggestionInput}
+                    placeholder="Help us improve DialectGo..."
+                    value={suggestionText}
+                    onChangeText={setSuggestionText}
+                    multiline
+                  />
+                  <TouchableOpacity style={styles.yellowSubmitBtn} onPress={submitSuggestion}>
+                    <Text style={styles.submitText}>SUBMIT</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
         </View>
       </ScrollView>
 
-      {/* DROPDOWN MODAL */}
-      <Modal 
-        visible={modalVisible} 
-        transparent={true} 
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={styles.dropdownMenu}>
-            <Text style={styles.modalTitle}>Select Language</Text>
-            <FlatList
-              data={languages}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => {
-                const isSelected = selectingFor === 'source' ? item.name === sourceLang : item.name === targetLang;
-                return (
-                  <TouchableOpacity
-                    style={[styles.dropdownItem, isSelected && { backgroundColor: '#FFFDE7' }]}
-                    onPress={() => selectLanguage(item)} // Pass the whole object
-                  >
-                    <Text style={[styles.dropdownItemText, isSelected && { color: '#FBC02D', fontWeight: 'bold' }]}>
-                      {item.name}
-                    </Text>
-                    {isSelected && <Text style={{ color: '#FBC02D' }}>✓</Text>}
-                  </TouchableOpacity>
-                );
-              }}
-            />
+      {/* MODAL PICKER (Updated to use language objects) */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Select Language</Text>
+            {languages.map((item) => (
+               <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
+                 <Text style={[
+                   styles.sheetItemText, 
+                   (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText
+                 ]}>
+                   {item.name}
+                 </Text>
+                 {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && (
+                   <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />
+                 )}
+               </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}>
+               <Text style={styles.closeSheetText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />

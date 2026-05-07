@@ -7,7 +7,7 @@ import TopBar from '../../../shared/components/TopBar';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_BASE_URL = 'http://192.168.1.52:5001/api/dictionary/search';
+const API_BASE_URL = 'http://192.168.1.53:5001/api/dictionary/search';
 
 export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,8 +59,8 @@ export default function Dictionary() {
 
       const result = await response.json();
 
-      if (result.success && result.data) {
-        setSearchResults([result.data]);
+      if (result.success && Array.isArray(result.data)) {
+        setSearchResults(result.data); 
       } else {
         setSearchResults([]);
         // setError(result.message || 'Word not found');

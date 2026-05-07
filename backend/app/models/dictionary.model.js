@@ -19,7 +19,7 @@ export const DictionaryModel = {
                 )
             `)
             .ilike('word_term', term)
-            .maybeSingle();
+            // .maybeSingle();
 
         if (err) {
             console.error("Database Error:", err);

@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
 
 // Use your specific API endpoint for search history
-const API_BASE = 'http://192.168.1.52:5001/api/dictionary';
+const API_BASE = 'http://192.168.1.53:5001/api/dictionary';
 
 export default function History() {
   const [historyItems, setHistoryItems] = useState([]);

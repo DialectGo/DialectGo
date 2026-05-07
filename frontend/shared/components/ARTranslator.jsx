@@ -3,8 +3,11 @@ import { StyleSheet, View, TouchableOpacity, Text, Alert, ActivityIndicator } fr
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import axios from 'axios';
 import { supabase } from '../../shared/lib/supabase'; // Adjust path as needed
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function ARTranslator({ targetLang }) {
+  const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,7 +44,7 @@ export default function ARTranslator({ targetLang }) {
         });
 
         // Update the URL and include the required ID fields
-        const response = await axios.post('http://192.168.0.104:5001/api/translate/image', {
+        const response = await axios.post('http://192.168.1.53:5001/api/translate/image', {
           image: photo.base64,
           targetLang: targetLang,
           source_language_id: 1, // Ensure these map to your language list
@@ -64,6 +67,9 @@ export default function ARTranslator({ targetLang }) {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Ionicons name="chevron-back" size={28} color="#1F2937" />
+      </TouchableOpacity>
       {/* Camera View */}
       <CameraView style={StyleSheet.absoluteFill} ref={cameraRef} />
 
@@ -125,5 +131,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   resultText: { fontSize: 18, color: '#333', textAlign: 'center', fontWeight: '500' },
-  dismissText: { marginTop: 15, color: '#FBBF24', textAlign: 'center', fontWeight: 'bold' }
+  dismissText: { marginTop: 15, color: '#FBBF24', textAlign: 'center', fontWeight: 'bold' },
+  backButton: {
+    position: 'absolute',
+    top: 50, // Adjust based on device status bar height
+    left: 20,
+    zIndex: 10, // Force it to stay on top
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Optional: make it visible against dark backgrounds
+    padding: 8,
+    borderRadius: 20,
+  },
 });
