@@ -25,32 +25,40 @@ export const translateAudio = async (req, res, next) => {
         
         const { targetLang, sourceLang, source_language_id, target_language_id } = req.body;
 
-        // 1. Convert Audio to Text (Using the service)
-        const transcribedText = await TranslationService.performSpeechToText(req.file.path);
-        console.log("Transcribed text captured:", transcribedText);
-
-        // 2. Translate Text (Using the service)
-        const translatedText = await TranslationService.performTranslation(
-            transcribedText, 
-            sourceLang, 
-            targetLang
+        // 1. Get the object from Service { transcript, translation, status }
+        const result = await TranslationService.performSpeechToText(
+            req.file.path, 
+            targetLang, 
+            sourceLang
         );
 
-        // 3. Save to History
+        console.log("AI Result Object:", result);
+
+        // 2. Save to History
         if (req.user?.id) {
-            await TranslationService.saveHistory(req.user.id, {
-                sourceText: transcribedText, 
-                translatedText, 
-                sourceLanguageId: source_language_id, 
-                targetLanguageId: target_language_id
-            });
+            const historyPayload = {
+                // Use result.transcript for the source text
+                sourceText: result.transcript, 
+                // Use result.translation for the translated text
+                translatedText: result.translation, 
+                sourceLanguageId: source_language_id || 1, 
+                targetLanguageId: target_language_id || 2
+            };
+
+            console.log("Database Payload:", historyPayload);
+
+            const { error } = await TranslationService.saveHistory(req.user.id, historyPayload);
+            
+            if (error) {
+                console.error("Supabase Save Error:", error.message);
+            }
         }
 
-        // Return the results
+        // 3. Return to Mobile
         res.status(200).json({ 
             success: true, 
-            translation: translatedText, 
-            transcript: transcribedText 
+            translation: result.translation, 
+            transcript: result.transcript 
         });
     } catch (err) { 
         console.error("Translate Audio Controller Error:", err);
