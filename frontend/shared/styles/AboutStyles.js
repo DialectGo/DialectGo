@@ -1,41 +1,41 @@
-import { Platform, StatusBar, StyleSheet } from 'react-native';
-
-const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight;
+import { Platform, StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#FDFDFD' 
+    backgroundColor: '#F8F9FA' // Light grey background para malinis
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 0 : STATUSBAR_HEIGHT,
-    height: Platform.OS === 'ios' ? 90 : 64 + STATUSBAR_HEIGHT,
+    // Inalign sa 80px gaya ng mga naunang screens
+    height: 80, 
     backgroundColor: '#FFD54F',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Center ang title horizontally
     paddingHorizontal: 20,
-    elevation: 10,       // Tumaas ang elevation para sa Android
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    zIndex: 9999,        // Siniguradong nasa pinakataas
+    paddingTop: Platform.OS === 'ios' ? 20 : 0,
+    position: 'relative',
+    zIndex: 9999,
   },
   headerTitle: { 
     fontSize: 22, 
     fontWeight: '900', 
-    color: '#421C00' 
+    color: '#2D1606', // Inalign ang color sa dark brown ng ibang screens
+    textAlign: 'center',
+    fontFamily: 'Poppins-Bold',
   },
   backButton: {
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 15,
-    zIndex: 10000,       // Button mismo ay may mataas na zIndex
+    position: 'absolute', // Absolute para hindi ma-disturb ang centering ng title
+    left: 20,
+    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 12,
+    zIndex: 10000,
   },
   backIcon: { 
     width: 20, 
     height: 20, 
-    tintColor: '#421C00' 
+    tintColor: '#2D1606' 
   },
 
   scrollContent: { paddingBottom: 40 },
@@ -43,49 +43,52 @@ export const styles = StyleSheet.create({
   logoSection: {
     alignItems: 'center',
     paddingVertical: 45,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
   },
   logoCircle: {
     width: 130,
     height: 130,
     borderRadius: 65,
-    backgroundColor: '#FFD54F',
+    backgroundColor: '#F5F5F5', // Binuwasan ang pagka-yellow, ginawang light grey
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 12,
-    shadowColor: '#FFD54F',
-    shadowOpacity: 0.4,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
     marginBottom: 20,
   },
   logoImg: { width: 85, height: 85, resizeMode: 'contain' },
-  appName: { fontSize: 30, fontWeight: '900', color: '#263238' },
-  appTagline: { fontSize: 14, color: '#78909C', fontWeight: '600', marginTop: 6 },
+  appName: { fontSize: 30, fontWeight: '900', color: '#2D1606' },
+  appTagline: { fontSize: 14, color: '#8D8D8D', fontWeight: '600', marginTop: 6 },
   
   versionBadge: {
     marginTop: 18,
-    backgroundColor: '#ECEFF1',
+    backgroundColor: '#F0F2F5',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 12,
   },
-  versionText: { fontSize: 12, color: '#546E7A', fontWeight: '800' },
+  versionText: { fontSize: 12, color: '#8D8D8D', fontWeight: '800' },
 
   infoCard: {
     margin: 20,
     padding: 25,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF', // Pure white card
     borderRadius: 25,
-    elevation: 4,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#421C00', marginBottom: 12 },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: '#2D1606', marginBottom: 12 },
   cardBody: { fontSize: 15, color: '#546E7A', lineHeight: 24, textAlign: 'justify' },
 
   sectionLabel: { 
-    fontSize: 13, 
+    fontSize: 12, 
     fontWeight: '900', 
-    color: '#B0BEC5', 
+    color: '#BDBDBD', 
     marginLeft: 25, 
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -97,14 +100,16 @@ export const styles = StyleSheet.create({
   },
   techItem: {
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF', // White cards para sa tech items
     padding: 15,
     borderRadius: 22,
     width: '28%',
-    elevation: 5,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F2F5',
   },
   techEmoji: { fontSize: 26, marginBottom: 8 },
-  techName: { fontSize: 11, fontWeight: '800', color: '#455A64', textAlign: 'center' },
+  techName: { fontSize: 11, fontWeight: '800', color: '#2D1606', textAlign: 'center' },
 
   footerSection: {
     alignItems: 'center',
@@ -114,7 +119,7 @@ export const styles = StyleSheet.create({
     borderTopColor: '#F0F0F0',
     marginHorizontal: 40,
   },
-  footerTitle: { fontSize: 13, color: '#90A4AE', fontWeight: '600' },
-  devName: { fontSize: 17, fontWeight: '900', color: '#421C00', marginTop: 6 },
+  footerTitle: { fontSize: 12, color: '#BDBDBD', fontWeight: '600' },
+  devName: { fontSize: 17, fontWeight: '900', color: '#2D1606', marginTop: 6 },
   copyright: { fontSize: 11, color: '#CFD8DC', marginTop: 12 }
 });

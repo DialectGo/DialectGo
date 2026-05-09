@@ -117,3 +117,70 @@ export const deleteUser = async (id) => {
 
   if (error) throw error;
 };
+
+// Add to user.model.js
+// user.model.js
+
+export const calculateAndSyncStreak = async (userId) => {
+  // 1. Fetch all translation timestamps for this user
+  const { data, error } = await supabase
+    .from('translation_history')
+    .select('created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  // 2. Map translations to unique dates and count them
+  const dayCounts = {};
+  data.forEach(row => {
+    // Convert timestamp to local date string (YYYY-MM-DD)
+    const date = new Date(row.created_at).toISOString().split('T')[0];
+    dayCounts[date] = (dayCounts[date] || 0) + 1;
+  });
+
+  // 3. Identify "Active Days" (days with 3 or more translations)
+  const activeDays = Object.keys(dayCounts)
+    .filter(date => dayCounts[date] >= 3)
+    .sort((a, b) => new Date(b) - new Date(a)); // Newest first
+
+  if (activeDays.length === 0) {
+    await supabase.from('profiles').update({ streak_count: 0 }).eq('id', userId);
+    return { streak: 0, activeDays: [] };
+  }
+
+  // 4. Calculate consecutive days
+  let streak = 0;
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+  // Check if the user is active today or was at least active yesterday
+  // If not, the streak has already broken.
+  if (activeDays[0] === today || activeDays[0] === yesterdayStr) {
+    streak = 1;
+    for (let i = 0; i < activeDays.length - 1; i++) {
+      const current = new Date(activeDays[i]);
+      const next = new Date(activeDays[i + 1]);
+      
+      // Calculate difference in days
+      const diffTime = Math.abs(current - next);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        streak++;
+      } else {
+        break; // Streak broken
+      }
+    }
+  }
+
+  // 5. Sync to profile
+  await supabase
+    .from('profiles')
+    .update({ streak_count: streak })
+    .eq('id', userId);
+
+  return { streak, activeDays };
+};

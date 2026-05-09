@@ -1,194 +1,271 @@
-import { Dimensions, StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
-  // ==========================================
-  // 1. MAIN CONTAINER & CONTENT
-  // ==========================================
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
   content: {
-    paddingHorizontal: 25,
-    paddingTop: 20,
-    paddingBottom: 40, // Dagdag space sa dulo para sa ScrollView
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
-
-  // ==========================================
-  // 2. HEADER SECTION
-  // ==========================================
+  
+  // HEADER SECTION
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
+    marginTop: 10,
   },
   headerTitle: {
     fontSize: 32,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
+    fontWeight: '900',
+    color: '#1F2937',
   },
   yellowText: {
-    color: '#FFD54F',
+    color: '#FBBF24',
   },
-  titleUnderline: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#FFD54F',
-    borderRadius: 2,
-    marginTop: -2,
+  subHeader: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginTop: 4,
   },
 
-  // ==========================================
-  // 3. SELECTOR SECTION (Yellow Bar)
-  // ==========================================
-  selectorWrapper: {
-    marginTop: 20,
-    marginBottom: 10, // Mahalaga: Para itulak ang card pababa
-    width: '100%',
-  },
-  selectorBar: {
+  // NEW SELECTOR BAR (Yellow Pill Style)
+  newSelectorBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFD54F',
-    height: 55,
-    borderRadius: 28,
+    backgroundColor: '#FFD700',
+    borderRadius: 20,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    elevation: 5, // Para sa Android shadow
-    shadowColor: '#000', // Para sa iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  langButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  langText: {
-    fontSize: 15,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
-  },
-  swapIcon: {
-    width: 22,
-    height: 22,
-    tintColor: '#421C00',
-    marginHorizontal: 10,
-  },
-
-  // ==========================================
-  // 4. TRANSLATION CARDS (Input & Result)
-  // ==========================================
-translateCard: {
-    marginTop: 20,
-    backgroundColor: '#FFF9E1',
-    borderRadius: 30,
-    padding: 22,
-    elevation: 3,
+    marginBottom: 25,
+    elevation: 4,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    // Tinanggal ang justifyContent: 'space-between' dito 
-    // para ang flex: 1 sa loob ang mag-control ng push.
+    shadowOffset: { width: 0, height: 2 },
   },
-  mainInput: {
-    fontSize: 32,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
-    marginTop: 10,
-    textAlignVertical: 'top',
-    padding: 0,
-    // Huwag lagyan ng flex: 1 dito para hindi lumitaw ang scrollbar sa loob ng textinput
+  langPill: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
   },
-  inputLabel: {
+  langPillText: {
     fontSize: 14,
-    color: '#8E8E8E',
-    fontFamily: 'Poppins-Medium',
+    fontWeight: '700',
+    color: '#1F2937',
   },
-  resultText: {
-    fontSize: 32,
-    fontFamily: 'Poppins-Bold',
-    color: '#000000',
-    marginTop: 10,
+  newSwapButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  // ==========================================
-  // 5. SUGGESTIONS & FOOTER
-  // ==========================================
-  suggestionInsideCard: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  // TRANSLATE CARDS
+  translateCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  resultCardExtra: {
     marginTop: 15,
-    marginBottom: 10,
+    backgroundColor: '#FAFAFA',
+    borderLeftWidth: 5,
+    borderLeftColor: '#FBBF24',
   },
-  chip: {
-    backgroundColor: '#FFE8A1',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    marginRight: 8,
-    marginVertical: 4,
-  },
-  chipText: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Medium',
-    color: '#421C00',
-  },
-cardFooter: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#9CA3AF',
+    letterSpacing: 1,
+  },
+  mainInput: {
+    flex: 1,
+    fontSize: 18,
+    color: '#1F2937',
+    fontWeight: '600',
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  resultText: {
+    fontSize: 20,
+    color: '#1F2937',
+    fontWeight: '700',
+  },
+  loadingArea: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+
+  // CARD FOOTER & ICONS
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#F9FAFB',
+  },
+  shortcutIcons: {
+    flexDirection: 'row',
+  },
+  iconBtn: {
+    backgroundColor: '#F3F4F6',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  charCount: {
+    fontSize: 10,
+    color: '#D1D5DB',
+    fontWeight: '600',
+  },
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  copyBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FBBF24',
+    marginLeft: 4,
+  },
+
+  // FEEDBACK SECTION
+  feedbackContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  feedbackAsk: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '600',
+    marginBottom: 15,
+  },
+  feedbackIcons: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  miniFeedbackBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  activeYellow: {
+    backgroundColor: '#FBBF24',
+    borderColor: '#FBBF24',
+  },
+
+  // SUGGESTION BOX
+  suggestionBox: {
     width: '100%',
-    paddingTop: 10, // Konting gap mula sa content sa taas
-    borderTopWidth: 0, // Siguradong walang line
+    marginTop: 20,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 15,
+    padding: 15,
   },
-  footerIcon: {
-    width: 26,
-    height: 26,
-    resizeMode: 'contain',
-    tintColor: '#421C00',
+  suggestionInput: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 15,
   },
-  // Siguraduhin na may ganito sa TranslateStyles.js mo:
-modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.5)', // Madilim na background
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-dropdownMenu: {
-  width: '80%',
-  backgroundColor: '#FFFFFF',
-  borderRadius: 15,
-  padding: 20,
-  elevation: 5, // Para sa Android shadow
-  shadowColor: '#000', // Para sa iOS shadow
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.84,
-},
-dropdownItem: {
-  paddingVertical: 15,
-  paddingHorizontal: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: '#F0F0F0',
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-},
-dropdownItemText: {
-  fontSize: 16,
-  fontFamily: 'Poppins-Regular',
-  color: '#333',
-},
-modalTitle: {
-  fontSize: 18,
-  fontFamily: 'Poppins-Bold',
-  marginBottom: 15,
-  textAlign: 'center',
-  color: '#000',
-}
+  yellowSubmitBtn: {
+    backgroundColor: '#FBBF24',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  submitText: {
+    color: '#1F2937',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+
+  // MODERN MODAL / BOTTOM SHEET
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 25,
+    paddingBottom: 40,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 20,
+  },
+  sheetItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  sheetItemText: {
+    fontSize: 16,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  activeSheetText: {
+    color: '#FBBF24',
+    fontWeight: '800',
+  },
+  closeSheet: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  closeSheetText: {
+    color: '#EF4444',
+    fontWeight: '700',
+  },
 });

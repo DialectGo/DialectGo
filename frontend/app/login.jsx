@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../shared/lib/supabase';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users';
+const API_BASE_URL = 'http://192.168.1.53:5001/api/v1/users';
 
 export default function LogIn({ onSwitch, onSuccess }) {
   const router = useRouter(); 

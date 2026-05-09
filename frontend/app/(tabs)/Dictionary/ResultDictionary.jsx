@@ -1,24 +1,12 @@
 import React, { useState } from 'react';
-// Added Alert and ActivityIndicator to react-native imports
-import { 
-  Image, 
-  SafeAreaView, 
-  ScrollView, 
-  Text, 
-  TouchableOpacity, 
-  View, 
-  Alert, 
-  ActivityIndicator 
-} from 'react-native';
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-// Import AsyncStorage (Ensure you have @react-native-async-storage/async-storage installed)
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import { StatusBar } from 'expo-status-bar';
 import { supabase } from '../../../shared/lib/supabase';
-
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 
-const SAVE_API_URL = 'http://192.168.1.52:5001/api/dictionary/save';
+const SAVE_API_URL = 'http://192.168.1.53:5001/api/dictionary/save';
 
 export default function ResultDictionary() {
   const router = useRouter();
@@ -26,54 +14,44 @@ export default function ResultDictionary() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Extract backend data
-  const dictionaryId = params.id; 
-  const wordTerm = params.wordTerm || 'No Word';
-  const partOfSpeech = params.partOfSpeech || 'Word';
-  const definition = params.definition || 'No definition available';
-  const exampleUsage = params.exampleUsage || 'No examples available';
-  const phoneticTranscription = params.phoneticTranscription || '';
-  const translation1 = params.translation1 || '';
-  const translation2 = params.translation2 || '';
+  // Destructure all parameters including the new usage params
+  const { 
+    id, wordTerm, partOfSpeech, definition, 
+    exampleUsage, phoneticTranscription, 
+    translation1, translation2, 
+    usage1, usage2 
+  } = params;
 
   const handleSaveWord = async () => {
-    if (!dictionaryId) {
-      Alert.alert("Error", "Cannot save this word: ID is missing.");
+    if (!id) {
+      Alert.alert("Error", "ID is missing.");
       return;
     }
-
     setIsSaving(true);
     try {
-      // 1. Get the JWT token from storage
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
-        Alert.alert("Error", "You must be logged in to save words.");
+        Alert.alert("Error", "Please login to save words.");
         return;
       }
       
-      // 2. Perform the POST request to backend
       const response = await fetch(SAVE_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          dictionary_id: parseInt(dictionaryId)
-        }),
+        body: JSON.stringify({ dictionary_id: parseInt(id) }),
       });
 
       const result = await response.json();
-
       if (response.ok && result.success) {
         setIsBookmarked(true);
-        Alert.alert("Success", `"${wordTerm}" has been saved.`);
+        Alert.alert("Success", `"${wordTerm}" saved.`);
       } else {
-        throw new Error(result.message || "Failed to save word.");
+        throw new Error(result.message || "Failed to save.");
       }
     } catch (error) {
-      console.error("Save Error:", error);
       Alert.alert("Error", error.message);
     } finally {
       setIsSaving(false);
@@ -81,121 +59,107 @@ export default function ResultDictionary() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { flex: 1 }]}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       
-      {/* --- HEADER SECTION --- */}
-      <View style={[styles.headerAction, { zIndex: 100 }]}>
-        {/* Left Side: Back Button */}
-        <TouchableOpacity 
-          style={styles.backCircle} 
-          onPress={() => router.back()}
-        >
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backIcon} />
+      {/* FIXED UI HEADER: Back button and Title both aligned to the LEFT */}
+      <View style={[styles.topHeader, { 
+        flexDirection: 'row', 
+        justifyContent: 'flex-start', // Align to left
+        alignItems: 'center', 
+        paddingHorizontal: 20,
+        gap: 15 // Space between arrow and text
+      }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtnNoBg}>
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImgLarge} />
         </TouchableOpacity>
-
-        {/* Center: Title */}
-        <Text style={[styles.topLabel, { flex: 0, marginHorizontal: 10 }]}>DICTIONARY</Text>
-
-        {/* Right Side: History & Saved Words Icons */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity 
-            activeOpacity={0.7}
-            style={[styles.backCircle, { marginLeft: 8 }]} 
-            onPress={() => {
-              console.log("Navigating to History...");
-              router.push('/Dictionary/History'); 
-            }}
-          >
-            <Image 
-              source={require('../../../assets/images/history.png')} 
-              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
-            />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            activeOpacity={0.7}
-            style={[styles.backCircle, { marginLeft: 8 }]} 
-            onPress={() => router.push('/Dictionary/SaveWords')}
-          >
-            <Image 
-              source={require('../../../assets/icons/star.png')} 
-              style={{ width: 20, height: 20, tintColor: '#421C00' }} 
-            />
-          </TouchableOpacity>
+        
+        <View style={{ alignItems: 'flex-start' }}>
+          <Text style={styles.brandYellow}>DialectGo</Text>
+          <Text style={styles.brandBlack}>Dictionary</Text>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
         {/* HERO CARD */}
-        <View style={styles.yellowHeroCard}>
+        <View style={styles.mainWordCard}>
+          <Text style={styles.heroWord}>{wordTerm}</Text>
+          <Text style={styles.heroPronounce}>
+             {phoneticTranscription ? `//${phoneticTranscription}//` : `[ ${partOfSpeech} ]`}
+          </Text>
+        </View>
+
+        {/* TRANSLATION BOXES */}
+        <View style={styles.definitionsRow}>
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(Translation 1)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>{translation1 || '---'}</Text>
+              <Text style={styles.defText}>Equivalent term</Text>
+            </View>
+          </View>
+
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(Translation 2)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>{translation2 || '---'}</Text>
+              <Text style={styles.defText}>Equivalent term</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* USAGE EXAMPLES SECTION */}
+        <View style={[styles.exampleSection, { marginTop: 20 }]}>
+          <Text style={[styles.exampleTitle, { fontSize: 18, fontWeight: 'bold', color: '#421C00' }]}>Usage Examples:</Text>
+          <View style={styles.exampleContent}>
+            
+            {/* Main Word Example */}
+            <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{wordTerm}:</Text>
+                <Text style={styles.exampleLine}>{exampleUsage || 'No example available.'}</Text>
+            </View>
+            
+            {/* Translation 1 Example */}
+            {translation1 ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation1}:</Text>
+                <Text style={styles.exampleLine}>{usage1 || 'No example available.'}</Text>
+              </View>
+            ) : null}
+
+            {/* Translation 2 Example */}
+            {translation2 ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation2}:</Text>
+                <Text style={styles.exampleLine}>{usage2 || 'No example available.'}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* SAVE WORD BUTTON CONTAINER */}
+      <View style={{ paddingBottom: 20, alignItems: 'center' }}>
           <TouchableOpacity 
-            style={styles.bookmarkBadge} 
+            style={[styles.floatingSaveBtn, isBookmarked && styles.activeSaveBtn]} 
             onPress={handleSaveWord}
             disabled={isSaving || isBookmarked}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#421C00" />
+                <ActivityIndicator color="#FFF" />
             ) : (
-              <>
-                <Image 
-                  source={require('../../../assets/icons/star.png')} 
-                  style={[styles.starIcon, { tintColor: isBookmarked ? '#421C00' : '#FFFFFF' }]} 
-                />
-                <Text style={styles.bookmarkText}>{isBookmarked ? 'Saved' : 'Save Word'}</Text>
-              </>
+                <>
+                    <Image 
+                        source={require('../../../assets/icons/star.png')} 
+                        style={[styles.starIcon, { tintColor: '#FFFFFF' }]} 
+                    />
+                    <Text style={styles.bookmarkText}>
+                        {isBookmarked ? 'SAVED' : 'SAVE WORD'}
+                    </Text>
+                </>
             )}
           </TouchableOpacity>
-
-          <Text style={styles.displayWord}>{wordTerm}</Text>
-          <Text style={styles.syllableText}>[ {partOfSpeech} ]</Text>
-          {phoneticTranscription && (
-            <Text style={[styles.syllableText, { marginTop: 5, fontSize: 12 }]}>
-              /{phoneticTranscription}/
-            </Text>
-          )}
-        </View>
-
-        {/* TRANSLATIONS SECTION */}
-        <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>TRANSLATIONS</Text>
-          <View style={styles.descriptionBox}>
-            {translation1 && (
-              <View style={{ marginBottom: 10 }}>
-                <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>TRANSLATION 1</Text>
-                <Text style={styles.descriptionText}>{translation1}</Text>
-              </View>
-            )}
-            {translation2 && (
-              <View>
-                <Text style={{ fontFamily: 'Poppins-Bold', color: '#FFD54F', fontSize: 12 }}>TRANSLATION 2</Text>
-                <Text style={styles.descriptionText}>{translation2}</Text>
-              </View>
-            )}
-            {!translation1 && !translation2 && (
-              <Text style={[styles.descriptionText, { color: '#999' }]}>No translations available</Text>
-            )}
-          </View>
-        </View>
-
-        {/* DEFINITION SECTION */}
-        <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>DEFINITION</Text>
-          <View style={styles.descriptionBox}>
-            <Text style={styles.descriptionText}>{definition}</Text>
-          </View>
-        </View>
-
-        {/* USAGE SECTION */}
-        {exampleUsage && exampleUsage !== 'No examples available' && (
-          <View style={styles.contentSection}>
-            <Text style={styles.sectionTitle}>USAGE IN SENTENCES</Text>
-            <View style={styles.usageCard}>
-              <Text style={styles.exampleText}>• {exampleUsage}</Text>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+      </View>
 
       <BottomNav activeTab="Dictionary" />
     </SafeAreaView>

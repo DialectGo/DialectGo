@@ -9,6 +9,7 @@ const COLAB_URL = process.env.COLAB_URL;
 export const performTranslation = async (text, sourceLang, targetLang) => {
     const payload = { 
         input: text,
+        source_lang: sourceLang,
         target_lang: targetLang 
     };
     
@@ -31,21 +32,26 @@ export const performOCR = async (base64Image) => {
     return text;
 };
 
-export const performSpeechToText = async (audioPath) => {
-    // 2. Instantiate FormData from the library
+export const performSpeechToText = async (audioPath, targetLang, sourceLang) => {
     const form = new FormDataLib();
     
-    // 3. Append the file stream
+    // 1. Append the audio file
     form.append('audio', fs.createReadStream(audioPath));
+
+    // 2. Append the languages (CRITICAL: ensure these match Flask's expected keys)
+    form.append('target_lang', targetLang);
+    form.append('source_lang', sourceLang);
 
     const response = await axios.post(`${COLAB_URL}/translate`, form, {
         headers: {
-            ...form.getHeaders(), // Now this method will exist
+            ...form.getHeaders(), 
         },
     });
+
     console.log("DEBUG: Flask response structure:", response.data);
 
-    return response.data.transcript || response.data.text;
+    // Return the translation field from the Flask response
+    return response.data;
 };
 
 export const saveHistory = async (userId, data) => await TranslationModel.saveHistory(userId, data);

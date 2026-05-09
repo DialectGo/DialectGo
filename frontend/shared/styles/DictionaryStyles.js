@@ -1,153 +1,129 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-  // ==========================================
-  // 1. MAIN CONTAINER
-  // ==========================================
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-listContent: {
+  listContent: {
     paddingHorizontal: 25,
-    paddingTop: 10,
-    paddingBottom: 120, // Dinagdagan para hindi takpan ng BottomNav
+    paddingTop: 5,
   },
+
   // ==========================================
-  // 2. HEADER STYLES
+  // 1. HEADER (ALIGNED)
   // ==========================================
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end', 
     paddingHorizontal: 25,
     paddingTop: 20,
-    marginBottom: 20,
+    marginBottom: 25,
   },
-headerTitleYellow: {
-    fontSize: 22,
+  titleWrapper: {
+    flexDirection: 'column',
+  },
+  headerTitleYellow: {
+    fontSize: 24,
     fontFamily: 'Poppins-Bold',
     color: '#FFD54F',
-    lineHeight: 26, // Binawasan para hindi masyadong banat
-  },  headerTitleBlack: {
-    fontSize: 32,
+    marginBottom: -10, 
+    letterSpacing: 0.5,
+  },
+  headerTitleBlack: {
+    fontSize: 36,
     fontFamily: 'Poppins-Bold',
     color: '#421C00',
-    lineHeight: 34,
+    fontWeight: '900',
   },
   headerIcons: {
     flexDirection: 'row',
-  },
-topIcon: {
-    width: 22,
-    height: 22,
-    tintColor: '#421C00', // Ito ang magpapakulay sa icons para mag-pop!
-    resizeMode: 'contain',
-  },
-  iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#FFD54F', // Yellow base gaya ng nasa image mo
-    justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
-    elevation: 3, // Shadow para mas lively
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    gap: 8, // Mas maliit na gap para sa mas maliliit na icons
   },
 
   // ==========================================
-  // 3. SEARCH BAR STYLES
+  // 2. ICON CIRCLE (PINALIIT)
+  // ==========================================
+  iconCircle: {
+    width: 45, // Mula 55, ginawang 45
+    height: 45, // Mula 55, ginawang 45
+    borderRadius: 22.5,
+    backgroundColor: 'transparent', 
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  topIcon: {
+    width: 38, // Mula 50, ginawang 38 para sakto sa loob
+    height: 38, // Mula 50, ginawang 38
+    resizeMode: 'contain',
+  },
+
+  // ==========================================
+  // 3. SEARCH BAR
   // ==========================================
   searchContainer: {
     marginHorizontal: 25,
     backgroundColor: '#FFD54F',
     borderRadius: 30,
-    height: 55,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 25,
+    marginBottom: 30,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: 'Poppins-Medium',
     color: '#421C00',
   },
   searchIcon: {
-    width: 20,
+    width: 20, // Pinalit din ang search icon nang kaunti
     height: 20,
     tintColor: '#421C00',
   },
 
   // ==========================================
-  // 4. ENTRY CARD STYLES
+  // 4. ENTRY CARDS
   // ==========================================
   entryCard: {
-    backgroundColor: '#FFF9E1',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    paddingVertical: 22,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
   },
   entryWord: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Poppins-Bold',
-    color: '#421C00',
+    color: '#2D1606',
   },
   entryTranslation: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Poppins-Regular',
-    color: '#8E8E8E',
+    color: '#9E9E9E',
   },
   tagContainer: {
-    backgroundColor: '#FFE8A1',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    backgroundColor: '#FFF176',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    minWidth: 100,
+    alignItems: 'center',
   },
   tagText: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Poppins-Bold',
     color: '#421C00',
-  },
-
-  // ==========================================
-  // 5. FLOATING ELEMENTS
-  // ==========================================
-  floatingBot: {
-    position: 'absolute',
-    bottom: 30,
-    right: 25,
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    backgroundColor: '#FFFFFF',
-    elevation: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFD54F',
-  },
-  botIcon: {
-    width: 45,
-    height: 45,
-    resizeMode: 'contain',
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontFamily: 'Poppins-Medium',
-    color: '#8E8E8E',
-    marginTop: 50,
+    textTransform: 'uppercase',
   }
 });
