@@ -32,6 +32,15 @@ export const deleteUser = async (id) => {
   return await UserModel.deleteUser(id);
 };
 
+export const getStreakInfo = async (userId) => {
+  // Always recalculate to ensure accuracy based on historical data
+  return await UserModel.calculateAndSyncStreak(userId);
+};
+
+export const refreshStreak = async (userId) => {
+  return await UserModel.calculateAndSyncStreak(userId);
+};
+
 export const updateStreakStatus = async (userId) => {
   const today = new Date().toISOString().split('T')[0];
 

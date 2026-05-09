@@ -17,7 +17,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Assuming you use this for token
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_BASE_URL = 'http://192.168.1.52:5001/api/v1/users/profile';
+const API_BASE_URL = 'http://192.168.1.53:5001/api/v1/users/profile';
 
 // Listahan ng iyong available avatars
 const availableAvatars = [

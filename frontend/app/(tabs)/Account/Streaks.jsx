@@ -18,31 +18,59 @@ export default function Streaks() {
   const fetchStreak = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://192.168.0.104:5001/api/v1/user/streak', {
+      const response = await fetch('http://192.168.1.53:5001/api/v1/users/streak', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const result = await response.json();
       if (result.success) setStreakData(result.data);
     } catch (error) {
-      console.error(error);
+      console.error("Fetch Streak Error:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const currentStreak = streakData.streak;
-  // Logic: Every 7 days = 1 week
   const currentWeekNum = Math.floor(currentStreak / 7) + 1;
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-  // Check if current day of week was an "active day" (3+ translations)
+  /**
+   * Logic: 
+   * 1. Get the current date.
+   * 2. Find the most recent Sunday (start of the week).
+   * 3. Loop 7 times to create the YYYY-MM-DD string for each day of this week.
+   * 4. Check if that string exists in the activeDays array from the backend.
+   */
   const getWeeklyStatus = () => {
     const status = [false, false, false, false, false, false, false];
-    // logic to map streakData.activeDays to S-M-T-W-T-F-S for the current week
+    const today = new Date();
+    
+    // Find Sunday of the current week
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - today.getDay());
+    sunday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 7; i++) {
+      const tempDate = new Date(sunday);
+      tempDate.setDate(sunday.getDate() + i);
+      
+      // Format as YYYY-MM-DD to match database/backend format
+      const dateString = tempDate.toISOString().split('T')[0];
+      
+      if (streakData.activeDays && streakData.activeDays.includes(dateString)) {
+        status[i] = true;
+      }
+    }
     return status;
   };
 
-  if (loading) return <ActivityIndicator style={{flex:1}} />;
+  const weeklyStatus = getWeeklyStatus();
+
+  if (loading) return (
+    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <ActivityIndicator size="large" color="#FBBF24" />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,9 +100,9 @@ export default function Streaks() {
                 <View key={index} style={styles.dayColumn}>
                   <View style={[
                     styles.dayCircle, 
-                    getWeeklyStatus()[index] ? styles.activeDayCircle : styles.inactiveDayCircle
+                    weeklyStatus[index] ? styles.activeDayCircle : styles.inactiveDayCircle
                   ]}>
-                    {getWeeklyStatus()[index] && (
+                    {weeklyStatus[index] && (
                       <Image source={require('../../../assets/icons/check_icon.png')} style={styles.checkIcon} />
                     )}
                   </View>
