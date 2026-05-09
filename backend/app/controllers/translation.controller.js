@@ -6,13 +6,16 @@ import * as TranslationService from '../services/translation.service.js';
 
 export const translateImage = async (req, res, next) => {
     try {
-        const { image, targetLang, source_language_id, target_language_id } = req.body;
+        const { image, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
-        const translatedText = await TranslationService.performTranslation(text, targetLang);
+        const translatedText = await TranslationService.performTranslation(text, sourceLang, targetLang);
 
         if (req.user?.id) {
             await TranslationService.saveHistory(req.user.id, {
-                sourceText: text, translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
+                sourceText: text, 
+                translatedText, 
+                sourceLanguageId: source_language_id, 
+                targetLanguageId: target_language_id
             });
         }
         res.status(200).json({ success: true, translatedText });
