@@ -7,15 +7,15 @@ import {
   ScrollView, 
   LayoutAnimation, 
   Alert, 
-  Image, 
   Animated, 
   StatusBar,
-  ActivityIndicator 
+  ActivityIndicator,
+  Modal // Added Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av'; // Added
-import { supabase } from '../../../shared/lib/supabase'; // Added
+import { Audio } from 'expo-av';
+import { supabase } from '../../../shared/lib/supabase';
 
 // Components & Icons
 import LanguageSelector from '../../../shared/components/LanguageSelector';
@@ -26,25 +26,29 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
 const API_URL = 'http://192.168.1.53:5001/api/translate/audio';
 
-const LANGUAGE_IDS = {
-  'English': 1,
-  'Tagalog': 2,
-  'Cebuano': 3,
-};
+const LANGUAGE_MAP = [
+  { name: 'English', id: 1 },
+  { name: 'Tagalog', id: 2 },
+  { name: 'Cebuano', id: 3 },
+];
+
 export default function SpeechToText() {
   const router = useRouter();
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [isListening, setIsListening] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Added
+  const [isLoading, setIsLoading] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [showResult, setShowResult] = useState(false);
-  const [recording, setRecording] = useState(null); // Added
+  const [recording, setRecording] = useState(null);
+
+  // --- NEW STATE FOR SELECTION ---
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectingFor, setSelectingFor] = useState('source');
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // --- PULSE ANIMATION LOGIC ---
   useEffect(() => {
     if (isListening) {
       Animated.loop(
@@ -58,7 +62,6 @@ export default function SpeechToText() {
     }
   }, [isListening]);
 
-  // --- CLEANUP RECORDING ---
   useEffect(() => {
     return () => {
       if (recording) {
@@ -69,15 +72,39 @@ export default function SpeechToText() {
 
   const animateUI = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
-  // --- BACKEND INTEGRATION: RECORDING LOGIC ---
-  const toggleListening = () => {
-    if (isListening) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+  // --- LANGUAGE SELECTION LOGIC ---
+  const openPicker = (type) => {
+    setSelectingFor(type);
+    setModalVisible(true);
   };
 
+  const selectLanguage = (langObj) => {
+    animateUI();
+    if (selectingFor === 'source') {
+      if (langObj.name === targetLang) setTargetLang(sourceLang);
+      setSourceLang(langObj.name);
+    } else {
+      if (langObj.name === sourceLang) setSourceLang(targetLang);
+      setTargetLang(langObj.name);
+    }
+    setModalVisible(false);
+    // Reset results when language changes
+    setTranscript('');
+    setTranslatedText('');
+    setShowResult(false);
+  };
+
+  const swapLanguages = () => {
+    animateUI();
+    const temp = sourceLang;
+    setSourceLang(targetLang);
+    setTargetLang(temp);
+    setTranscript('');
+    setTranslatedText('');
+    setShowResult(false);
+  };
+
+  // --- RECORDING LOGIC (Kept same) ---
   const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
@@ -85,17 +112,11 @@ export default function SpeechToText() {
         Alert.alert('Permission required', 'Please enable microphone access.');
         return;
       }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       animateUI();
       setIsListening(true);
       setShowResult(false);
       setTranscript('Speak now...');
-
       const { recording } = await Audio.Recording.createAsync({
         android: {
           extension: '.m4a',
@@ -116,7 +137,6 @@ export default function SpeechToText() {
           linearPCMIsFloat: false,
         },
       });
-
       setRecording(recording);
     } catch (err) {
       console.error('Failed to start recording', err);
@@ -126,11 +146,9 @@ export default function SpeechToText() {
 
   const stopRecording = async () => {
     if (!recording) return;
-
     animateUI();
     setIsListening(false);
     setIsLoading(true);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -138,47 +156,35 @@ export default function SpeechToText() {
         setIsLoading(false);
         return;
       }
-
-      const status = await recording.getStatusAsync();
-      if (status.isLoaded && status.isRecording) {
-        await recording.stopAndUnloadAsync();
-      }
-
+      await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       setRecording(null);
-
+      const sId = LANGUAGE_MAP.find(l => l.name === sourceLang)?.id;
+      const tId = LANGUAGE_MAP.find(l => l.name === targetLang)?.id;
       const formData = new FormData();
-      formData.append('audio', {
-        uri: uri,
-        type: 'audio/m4a',
-        name: 'speech.m4a',
-      });
+      formData.append('audio', { uri: uri, type: 'audio/m4a', name: 'speech.m4a' });
       formData.append('targetLang', targetLang);
       formData.append('sourceLang', sourceLang);
-      formData.append('sourceText', ''); 
-
+      formData.append('source_language_id', sId);
+      formData.append('target_language_id', tId);
       const response = await fetch(API_URL, {
         method: 'POST',
         body: formData,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-          'Authorization': `Bearer ${session.access_token}`
-        },
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Accept': 'application/json' },
       });
-
-      if (!response.ok) throw new Error("Server error occurred.");
-
       const data = await response.json();
-
-      if (data.translation) {
+      if (response.ok && data.translation) {
         setTranslatedText(data.translation);
-        setTranscript("Original speech processed");
+        setTranscript(data.transcript || "Speech captured");
         animateUI();
         setShowResult(true);
+      } else {
+        throw new Error(data.message || "Translation failed");
       }
     } catch (error) {
       console.error("Translation error:", error);
-      Alert.alert("Error", "Failed to process audio. Check your connection.");
+      Alert.alert("Error", "Failed to process audio.");
+      setTranscript('');
     } finally {
       setIsLoading(false);
     }
@@ -187,75 +193,43 @@ export default function SpeechToText() {
   return (
     <View style={styles.mainWrapper}>
       <StatusBar barStyle="dark-content" />
-      
       <TopBar title="DialectGo" />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* HEADER SECTION */}
         <View style={styles.headerSection}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#1F2937" />
           </TouchableOpacity>
-
           <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>
-              Translate <Text style={styles.yellowText}>Now!</Text>
-            </Text>
+            <Text style={styles.introTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
             <View style={styles.statusBadge}>
               <View style={[styles.statusDot, (isListening || isLoading) && { backgroundColor: '#EF4444' }]} />
-              <Text style={styles.statusText}>
-                {isLoading ? 'Processing' : isListening ? 'Recording' : 'Voice Mode'}
-              </Text>
+              <Text style={styles.statusText}>{isLoading ? 'Processing' : isListening ? 'Recording' : 'Voice Mode'}</Text>
             </View>
           </View>
-          
           <View style={{ width: 45 }} />
         </View>
 
-        {/* Language Selection */}
         <LanguageSelector 
           sourceLang={sourceLang} 
           targetLang={targetLang}
           translateIcon={translateIcon}
-          onSwap={() => { setSourceLang(targetLang); setTargetLang(sourceLang); }}
+          onSwap={swapLanguages}
+          onSelectSource={() => openPicker('source')} // Added
+          onSelectTarget={() => openPicker('target')} // Added
         />
 
-        {/* Voice Pulse UI */}
         <View style={styles.pulseWrapper}>
-          <Animated.View style={[
-            styles.pulseOuter, 
-            { transform: [{ scale: pulseAnim }] }, 
-            isListening && styles.pulseActive
-          ]}>
-            <TouchableOpacity 
-              activeOpacity={0.9} 
-              onPress={toggleListening}
-              style={styles.pulseCircle}
-              disabled={isLoading}
-            >
+          <Animated.View style={[styles.pulseOuter, { transform: [{ scale: pulseAnim }] }, isListening && styles.pulseActive]}>
+            <TouchableOpacity activeOpacity={0.9} onPress={isListening ? stopRecording : startRecording} style={styles.pulseCircle} disabled={isLoading}>
               <View style={styles.innerCircle}>
-                {isLoading ? (
-                  <ActivityIndicator size="large" color="#000" />
-                ) : (
-                  <Ionicons name={isListening ? "stop" : "mic"} size={70} color="#000" />
-                )}
+                {isLoading ? <ActivityIndicator size="large" color="#FFF" /> : <Ionicons name={isListening ? "stop" : "mic"} size={70} color="#000" />}
               </View>
-              {/* Decorative Stars */}
-              <Ionicons name="sparkles" size={24} color="#FFF" style={styles.star1} />
-              <Ionicons name="star" size={18} color="#FFF" style={styles.star2} />
             </TouchableOpacity>
           </Animated.View>
-          
-          <Text style={styles.listeningText}>
-            {isLoading ? "Analyzing Audio..." : isListening ? "Listening ..." : "Tap to Speak"}
-          </Text>
-          {(isListening || isLoading) && (
-            <Text style={styles.subNote}>DialectGo is processing your voice...</Text>
-          )}
+          <Text style={styles.listeningText}>{isLoading ? "Analyzing Audio..." : isListening ? "Listening ..." : "Tap to Speak"}</Text>
         </View>
 
-        {/* Transcript UI */}
         {transcript !== '' && (
           <View style={styles.transcriptContainer}>
             <Text style={styles.transcriptLabel}>{sourceLang.toUpperCase()}</Text>
@@ -265,41 +239,46 @@ export default function SpeechToText() {
 
         {showResult && (
           <View style={styles.resultWrapper}>
-            <ResultCard 
-              translatedText={translatedText} 
-              targetLang={targetLang} 
-              onClose={() => { animateUI(); setShowResult(false); }}
-              pronounceIcon={pronounceIcon}
-            />
+            <ResultCard translatedText={translatedText} targetLang={targetLang} onClose={() => { animateUI(); setShowResult(false); }} pronounceIcon={pronounceIcon} />
           </View>
         )}
       </ScrollView>
+
+      {/* MODAL PICKER INTEGRATED FROM TRANSLATE.JSX */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Select Language</Text>
+            {LANGUAGE_MAP.map((item) => (
+               <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
+                 <Text style={[
+                   styles.sheetItemText, 
+                   (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText
+                 ]}>
+                   {item.name}
+                 </Text>
+                 {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && (
+                   <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />
+                 )}
+               </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}>
+               <Text style={styles.closeSheetText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
+// Ensure these additional styles from TranslateStyles are included
 const styles = StyleSheet.create({
   mainWrapper: { flex: 1, backgroundColor: '#FFFFFF' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 60, paddingTop: 10 },
-  headerSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-    marginTop: 10,
-  },
-  backButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 12,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
-  },
+  headerSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 25, marginTop: 10 },
+  backButton: { width: 45, height: 45, borderRadius: 12, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center', elevation: 2 },
   introContainer: { alignItems: 'center', flex: 1 },
   introTitle: { fontSize: 28, fontWeight: '900', color: '#111827' },
   yellowText: { color: '#FBBF24' },
@@ -307,52 +286,24 @@ const styles = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FBBF24', marginRight: 4 },
   statusText: { fontSize: 10, color: '#9CA3AF', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   pulseWrapper: { alignItems: 'center', marginVertical: 30 },
-  pulseOuter: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#FEF3C7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pulseActive: {
-    backgroundColor: '#FDE68A',
-    shadowColor: '#FBBF24',
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 15,
-  },
-  pulseCircle: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: '#FBBF24',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 6,
-    borderColor: '#FFF',
-  },
-  innerCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  pulseOuter: { width: 200, height: 200, borderRadius: 100, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  pulseActive: { backgroundColor: '#FDE68A', shadowColor: '#FBBF24', shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 },
+  pulseCircle: { width: 170, height: 170, borderRadius: 85, backgroundColor: '#FBBF24', justifyContent: 'center', alignItems: 'center', borderWidth: 6, borderColor: '#FFF' },
+  innerCircle: { width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
   listeningText: { marginTop: 20, fontSize: 24, fontWeight: '800', color: '#1F2937' },
-  subNote: { fontSize: 12, color: '#FBBF24', fontWeight: '700', marginTop: 8 },
-  star1: { position: 'absolute', top: 20, right: 20 },
-  star2: { position: 'absolute', bottom: 30, left: 20 },
-  transcriptContainer: {
-    backgroundColor: '#F9FAFB',
-    padding: 20,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    marginBottom: 20,
-  },
+  transcriptContainer: { backgroundColor: '#F9FAFB', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 20 },
   transcriptLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
   transcriptText: { fontSize: 22, fontWeight: '700', color: '#374151', textAlign: 'center', fontStyle: 'italic' },
-  resultWrapper: { marginTop: 10 }
+  resultWrapper: { marginTop: 10 },
+  
+  // NEW STYLES FOR MODAL
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 20, paddingBottom: 40 },
+  sheetHandle: { width: 40, height: 5, backgroundColor: '#E5E7EB', borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
+  sheetItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sheetItemText: { fontSize: 18, fontWeight: '600', color: '#4B5563' },
+  activeSheetText: { color: '#FBBF24', fontWeight: '800' },
+  closeSheet: { marginTop: 20, alignItems: 'center', padding: 15, backgroundColor: '#F9FAFB', borderRadius: 15 },
+  closeSheetText: { color: '#9CA3AF', fontWeight: '700', fontSize: 16 }
 });
