@@ -155,8 +155,6 @@ export default function SpeechToText() {
       });
       formData.append('targetLang', targetLang);
       formData.append('sourceLang', sourceLang);
-      formData.append('source_language_id', LANGUAGE_IDS[sourceLang] || null);
-      formData.append('target_language_id', LANGUAGE_IDS[targetLang] || null);
       formData.append('sourceText', ''); 
 
       const response = await fetch(API_URL, {

@@ -9,6 +9,7 @@ const COLAB_URL = process.env.COLAB_URL;
 export const performTranslation = async (text, sourceLang, targetLang) => {
     const payload = { 
         input: text,
+        source_lang: sourceLang,
         target_lang: targetLang 
     };
     

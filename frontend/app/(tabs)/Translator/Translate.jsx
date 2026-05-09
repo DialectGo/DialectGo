@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  Image,
   Modal,
   SafeAreaView,
   ScrollView,
@@ -20,8 +18,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
+import LanguageSelector from '../../../shared/components/LanguageSelector'; // Imported selector
 import { styles } from '../../../shared/styles/TranslateStyles';
-import { supabase } from '../../../shared/lib/supabase'; // Connected to your lib
+import { supabase } from '../../../shared/lib/supabase';
+
+// Assets
+import translateIcon from '../../../assets/icons/translateIcon.png';
 
 const { width } = Dimensions.get('window');
 
@@ -88,8 +90,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
       const data = await response.json();
 
-      // Clean output (Logic from your backend-connected file)
       const cleanAIOutput = (text) => {
+        if (!text) return "";
         return text
           .replace(/model/gi, '')
           .replace(/user/gi, '') 
@@ -102,12 +104,10 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         const cleaned = cleanAIOutput(data.translatedText);
         setTranslation(cleaned);
       } else {
-        console.error("Translation error:", data);
         setError(true);
         setTranslation("Error: Could not translate.");
       }
     } catch (err) {
-      console.error("Network error:", err);
       setError(true);
       setTranslation("Error: Check your connection.");
     } finally {
@@ -159,7 +159,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     setModalVisible(true);
   };
 
-  // Logic to handle language object and swap prevention
   const selectLanguage = (langObj) => {
     if (selectingFor === 'source') {
       if (langObj.name === targetLang) setTargetLang(sourceLang);
@@ -172,9 +171,19 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   };
 
   const swapLanguages = () => {
-    const temp = sourceLang;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    
+    // Swap Languages
+    const tempLang = sourceLang;
     setSourceLang(targetLang);
-    setTargetLang(temp);
+    setTargetLang(tempLang);
+
+    // Logic: Swap text as well if a translation exists
+    if (translation && !error) {
+        const tempText = inputText;
+        setInputText(translation);
+        setTranslation(tempText);
+    }
   };
 
   return (
@@ -196,22 +205,15 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               <Text style={styles.subHeader}>TEXT MODE</Text>
           </View>
 
-          {/* SELECTOR BAR */}
-          <View style={styles.newSelectorBar}>
-            <TouchableOpacity style={styles.langPill} onPress={() => openPicker('source')}>
-              <Text style={styles.langPillText}>{sourceLang}</Text>
-              <Ionicons name="caret-down" size={12} color="#1F2937" style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.newSwapButton} onPress={swapLanguages}>
-              <Ionicons name="swap-horizontal" size={20} color="#1F2937" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.langPill} onPress={() => openPicker('target')}>
-              <Text style={styles.langPillText}>{targetLang}</Text>
-              <Ionicons name="caret-down" size={12} color="#1F2937" style={{ marginLeft: 4 }} />
-            </TouchableOpacity>
-          </View>
+          {/* INTEGRATED LANGUAGE SELECTOR */}
+          <LanguageSelector 
+            sourceLang={sourceLang} 
+            targetLang={targetLang}
+            onSwap={swapLanguages} 
+            onSelectSource={() => openPicker('source')}
+            onSelectTarget={() => openPicker('target')}
+            translateIcon={translateIcon}
+          />
 
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
@@ -246,7 +248,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             </View>
           </View>
 
-          {/* RESULT CARD (Conditional Rendering based on Backend Response) */}
+          {/* RESULT CARD */}
           {inputText.length > 0 && !error && (
             <View style={[styles.translateCard, styles.resultCardExtra]}>
               <View style={styles.cardHeader}>
@@ -317,7 +319,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         </View>
       </ScrollView>
 
-      {/* MODAL PICKER (Updated to use language objects) */}
+      {/* MODAL PICKER */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.bottomSheet}>
