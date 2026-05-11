@@ -15,128 +15,182 @@ import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import { styles } from '../../shared/styles/HomeStyles';
 
-const API_BASE_URL = 'http://192.168.1.53:5001/api/dictionary/word-of-the-day';
+const availableAvatars = [
+  { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
+  { id: 2, name: '1.png', source: require('../../assets/avatars/1.png') },
+  { id: 3, name: '2.png', source: require('../../assets/avatars/2.png') },
+  { id: 4, name: '3.png', source: require('../../assets/avatars/3.png') },
+  { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
+];
+
+const WORD_API = 'http://192.168.1.53:5001/api/dictionary/word-of-the-day';
+const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
+const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
 
 export default function Home({ onNavigate, activeTab }) {
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('User'); 
+  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
+  
+  // New Streak State
+  const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
 
   useEffect(() => {
-    fetchDailyWord();
+    const loadAllData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchUserProfile(),
+        fetchDailyWord(),
+        fetchStreak() // Added Streak Fetch
+      ]);
+      setLoading(false);
+    };
+    loadAllData();
   }, []);
 
+  const fetchStreak = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(STREAK_API, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      if (result.success) setStreakData(result.data);
+    } catch (error) {
+      console.error("Home Fetch Streak Error:", error);
+    }
+  };
+
+  // Logic to determine which days of the week are highlighted
+  const getWeeklyStatus = () => {
+    const status = [false, false, false, false, false, false, false];
+    const today = new Date();
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - today.getDay());
+    sunday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 7; i++) {
+      const tempDate = new Date(sunday);
+      tempDate.setDate(sunday.getDate() + i);
+      const dateString = tempDate.toISOString().split('T')[0];
+      if (streakData.activeDays && streakData.activeDays.includes(dateString)) {
+        status[i] = true;
+      }
+    }
+    return status;
+  };
+
+  const weeklyStatus = getWeeklyStatus();
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(PROFILE_API, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        const user = result.data;
+        setUserName(user.first_name || 'User');
+        if (user.profile_avatar_url) {
+          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
+          if (matched) setUserAvatar(matched.source);
+        }
+      }
+    } catch (error) {
+      console.error("Home Profile Fetch Error:", error);
+    }
+  };
+
   const fetchDailyWord = async () => {
-  try {
-    // 1. Get session FIRST to identify the user
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const userId = session.user.id;
-    // CRITICAL: Use the same unique key for both reading and writing
-    const storageKey = `word_of_the_day_${userId}`; 
-    const now = Date.now();
+      const userId = session.user.id;
+      const storageKey = `word_of_the_day_${userId}`; 
+      const now = Date.now();
+      const storedData = await AsyncStorage.getItem(storageKey);
 
-    // 2. Check the user-specific cache
-    const storedData = await AsyncStorage.getItem(storageKey);
-
-    if (storedData) {
-      const { data, timestamp } = JSON.parse(storedData);
-      // Use cached word if less than 24 hours old
-      if (now - timestamp < 86400000) {
-        setWordOfDay(data);
-        setLoading(false);
-        return;
+      if (storedData) {
+        const { data, timestamp } = JSON.parse(storedData);
+        if (now - timestamp < 86400000) {
+          setWordOfDay(data);
+          return;
+        }
       }
-    }
 
-    // 3. Fetch fresh word if cache is expired or missing
-    const response = await fetch(API_BASE_URL, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
+      const response = await fetch(WORD_API, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        const raw = result.data;
+        const translations = raw.translations || [];
+        const englishEntry = translations.find(t => t.target_entry.language_id === 1)?.target_entry;
+        const tagalogEntry = translations.find(t => t.target_entry.language_id === 2)?.target_entry;
+
+        const formattedWord = {
+          term: raw.word_term,
+          definition: englishEntry?.definition || 'No definition available',
+          usageCeb: raw.example_usage,
+          usageEng: englishEntry?.example_usage,
+          usageTag: tagalogEntry?.example_usage
+        };
+
+        await AsyncStorage.setItem(storageKey, JSON.stringify({
+          data: formattedWord,
+          timestamp: now
+        }));
+        setWordOfDay(formattedWord);
       }
-    });
-
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      console.error("Server returned non-JSON response");
-      setLoading(false);
-      return;
+    } catch (error) {
+      console.error("Daily word error:", error);
     }
-
-    const result = await response.json();
-
-    if (result.success && result.data) {
-      const raw = result.data;
-      const translations = raw.translations || [];
-
-      // Check your DB IDs: If English is 1 and Tagalog is 2, this is correct.
-      // If Cebuano is 1, English is 2, and Tagalog is 3, increment these IDs.
-      const englishEntry = translations.find(t => t.target_entry.language_id === 1)?.target_entry;
-      const tagalogEntry = translations.find(t => t.target_entry.language_id === 2)?.target_entry;
-
-      const formattedWord = {
-        term: raw.word_term,
-        definition: englishEntry?.definition || 'No definition available',
-        usageCeb: raw.example_usage,
-        usageEng: englishEntry?.example_usage,
-        usageTag: tagalogEntry?.example_usage
-      };
-
-      // 4. Save to the USER-SPECIFIC key
-      await AsyncStorage.setItem(storageKey, JSON.stringify({
-        data: formattedWord,
-        timestamp: now
-      }));
-      
-      setWordOfDay(formattedWord);
-    }
-  } catch (error) {
-    console.error("Daily word error:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
       <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
-
-      <TopBar 
-        onLogout={() => console.log("Logout")}
-        onProfile={() => console.log("Profile")}
-      />
+      <TopBar onLogout={() => {}} onProfile={() => {}} />
       
       <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
-        >
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}>
+          
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
               <Text style={styles.helloText}>Maayong Buntag,</Text>
-              <Text style={styles.userName}>Maria Clara</Text>
+              <Text style={styles.userName}>{userName}</Text>
+              <View style={styles.statusBadge}><Text style={styles.statusText}>• Online</Text></View>
+            </View>
+            <View style={styles.avatarWrapper}>
+              <Image source={userAvatar} style={styles.avatarMain} />
             </View>
           </View>
 
-          {/* WORD OF THE DAY SECTION */}
+          {/* WORD OF THE DAY */}
           <View style={styles.wordCard}>
             <Text style={styles.wordLabel}>Word of the day</Text>
-            {loading ? (
-              <ActivityIndicator color="#FFD54F" />
-            ) : (
+            {loading ? <ActivityIndicator color="#FFD54F" /> : (
               <>
                 <Text style={styles.wordText}>“{wordOfDay?.term || 'Searching...'}”</Text>
                 <View style={styles.wordDetails}>
-                  <Text style={[styles.meaningText, { fontWeight: 'bold' }]}>
-                    Definition (EN): {wordOfDay?.definition}
-                  </Text>
-                  
+                  <Text style={[styles.meaningText, { fontWeight: 'bold' }]}>Definition (EN): {wordOfDay?.definition}</Text>
                   <View style={{ marginTop: 10 }}>
                     <Text style={{ fontSize: 12, color: '#421C00', opacity: 0.6, marginBottom: 4 }}>Example Usages:</Text>
                     {wordOfDay?.usageCeb && <Text style={styles.usageText}>• Ceb: "{wordOfDay.usageCeb}"</Text>}
@@ -148,7 +202,7 @@ export default function Home({ onNavigate, activeTab }) {
             )}
           </View>
 
-          {/* PROGRESS / STREAK SECTION */}
+          {/* DYNAMIC PROGRESS SECTION */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Your Progress</Text>
             <View style={styles.titleAccentOrange} />
@@ -160,11 +214,13 @@ export default function Home({ onNavigate, activeTab }) {
           <View style={styles.largeStreakCard}>
             <View style={styles.streakTopRow}>
               <View style={styles.streakTextGroup}>
-                <Text style={styles.streakNumberLarge}>24</Text>
+                <Text style={styles.streakNumberLarge}>{streakData.streak}</Text>
                 <Text style={styles.streakStatus}>DAY STREAK</Text>
-                <View style={styles.onFireBadge}>
-                  <Text style={styles.onFireText}>🔥 SUPER STREAK!</Text>
-                </View>
+                {streakData.streak >= 7 && (
+                  <View style={styles.onFireBadge}>
+                    <Text style={styles.onFireText}>🔥 SUPER STREAK!</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.tripleFlameWrapper}>
                 <Image source={require('../../assets/images/flame.png')} style={[styles.sideFlame, styles.leftFlame]} resizeMode="contain" />
@@ -176,8 +232,8 @@ export default function Home({ onNavigate, activeTab }) {
             <View style={styles.largeWeekRow}>
               {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, index) => (
                 <View key={index} style={styles.largeDayBox}>
-                  <View style={[styles.dayCircleLarge, index < 4 ? styles.dayActive : styles.dayInactive]}>
-                    {index < 4 ? <Text style={styles.checkMarkLarge}>✓</Text> : <Text style={styles.lockIcon}>🔒</Text>}
+                  <View style={[styles.dayCircleLarge, weeklyStatus[index] ? styles.dayActive : styles.dayInactive]}>
+                    {weeklyStatus[index] ? <Text style={styles.checkMarkLarge}>✓</Text> : <Text style={styles.lockIcon}>🔒</Text>}
                   </View>
                   <Text style={styles.largeDayText}>{day}</Text>
                 </View>
@@ -185,7 +241,7 @@ export default function Home({ onNavigate, activeTab }) {
             </View>
           </View>
 
-          {/* ADVENTURE / PROMO SECTION */}
+           {/* ADVENTURE / PROMO SECTION */}
           <View style={styles.promoCardWrapper}>
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee1]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee2]} resizeMode="contain" />
@@ -202,9 +258,9 @@ export default function Home({ onNavigate, activeTab }) {
               <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
             </View>
           </View>
+          
         </ScrollView>
       </SafeAreaView>
-
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>
   );
