@@ -15,15 +15,58 @@ import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import { styles } from '../../shared/styles/HomeStyles';
 
+const availableAvatars = [
+  { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
+  { id: 2, name: '1.png', source: require('../../assets/avatars/1.png') },
+  { id: 3, name: '2.png', source: require('../../assets/avatars/2.png') },
+  { id: 4, name: '3.png', source: require('../../assets/avatars/3.png') },
+  { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
+];
+
 const API_BASE_URL = 'http://192.168.1.53:5001/api/dictionary/word-of-the-day';
+const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
 
 export default function Home({ onNavigate, activeTab }) {
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [userName, setUserName] = useState('User'); 
+  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
+
   useEffect(() => {
     fetchDailyWord();
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(PROFILE_API, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        const user = result.data;
+        // Use first_name from account info
+        setUserName(user.first_name || 'User');
+        
+        // Find matching avatar source based on filename
+        if (user.profile_avatar_url) {
+          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
+          if (matched) setUserAvatar(matched.source);
+        }
+      }
+    } catch (error) {
+      console.error("Home Profile Fetch Error:", error);
+    }
+  };
 
   const fetchDailyWord = async () => {
   try {
@@ -120,7 +163,20 @@ export default function Home({ onNavigate, activeTab }) {
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
               <Text style={styles.helloText}>Maayong Buntag,</Text>
-              <Text style={styles.userName}>Maria Clara</Text>
+              <Text style={styles.userName}>{userName}</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>• Online</Text>
+              </View>
+            </View>
+
+            <View style={styles.avatarWrapper}>
+              <Image
+                source={userAvatar}
+                style={styles.avatarMain}
+              />
+              {/* <View style={styles.levelBadge}>
+                <Text style={styles.levelText}>Lvl 5</Text>
+              </View> */}
             </View>
           </View>
 
