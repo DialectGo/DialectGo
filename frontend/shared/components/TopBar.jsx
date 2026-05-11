@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
 import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { supabase } from '../../shared/lib/supabase';
+import { useRouter } from 'expo-router';
+import { handleLogout } from '../../app/Logout';
 
 const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
   const [menuVisible, setMenuVisible] = useState(false);
-  const onSignOut = async () => {
-    await supabase.auth.signOut();
+  const router = useRouter();
+
+  const onSignOutPress = async () => {
+    setMenuVisible(false); // Close menu
+    await handleLogout();  // Run the logic from Logout.jsx
+  };
+
+  const handleNavigation = (path) => {
+    setMenuVisible(false); // Close menu first
+    router.push(path);     // Navigate to the absolute path
   };
 
   return (
@@ -44,24 +54,34 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
           <View style={styles.modalOverlay}>
             <View style={styles.menuCard}>
               {/* Option 1: Profile */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onProfile?.(); }}>
+              {/* Option 1: Profile */}
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => handleNavigation('/Account/Profile')}
+              >
                 <Text style={styles.menuText}>Profile</Text>
               </TouchableOpacity>
 
               {/* Option 2: About */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onAbout?.(); }}>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => handleNavigation('/Account/About')}
+              >
                 <Text style={styles.menuText}>About the App</Text>
               </TouchableOpacity>
 
               {/* Option 3: Settings */}
-              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); onSettings?.(); }}>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={() => handleNavigation('/Account/Settings')}
+              >
                 <Text style={styles.menuText}>Settings</Text>
               </TouchableOpacity>
 
               {/* Option 4: Logout (With Touch of Yellow/Orange) */}
               <TouchableOpacity 
                 style={[styles.menuItem, styles.lastItem]} 
-                onPress={onSignOut}
+                onPress={onSignOutPress} // Uses the new utility
               >
                 <Text style={[styles.menuText, { color: '#FFB300', fontWeight: 'bold' }]}>Logout</Text>
               </TouchableOpacity>
