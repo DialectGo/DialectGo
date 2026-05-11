@@ -56,7 +56,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
           onSuccess();
         } else {
           // Replace '/(tabs)' with whatever your home/dashboard route is
-          router.replace('../(tabs)'); 
+          router.replace('../(tabs)/Home'); 
         }
 
         return response.data;

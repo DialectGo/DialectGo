@@ -18,7 +18,7 @@ export const DictionaryModel = {
                     )
                 )
             `)
-            .ilike('word_term', term)
+            .ilike('word_term', `%${term.trim()}%`)
             // .maybeSingle();
 
         if (err) {
