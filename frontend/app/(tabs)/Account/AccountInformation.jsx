@@ -241,7 +241,15 @@ const fetchProfile = async () => {
             />
           </View>
 
-          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: '#424242', marginBottom: 10 }]} onPress={() => {}}>
+          <TouchableOpacity 
+            style={[styles.saveBtn, { backgroundColor: '#424242', marginBottom: 10 }]} 
+            onPress={() => {
+              router.push({
+                  pathname: '/auth/ForgotPassword', // Absolute path from the app root
+                  params: { email }
+                });
+            }}
+          >
             <Text style={styles.saveBtnText}>Change Password</Text>
           </TouchableOpacity>
 

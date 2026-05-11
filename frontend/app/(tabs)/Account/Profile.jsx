@@ -1,22 +1,109 @@
-import React from 'react';
-import { Image, ScrollView, StatusBar, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  Image, 
+  ScrollView, 
+  StatusBar, 
+  Text, 
+  TouchableOpacity, 
+  View, 
+  SafeAreaView, 
+  ActivityIndicator 
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ProfileStyles';
 
-export default function Profile({ onNavigate, user }) {
-  const router = useRouter();
+// Matching your available avatars from Home/Account
+const availableAvatars = [
+  { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
+  { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
+  { id: 3, name: '2.png', source: require('../../../assets/avatars/2.png') },
+  { id: 4, name: '3.png', source: require('../../../assets/avatars/3.png') },
+  { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
+];
 
-  const firstName = user?.firstName || 'Maria';
-  const lastName = user?.lastName || 'Clara';
-  const userStreak = user?.streak || '24';
-  const userAvatar = user?.avatar || require('../../../assets/avatars/maria_clara.png');
+const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
+const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
+
+export default function Profile({ onNavigate }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  // Profile States
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
+  const [streakCount, setStreakCount] = useState(0);
+
+  useEffect(() => {
+    const loadProfileData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchUserProfile(),
+        fetchStreak()
+      ]);
+      setLoading(false);
+    };
+    loadProfileData();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(PROFILE_API, {
+        method: 'GET',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        const user = result.data;
+        setFirstName(user.first_name || 'User');
+        setLastName(user.last_name || '');
+        
+        if (user.profile_avatar_url) {
+          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
+          if (matched) setUserAvatar(matched.source);
+        }
+      }
+    } catch (error) {
+      console.error("Profile Fetch Error:", error);
+    }
+  };
+
+  const fetchStreak = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(STREAK_API, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      if (result.success) setStreakCount(result.data.streak);
+    } catch (error) {
+      console.error("Profile Streak Fetch Error:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+        <ActivityIndicator size="large" color="#FFD54F" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
-      {/* YELLOW HEADER */}
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
@@ -25,16 +112,15 @@ export default function Profile({ onNavigate, user }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
-        {/* PROFILE HEADER SECTION */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
             <Image source={userAvatar} style={styles.avatarImg} />
           </View>
-          <Text style={styles.userName}>{`${firstName} ${lastName}`}</Text>
-          <Text style={styles.streakText}>{userStreak}days streak</Text>
+          {/* Dynamic First and Last Name */}
+          <Text style={styles.userName}>{`${firstName} ${lastName}`.trim()}</Text>
+          <Text style={styles.streakText}>{streakCount} days streak</Text>
         </View>
 
-        {/* SETTINGS CONTAINER - Rounded Yellow Box */}
         <View style={styles.settingsContainer}>
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/AccountInformation')}>
             <View style={styles.menuLeft}>
