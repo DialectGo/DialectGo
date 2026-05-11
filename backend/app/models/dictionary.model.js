@@ -98,4 +98,39 @@ export const DictionaryModel = {
             .eq('user_id', userId)
             .in('id', ids);
     },
+    
+    async getRandomCebuanoWord() {
+        // 1. Get total count of Cebuano entries (Language ID 3 based on your code)
+        const { count, error: countErr } = await supabase
+            .from('dictionary_entries')
+            .select('*', { count: 'exact', head: true })
+            .eq('language_id', 3);
+
+        if (countErr) throw countErr;
+        if (count === 0) throw new Error("No Cebuano words found");
+
+        const randomOffset = Math.floor(Math.random() * count);
+
+        // 2. Fetch word with full translation details
+        const { data, error } = await supabase
+        .from('dictionary_entries')
+        .select(`
+            *,
+            translations:dictionary_translations!source_entry_id (
+                id,
+                target_entry:dictionary_entries!target_entry_id (
+                    word_term,
+                    definition,
+                    language_id,
+                    example_usage
+                )
+            )
+        `)
+        .eq('language_id', 3)
+        .range(randomOffset, randomOffset)
+        .single();
+
+        if (error) throw error;
+        return data;
+    },
 };

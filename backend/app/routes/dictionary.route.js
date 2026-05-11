@@ -5,7 +5,8 @@ import {
     getSavedWords ,
     deleteSelectedWords,
     getSearchHistory,
-    deleteSelectedHistory
+    deleteSelectedHistory,
+    getWordOfTheDay
 } from '../controllers/dictionary.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
 import { validateDictionarySave } from '../middlewares/validate.middleware.js';
@@ -21,5 +22,6 @@ router.get('/saved', verifyToken, getSavedWords);
 router.delete('/delete-multiple', verifyToken, deleteSelectedWords);
 router.get('/history', verifyToken, getSearchHistory);
 router.delete('/history/delete-multiple', verifyToken, deleteSelectedHistory);
+router.get('/word-of-the-day', verifyToken, getWordOfTheDay);
 
 export default router;
