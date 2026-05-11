@@ -45,3 +45,9 @@ export const deleteHistoryItems = async (userId, ids) => {
     if (error) throw error;
     return data;
 };
+
+export const getRandomCebuanoWord = async () => {
+    const wordData = await DictionaryModel.getRandomCebuanoWord();
+    if (!wordData) throw new Error('No words available');
+    return wordData;
+};

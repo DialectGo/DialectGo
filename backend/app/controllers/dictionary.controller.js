@@ -79,3 +79,13 @@ export const deleteSelectedHistory = async (req, res, next) => {
         next(err);
     }
 };
+
+export const getWordOfTheDay = async (req, res, next) => {
+    try {
+        const data = await DictionaryService.getRandomCebuanoWord();
+        res.status(200).json({ success: true, data });
+    } catch (err) {
+        // This ensures the error is returned as JSON, preventing the HTML error page
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
