@@ -45,12 +45,77 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [feedback, setFeedback] = useState(null); 
   const [suggestionText, setSuggestionText] = useState('');
 
+  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [comment, setComment] = useState('');
+  const [currentTranslationId, setCurrentTranslationId] = useState(null);
+
   // Backend Language Mapping
   const languages = [
     { name: 'English', id: 1 },
     { name: 'Tagalog', id: 2 },
     { name: 'Cebuano', id: 3 },
   ];
+
+  const handleQuickRating = async (ratingValue) => {
+    setFeedback(ratingValue === 5 ? 'like' : 'unlike');
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await fetch(FEEDBACK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({
+                translationId: currentTranslationId,
+                rating: ratingValue, // 5 for like, 1 for unlike
+            })
+        });
+    } catch (err) {
+        console.error("Feedback error", err);
+    }
+};
+
+const handleDetailedSubmit = async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // 1. Submit/Update Feedback
+        // We include the existing 'feedback' state value so the rating isn't lost
+        await fetch(FEEDBACK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+                translationId: currentTranslationId,
+                rating: feedback === 'like' ? 5 : 1, // Sends current state
+                comment: comment
+            })
+        });
+
+        // 2. Submit Suggested Translation (Contribution)
+        if (suggestionText) {
+            await fetch(`${API_URL}/contribute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                body: JSON.stringify({
+                    sourceText: inputText,
+                    userTranslation: suggestionText,
+                    sourceLang: sourceLang,
+                    targetLang: targetLang,
+                    source_language_id: languages.find(l => l.name === sourceLang)?.id,
+                    target_language_id: languages.find(l => l.name === targetLang)?.id,
+                })
+            });
+        }
+
+        Alert.alert("Salamat!", "Nakatulong ka sa pag-improve ng DialectGo.");
+        setFeedbackModalVisible(false);
+        setComment('');
+        setSuggestionText('');
+    } catch (err) {
+        Alert.alert("Error", "Hindi maipadala ang feedback.");
+    }
+};
 
   // --- BACKEND INTEGRATION: TRANSLATE FUNCTION ---
   const handleTranslate = async (text) => {
@@ -103,6 +168,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         const cleaned = cleanAIOutput(data.translatedText);
         setTranslation(cleaned);
+        setCurrentTranslationId(data.historyRecord?.id);
       } else {
         setError(true);
         setTranslation("Error: Could not translate.");
@@ -276,46 +342,59 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           )}
 
           {/* FEEDBACK SECTION */}
-          {inputText.length > 0 && !isLoading && (
+          {inputText.length > 0 && !isLoading && translation && (
             <View style={styles.feedbackContainer}>
-              <Text style={styles.feedbackAsk}>
-                {error ? "Translation failed. Try again?" : "Is this translation correct?"}
-              </Text>
-              
-              {!error && (
-                <View style={styles.feedbackIcons}>
-                  <TouchableOpacity 
-                    onPress={() => setFeedback('like')} 
-                    style={[styles.miniFeedbackBtn, feedback === 'like' && styles.activeYellow]}
-                  >
-                    <Ionicons name="thumbs-up" size={18} color={feedback === 'like' ? "#1F2937" : "#9CA3AF"} />
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    onPress={() => setFeedback('unlike')} 
-                    style={[styles.miniFeedbackBtn, feedback === 'unlike' && styles.activeYellow]}
-                  >
-                    <Ionicons name="thumbs-down" size={18} color={feedback === 'unlike' ? "#1F2937" : "#9CA3AF"} />
-                  </TouchableOpacity>
-                </View>
-              )}
+              <View style={styles.feedbackIcons}>
+                <TouchableOpacity onPress={() => handleQuickRating(5)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="thumbs-up" size={18} color={feedback === 'like' ? "#FBBF24" : "#9CA3AF"} />
+                </TouchableOpacity>
+                
+                <TouchableOpacity onPress={() => handleQuickRating(1)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="thumbs-down" size={18} color={feedback === 'unlike' ? "#FBBF24" : "#9CA3AF"} />
+                </TouchableOpacity>
 
-              {(feedback === 'unlike' || error) && (
-                <View style={styles.suggestionBox}>
-                  <TextInput 
-                    style={styles.suggestionInput}
-                    placeholder="Help us improve DialectGo..."
-                    value={suggestionText}
-                    onChangeText={setSuggestionText}
-                    multiline
-                  />
-                  <TouchableOpacity style={styles.yellowSubmitBtn} onPress={submitSuggestion}>
-                    <Text style={styles.submitText}>SUBMIT</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                {/* Write Icon to trigger Modal */}
+                <TouchableOpacity onPress={() => setFeedbackModalVisible(true)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="create-outline" size={20} color="#FBBF24" />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
+
+          {/* DETAILED FEEDBACK MODAL */}
+          <Modal visible={feedbackModalVisible} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+              <View style={[styles.bottomSheet, { height: 'auto', paddingBottom: 30 }]}>
+                <Text style={styles.sheetTitle}>Improve DialectGo</Text>
+                
+                <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 5 }}>Your Satisfaction</Text>
+                <TextInput 
+                  style={[styles.suggestionInput, { height: 80 }]}
+                  placeholder="How was your experience?"
+                  value={comment}
+                  onChangeText={setComment}
+                  multiline
+                />
+
+                <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 15, marginBottom: 5 }}>Suggested Translation</Text>
+                <TextInput 
+                  style={[styles.suggestionInput, { height: 80 }]}
+                  placeholder="What is the correct translation?"
+                  value={suggestionText}
+                  onChangeText={setSuggestionText}
+                  multiline
+                />
+
+                <TouchableOpacity style={[styles.yellowSubmitBtn, { marginTop: 20 }]} onPress={handleDetailedSubmit}>
+                  <Text style={styles.submitText}>SUBMIT CONTRIBUTION</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={{ marginTop: 15, alignItems: 'center' }} onPress={() => setFeedbackModalVisible(false)}>
+                  <Text style={{ color: '#9CA3AF' }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ScrollView>
 

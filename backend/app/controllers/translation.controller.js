@@ -129,32 +129,28 @@ export const deleteUserHistory = async (req, res) => {
 // CRUD: Add Feedback
 export const submitFeedback = async (req, res) => {
     try {
-        const { translationId, rating } = req.body;
+        const { translationId, rating, comment } = req.body;
 
-        if (translationId === undefined || rating === undefined) {
-            return res.status(400).json({ success: false, message: 'Missing feedback data' });
+        if (!translationId) {
+            return res.status(400).json({ success: false, message: 'Missing translationId' });
         }
 
-        if (Number.isNaN(Number(translationId)) || Number.isNaN(Number(rating))) {
-            return res.status(400).json({ success: false, message: 'translationId and rating must be numbers' });
-        }
+        // Map frontend 5/1 to backend 1/0 for the CHECK constraint
+        const dbRating = (rating >= 5) ? 1 : 0;
 
-        const numericRating = Number(rating);
-        if (!Number.isInteger(numericRating) || numericRating < 0 || numericRating > 5) {
-            return res.status(400).json({ success: false, message: 'rating must be an integer between 0 and 5' });
-        }
+        const { data, error } = await TranslationModel.addFeedback(
+            req.user.id, 
+            Number(translationId), 
+            dbRating, 
+            comment
+        );
 
-        const { error } = await TranslationModel.addFeedback(req.user.id, Number(translationId), numericRating);
+        if (error) throw error;
 
-        if (error) {
-            console.error('Supabase Feedback Error:', error);
-            return res.status(400).json({ success: false, message: error.message });
-        }
-
-        return res.status(200).json({ success: true, message: 'Feedback recorded' });
+        return res.status(200).json({ success: true, message: 'Feedback synced successfully' });
     } catch (error) {
-        console.error('Feedback Controller Crash:', error);
-        return res.status(500).json({ success: false, message: 'Server error during feedback' });
+        console.error('Feedback Sync Error:', error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
