@@ -36,14 +36,16 @@ export const TranslationModel = {
             .insert([{ user_id: userId, translation_id: translationId }]);
     },
 
-    addFeedback: async (userId, translationId, rating) => {
+    addFeedback: async (userId, translationId, rating, comment) => {
         return await supabase
             .from('user_feedback')
-            .insert([{ 
+            .upsert({ 
+                translation_id: translationId, // The Primary Key
                 user_id: userId,
-                translation_id: translationId, 
-                rating: rating
-            }]);
+                rating: rating,
+                comment: comment,
+                created_at: new Date().toISOString()
+            }, { onConflict: 'translation_id' }); // This handles the UPDATE if the ID exists
     },
 
     saveUserTranslation: async (userId, data) => {

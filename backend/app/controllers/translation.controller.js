@@ -10,15 +10,25 @@ export const translateImage = async (req, res, next) => {
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
         const translatedText = await TranslationService.performTranslation(text, sourceLang, targetLang);
 
+        let savedRecord = null;
         if (req.user?.id) {
-            await TranslationService.saveHistory(req.user.id, {
+            // Save to history and capture the returned data
+            const { data, error } = await TranslationService.saveHistory(req.user.id, {
                 sourceText: text, 
                 translatedText, 
                 sourceLanguageId: source_language_id, 
                 targetLanguageId: target_language_id
             });
+            if (!error) savedRecord = data?.[0];
         }
-        res.status(200).json({ success: true, translatedText });
+        
+        // Ensure you send 'sourceText' and 'historyRecord' back
+        res.status(200).json({ 
+            success: true, 
+            translatedText, 
+            sourceText: text, 
+            historyRecord: savedRecord 
+        });
     } catch (err) { next(err); }
 };
 
@@ -28,40 +38,38 @@ export const translateAudio = async (req, res, next) => {
         
         const { targetLang, sourceLang, source_language_id, target_language_id } = req.body;
 
-        // 1. Get the object from Service { transcript, translation, status }
         const result = await TranslationService.performSpeechToText(
             req.file.path, 
             targetLang, 
             sourceLang
         );
 
-        console.log("AI Result Object:", result);
+        let savedRecordId = null; // Use a dedicated variable for the ID
 
-        // 2. Save to History
         if (req.user?.id) {
             const historyPayload = {
-                // Use result.transcript for the source text
                 sourceText: result.transcript, 
-                // Use result.translation for the translated text
                 translatedText: result.translation, 
                 sourceLanguageId: source_language_id || 1, 
                 targetLanguageId: target_language_id || 2
             };
 
-            console.log("Database Payload:", historyPayload);
-
-            const { error } = await TranslationService.saveHistory(req.user.id, historyPayload);
+            // FIX: Destructure 'data' from the service call
+            const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload);
             
             if (error) {
                 console.error("Supabase Save Error:", error.message);
+            } else if (data && data.length > 0) {
+                savedRecordId = data[0].id; // Safely capture the ID
             }
         }
 
-        // 3. Return to Mobile
+        // Return the gathered ID to the mobile app
         res.status(200).json({ 
             success: true, 
             translation: result.translation, 
-            transcript: result.transcript 
+            transcript: result.transcript,
+            historyId: savedRecordId // This will no longer be undefined!
         });
     } catch (err) { 
         console.error("Translate Audio Controller Error:", err);
@@ -129,32 +137,28 @@ export const deleteUserHistory = async (req, res) => {
 // CRUD: Add Feedback
 export const submitFeedback = async (req, res) => {
     try {
-        const { translationId, rating } = req.body;
+        const { translationId, rating, comment } = req.body;
 
-        if (translationId === undefined || rating === undefined) {
-            return res.status(400).json({ success: false, message: 'Missing feedback data' });
+        if (!translationId) {
+            return res.status(400).json({ success: false, message: 'Missing translationId' });
         }
 
-        if (Number.isNaN(Number(translationId)) || Number.isNaN(Number(rating))) {
-            return res.status(400).json({ success: false, message: 'translationId and rating must be numbers' });
-        }
+        // Map frontend 5/1 to backend 1/0 for the CHECK constraint
+        const dbRating = (rating >= 5) ? 1 : 0;
 
-        const numericRating = Number(rating);
-        if (!Number.isInteger(numericRating) || numericRating < 0 || numericRating > 5) {
-            return res.status(400).json({ success: false, message: 'rating must be an integer between 0 and 5' });
-        }
+        const { data, error } = await TranslationModel.addFeedback(
+            req.user.id, 
+            Number(translationId), 
+            dbRating, 
+            comment
+        );
 
-        const { error } = await TranslationModel.addFeedback(req.user.id, Number(translationId), numericRating);
+        if (error) throw error;
 
-        if (error) {
-            console.error('Supabase Feedback Error:', error);
-            return res.status(400).json({ success: false, message: error.message });
-        }
-
-        return res.status(200).json({ success: true, message: 'Feedback recorded' });
+        return res.status(200).json({ success: true, message: 'Feedback synced successfully' });
     } catch (error) {
-        console.error('Feedback Controller Crash:', error);
-        return res.status(500).json({ success: false, message: 'Server error during feedback' });
+        console.error('Feedback Sync Error:', error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
