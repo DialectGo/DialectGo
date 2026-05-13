@@ -1,224 +1,197 @@
 import React, { useState } from 'react';
-import { View, Image, Dimensions, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate, Extrapolate } from 'react-native-reanimated';
-import { GestureDetector, Gesture, ScrollView } from 'react-native-gesture-handler';
-import { supabase } from '../../shared/lib/supabase';
-import AuthInput from '../../shared/components/AuthInput';
-import SocialAuth from '../../shared/components/SocialAuth';
-import CustomButton from '../../shared/components/CustomButton';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { styles } from '../../shared/styles/LoginStyles';
 
-const { height } = Dimensions.get('window');
-const SNAP_TOP = height * 0.05;    
-const SNAP_BOTTOM = height * 0.29; 
-const DRAG_LOWER_LIMIT = SNAP_BOTTOM + 50;
+const API_URL = 'http://192.168.1.52:5001/api/v1/users/register'; 
 
-function WelcomeHeader({ style }) {
-  return (
-    <Animated.View style={[styles.headerContainer, style]} className="w-full px-10 pt-10">
-      <Text style={styles.greetingText} className="text-4xl font-black tracking-tighter">
-          Maayong pagbalik!
-      </Text>
-      <Text className="text-slate-500 text-base font-bold mt-1">
-          Learn More. Speak Better. Connect Easier.
-      </Text>
-      <Image 
-        source={require('@assets/logo/jeepLogo.png')} 
-        className="w-60 h-28 self-start mt-4 mr-[-20]"
-        resizeMode="contain" 
-      />
-    </Animated.View>
-  );
-}
+export default function SignUp({ onSwitch, onSuccess }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Address States
+  const [country, setCountry] = useState('Philippines'); // Default value
+  const [province, setProvince] = useState('');
+  const [city, setCity] = useState('');
 
-function RegisterForm({ form, setForm, agree, setAgree, onSignUp, loading, onLogin, panGesture }) {
-  return (
-    <ScrollView 
-      showsVerticalScrollIndicator={false} 
-      contentContainerStyle={styles.scrollContent}
-      simultaneousHandlers={panGesture} 
-    >
-    <View className="items-center w-full">
-      <Text className="text-5xl font-black text-[#2D2D2D] mb-8 tracking-tighter">
-        SIGN UP
-      </Text>
-    </View>
-      <View className="space-y-1">
-        <View className="flex-row justify-between w-full">
-          <View className="w-[48%]">
-            <AuthInput label="First Name" onChangeText={(v) => setForm({...form, firstName: v})} style={styles.authArea} />
-          </View>
-          <View className="w-[48%]">
-            <AuthInput label="Last Name" onChangeText={(v) => setForm({...form, lastName: v})} style={styles.authArea} />
-          </View>
-        </View>
-        <AuthInput label="Email" keyboardType="email-address" onChangeText={(v) => setForm({...form, email: v})} style={styles.authArea} />
-        <AuthInput label="Age" keyboardType="numeric" onChangeText={(v) => setForm({...form, age: v})} style={styles.authArea} />
-        <AuthInput label="Password" secureTextEntry onChangeText={(v) => setForm({...form, password: v})} style={styles.authArea} />
-        <AuthInput label="Confirm Password" secureTextEntry onChangeText={(v) => setForm({...form, confirmPassword: v})} style={styles.authArea} />
-      </View>
+  // Date of Birth States
+  const [birthDate, setBirthDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateSelected, setDateSelected] = useState(false);
 
-      <View className="flex-row items-center justify-content-start mt-0 mb-2">
-        <Text className="text-slate-700 font-bold text-sm">Agree on Terms?</Text>
-        <TouchableOpacity 
-           onPress={() => setAgree(!agree)}
-           className={`ml-3 w-6 h-6 rounded-md border-2 border-amber-400 ${agree ? 'bg-amber-400' : 'bg-transparent'}`}
-        />
-      </View>
-
-      <CustomButton title="SIGN UP" onPress={onSignUp} loading={loading} style={styles.signUpBtn} />
-      
-      <SocialAuth />
-
-      <View className="flex-row justify-center mt-8">
-        <Text className="text-slate-700 font-bold">Have an account? </Text>
-        <TouchableOpacity onPress={onLogin}>
-            <Text className="font-black underline text-black">Log In.</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-}
-
-export default function Register() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [agree, setAgree] = useState(false);
-  const [form, setForm] = useState({ 
-    firstName: '', lastName: '', email: '', age: '', password: '', confirmPassword: '' 
-  });
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Reanimated Shared Values
-  const translateY = useSharedValue(SNAP_BOTTOM);
-  const contextY = useSharedValue(0);
+  const onChangeDate = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setBirthDate(selectedDate);
+      setDateSelected(true);
+    }
+  };
 
-  // Gesture Handling
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
-      contextY.value = translateY.value;
-    })
-    .onUpdate((event) => {
-      let nextValue = contextY.value + event.translationY;
-      if (nextValue < SNAP_TOP) nextValue = SNAP_TOP;
-      if (nextValue > DRAG_LOWER_LIMIT) nextValue = DRAG_LOWER_LIMIT;
-      translateY.value = nextValue;
-    })
-    .onEnd((event) => {
-      const halfwayPoint = (SNAP_BOTTOM + SNAP_TOP) / 2;
-      if (event.velocityY < -500 || translateY.value < halfwayPoint) {
-        translateY.value = withSpring(SNAP_TOP, { damping: 18, stiffness: 100 });
-      } else {
-        translateY.value = withSpring(SNAP_BOTTOM, { damping: 18, stiffness: 100 });
-      }
-    });
+  const handleRegister = async () => {
+    if (!email || !password || !firstName || !lastName || !dateSelected || !province || !city) {
+      Alert.alert("Error", "Palihug kumpletoha ang tanang fields.");
+      return;
+    }
 
-  // Animated Styles
-  const cardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const headerStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateY.value,
-      [SNAP_TOP + 100, SNAP_BOTTOM],
-      [0, 1],
-      Extrapolate.CLAMP
-    );
-    return { opacity };
-  });
-
-  const handleSignUp = async () => {
-    if (!agree) return Alert.alert("Required", "Please agree to the Terms and Agreement");
-    if (form.password !== form.confirmPassword) return Alert.alert("Error", "Passwords do not match");
-    
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ 
-      email: form.email, 
-      password: form.password,
-      options: {
-        data: { first_name: form.firstName, last_name: form.lastName, age: form.age }
-      }
-    });
-    setLoading(false);
 
-    if (error) Alert.alert("Error", error.message);
-    else {
-      Alert.alert("Success", "Account created! Please log in.");
-      router.replace('/login');
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          firstName,
+          lastName,
+          birthDate: birthDate.toISOString().split('T')[0],
+          country,
+          province,
+          city,
+          // addressLine: `${city}, ${province}, ${country}`,
+          username: email.split('@')[0], 
+          preferredLanguageCode: 'en'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setIsSuccess(true);
+      } else {
+        throw new Error(result.message || "Registration failed");
+      }
+    } catch (error) {
+      Alert.alert("Sign Up Error", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      
-      <WelcomeHeader style={headerStyle} />
-
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.formCard, cardStyle]}>
-          <View className="items-center py-4">
-            <View className="w-12 h-1.5 bg-slate-400 rounded-full" />
+    <SafeAreaView style={styles.container}>
+      {/* --- SUCCESS MODAL --- */}
+      <Modal visible={isSuccess} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#FFF', width: '100%', borderRadius: 30, padding: 30, alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#4CAF50', width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: '#FFF', fontSize: 40 }}>✓</Text>
+            </View>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>Account Registered!</Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
+              Malipayong pag-abot! Palihug pag-log in gamit ang imong bag-ong credentials.
+            </Text>
+            
+            <TouchableOpacity 
+              style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]} 
+              onPress={() => {
+                setIsSuccess(false);
+                onSwitch(); // Switches the form inside the sheet to Login
+                // Optional: call onSuccess() here if you want to close the sheet entirely
+              }}
+            >
+              <Text style={styles.primaryBtnText}>PROCEED TO LOGIN</Text>
+            </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.loginCard}>
+            <Text style={styles.cardLabel}>CREATE YOUR ACCOUNT</Text>
 
-          <RegisterForm 
-            form={form}
-            setForm={setForm}
-            agree={agree}
-            setAgree={setAgree}
-            onSignUp={handleSignUp}
-            loading={loading}
-            onLogin={() => router.push('/login')}
-            panGesture={panGesture}
-          />
-        </Animated.View>
-      </GestureDetector>
+            {/* Name Row */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={[styles.inputGroup, { width: '48%' }]}>
+                <Text style={styles.labelShadow}>First Name</Text>
+                <TextInput style={styles.bubbleInput} placeholder="First" value={firstName} onChangeText={setFirstName} />
+              </View>
+              <View style={[styles.inputGroup, { width: '48%' }]}>
+                <Text style={styles.labelShadow}>Last Name</Text>
+                <TextInput style={styles.bubbleInput} placeholder="Last" value={lastName} onChangeText={setLastName} />
+              </View>
+            </View>
+
+            {/* Birthdate */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.labelShadow}>Birthdate</Text>
+              <TouchableOpacity 
+                style={[styles.bubbleInput, { justifyContent: 'center' }]} 
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={{ color: dateSelected ? '#000' : '#999' }}>
+                  {dateSelected ? birthDate.toDateString() : "Select Birthdate"}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={birthDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  maximumDate={new Date()}
+                  onChange={onChangeDate}
+                />
+              )}
+            </View>
+
+            {/* Country */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.labelShadow}>Country</Text>
+              <TextInput style={styles.bubbleInput} placeholder="Country" value={country} onChangeText={setCountry} />
+            </View>
+
+            {/* Province & City Row */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={[styles.inputGroup, { width: '48%' }]}>
+                <Text style={styles.labelShadow}>Province</Text>
+                <TextInput style={styles.bubbleInput} placeholder="Province" value={province} onChangeText={setProvince} />
+              </View>
+              <View style={[styles.inputGroup, { width: '48%' }]}>
+                <Text style={styles.labelShadow}>City</Text>
+                <TextInput style={styles.bubbleInput} placeholder="City" value={city} onChangeText={setCity} />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.labelShadow}>Email</Text>
+              <TextInput style={styles.bubbleInput} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.labelShadow}>Password</Text>
+              <TextInput style={styles.bubbleInput} placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
+            </View>
+
+            <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 20 }]} onPress={handleRegister} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>SIGN UP</Text>}
+            </TouchableOpacity>
+
+            <View style={[styles.footer, { marginTop: 20 }]}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <TouchableOpacity onPress={onSwitch}>
+                <Text style={styles.footerLink}>Log In</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  headerContainer: {
-    position: 'absolute',
-    top: 50,
-  },
-  greetingText: {
-    color: '#FFBC00', 
-    fontWeight: '900',
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  formTitle: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  formCard: {
-    backgroundColor: '#FFF2C5',
-    borderTopLeftRadius: 65,
-    borderTopRightRadius: 65,
-    height: height, 
-    width: '100%',
-    position: 'absolute',
-    overflow: 'hidden',
-    elevation: 24, 
-  },
-  scrollContent: {
-    paddingHorizontal: 40, 
-    paddingBottom: 120
-  },
-  authArea: {
-    backgroundColor: '#ffffff',
-    borderRadius: 25,
-    height: 60,       
-    elevation: 4,
-  },
-  signUpBtn: {
-    backgroundColor: '#FFBC00',
-    paddingVertical: 18,
-    borderRadius: 35,
-    alignItems: 'center',
-    marginTop: 10,
-  }
-});

@@ -1,16 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  LayoutAnimation,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-  Text
-} from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect} from 'react';
+import { View, Keyboard, KeyboardAvoidingView, Platform, LayoutAnimation, ScrollView, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,9 +16,8 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/translate';
-const FEEDBACK_URL = 'http://192.168.1.50:5001/api/feedback';
-
+const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/api/translate';
+const FEEDBACK_URL = 'http://192.168.1.50:5000/api/feedback';
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
@@ -83,52 +71,61 @@ export default function TextToText() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, []);
 
-  // MAIN TRANSLATION FUNCTION
-  const translateText = useCallback(async () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const handleTranslate = async () => {
     if (!inputText.trim()) return;
 
+    setIsLoading(true);
+    console.log("🚀 Attempting to translate:", inputText); // This will show in terminal
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            Alert.alert("Authentication Required", "Please log in.");
+            setIsLoading(false);
+            return;
+        }
 
-      if (!session) {
-        Alert.alert("Authentication Required", "Please log in.");
-        return;
-      }
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}` 
+            },
+            body: JSON.stringify({ 
+                sourceText: inputText, 
+                sourceLang: sourceLang,
+                targetLang: targetLang,
+                source_language_id: 2,
+                target_language_id: 3
+            }),
+        });
 
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          sourceText: inputText,
-          sourceLang,
-          targetLang
-        }),
-      });
+        console.log("📡 API Response Status:", response.status);
 
-      const result = await response.json();
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}`);
+        }
 
-      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Full API Response:", result);
+
         const cleanText = result.translatedText
-          .replace(/<end_of_turn>/g, '')
-          .replace(/<start_of_turn>/g, '')
-          .trim();
+            .replace(/<end_of_turn>/g, '')
+            .replace(/<start_of_turn>/g, '')
+            .trim();
 
-        setTranslatedText(cleanText);
-        setCurrentTranslationId(result.historyRecord?.id);
-
+        setTranslatedText(cleanText || "No translation returned");
+        setCurrentTranslationId(result.historyRecord?.id); 
         animateTransition();
         setShowResult(true);
-      } else {
-        throw new Error(result.message || 'Translation failed');
-      }
 
     } catch (error) {
-      Alert.alert("Error", error.message);
+        console.error("❌ Translation Error:", error);
+        Alert.alert("Engine Unavailable", "The translation server is currently unreachable.");
     } finally {
-      Keyboard.dismiss();
+        Keyboard.dismiss();
+        setIsLoading(false);
     }
   }, [inputText, sourceLang, targetLang]);
 

@@ -15,7 +15,7 @@ router.post('/login', loginLimiter, validate(loginSchema), UserController.login)
 // USER
 router.get('/profile', verifyToken, UserController.getProfile);
 router.put('/profile', verifyToken, UserController.updateProfile);
-
+router.get('/streak', verifyToken, UserController.getStreakData);
 // ADMIN
 router.get('/admin/users', verifyToken, authorizeRole('admin'), UserController.getAllUsers);
 

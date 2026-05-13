@@ -53,6 +53,7 @@ export const validateTranslateImage = createValidationMiddleware(
     Joi.object({
         image: Joi.string().trim().required(),
         targetLang: Joi.alternatives().try(Joi.string().trim(), Joi.number().integer()).required(),
+        sourceLang: Joi.alternatives().try(Joi.string().trim(), Joi.number().integer()).required(),
         source_language_id: Joi.number().integer().optional().allow(null),
         target_language_id: Joi.number().integer().optional().allow(null),
     })

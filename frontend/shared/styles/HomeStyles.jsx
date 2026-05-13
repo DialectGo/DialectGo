@@ -1,14 +1,14 @@
-import { Dimensions, StyleSheet, Platform, StatusBar } from 'react-native';
+import { Dimensions, StyleSheet, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   // --- MAIN CONTAINER ---
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-  },
+container: {
+  flex: 1,
+  backgroundColor: '#FFFFFF', // o kahit anong background color ng app mo
+  paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Para sa Android
+},
   scrollContent: {
     paddingHorizontal: 25,
     paddingBottom: 120, // Space para hindi matakpan ng Bottom Tab

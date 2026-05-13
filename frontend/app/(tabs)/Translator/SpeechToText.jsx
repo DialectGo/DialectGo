@@ -1,266 +1,332 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, LayoutAnimation, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  View, StyleSheet, TouchableOpacity, Text, ScrollView, 
+  LayoutAnimation, Alert, Animated, StatusBar, ActivityIndicator, Modal
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
+
+// Shared Utilities & Components
+import { supabase } from '../../../shared/lib/supabase';
 import LanguageSelector from '../../../shared/components/LanguageSelector';
 import ResultCard from '../../../shared/components/ResultCard';
+import TopBar from '../../../shared/components/TopBar';
+import ContributionModal from '../../../shared/components/ContributionModal';
+
+// Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
-const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/translate';
+const API_BASE = 'http://192.168.1.53:5001/api';
+const ENDPOINTS = {
+  AUDIO: `${API_BASE}/translate/audio`,
+  FEEDBACK: `${API_BASE}/feedback`,
+  CONTRIBUTE: `${API_BASE}/translate/contribute`,
+};
+
+const LANGUAGE_MAP = [
+  { name: 'English', id: 1 },
+  { name: 'Tagalog', id: 2 },
+  { name: 'Cebuano', id: 3 },
+];
 
 export default function SpeechToText() {
   const router = useRouter();
+  
+  // Language & UI State
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectingFor, setSelectingFor] = useState('source');
+
+  // Logic & Result State
   const [transcript, setTranscript] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [recording, setRecording] = useState(null);
+  const [currentTranslationId, setCurrentTranslationId] = useState(null);
 
-  const animate = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  // Feedback State
+  const [feedback, setFeedback] = useState(null); 
+  const [isDetailedModalVisible, setIsDetailedModalVisible] = useState(false);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [suggestedTranslation, setSuggestedTranslation] = useState('');
+
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    return () => {
-      if (recording) {
-        try {
-          recording.stopAndUnloadAsync();
-        } catch (e) {
-        }
-      }
-    };
-  }, [recording]);
-
-  const toggleListening = () => {
     if (isListening) {
-      stopRecording();
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
     } else {
-      startRecording();
+      pulseAnim.setValue(1);
     }
+  }, [isListening]);
+
+  const animateUI = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+  // --- API HANDLERS ---
+
+  const handleQuickRating = async (ratingValue) => {
+    if (!currentTranslationId) return Alert.alert("Wait", "Translate something first.");
+
+    setFeedback(ratingValue === 5 ? 'like' : 'unlike');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(ENDPOINTS.FEEDBACK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ translationId: currentTranslationId, rating: ratingValue })
+      });
+      setIsDetailedModalVisible(true);
+    } catch (err) { console.error("Feedback error:", err); }
   };
+
+  const handleDetailedSubmit = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` };
+
+      if (feedbackComment.trim()) {
+        await fetch(ENDPOINTS.FEEDBACK, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ translationId: currentTranslationId, rating: feedback === 'like' ? 5 : 1, comment: feedbackComment })
+        });
+      }
+
+      if (suggestedTranslation.trim()) {
+        await fetch(ENDPOINTS.CONTRIBUTE, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceText: transcript,
+            userTranslation: suggestedTranslation,
+            sourceLang, targetLang,
+            source_language_id: LANGUAGE_MAP.find(l => l.name === sourceLang)?.id,
+            target_language_id: LANGUAGE_MAP.find(l => l.name === targetLang)?.id,
+          })
+        });
+      }
+
+      Alert.alert("Salamat!", "Thank you for improving DialectoGo.");
+      setIsDetailedModalVisible(false);
+      setFeedbackComment('');
+      setSuggestedTranslation('');
+    } catch (err) { Alert.alert("Error", "Submission failed."); }
+  };
+
+  // --- RECORDING LOGIC ---
 
   const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== 'granted') {
-        Alert.alert('Permission required', 'Please enable microphone access.');
-        return;
-      }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      animate();
+      if (permission.status !== 'granted') return Alert.alert('Mic Access Required');
+      
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      animateUI();
       setIsListening(true);
+      setShowResult(false);
+      setFeedback(null);
       setTranscript('Speak now...');
-
-      const { recording } = await Audio.Recording.createAsync({
-        android: {
-          extension: '.m4a',
-          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
-          audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 128000,
-        },
-        ios: {
-          extension: '.wav',
-          audioQuality: Audio.IOSAudioQuality.HIGH,
-          sampleRate: 16000,
-          numberOfChannels: 1,
-          bitRate: 128000,
-          linearPCMBitDepth: 16,
-          linearPCMIsBigEndian: false,
-          linearPCMIsFloat: false,
-        },
-      });
-
+      
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setRecording(recording);
-    } catch (err) {
-      console.error('Failed to start recording', err);
-      setIsListening(false);
-    }
+    } catch (err) { setIsListening(false); }
   };
 
-  const stopRecording = async () => {
-    if (!recording) return;
+  // SpeechToText.jsx
+const stopRecording = async () => {
+  if (!recording) return;
+  animateUI();
+  setIsListening(false);
+  setIsLoading(true);
 
-    animate();
-    setIsListening(false);
-    setIsLoading(true);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
 
-    try {
-      const status = await recording.getStatusAsync();
+    const formData = new FormData();
+    formData.append('audio', { uri, type: 'audio/m4a', name: 'speech.m4a' });
+    formData.append('targetLang', targetLang);
+    formData.append('sourceLang', sourceLang);
+    formData.append('source_language_id', LANGUAGE_MAP.find(l => l.name === sourceLang)?.id);
+    formData.append('target_language_id', LANGUAGE_MAP.find(l => l.name === targetLang)?.id);
 
-      if (status.isRecording) {
-        await recording.stopAndUnloadAsync();
-      }
+    const response = await fetch(ENDPOINTS.AUDIO, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    });
 
-      const uri = recording.getURI();
-      setRecording(null);
-
-      const formData = new FormData();
-      formData.append('audio', {
-        uri: uri,
-        type: 'audio/m4a',
-        name: 'speech.m4a',
-      });
-      formData.append('target_lang', targetLang);
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'ngrok-skip-browser-warning': 'true',
-        },
-      });
-
-      console.log("STATUS:", response.status);
-
-      const text = await response.text();
-      console.log("RESPONSE:", text);
-
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const data = JSON.parse(text);
-
-      if (data.translation) {
-        setTranslatedText(data.translation);
-        setTranscript("Original speech processed");
-        animate();
-        setShowResult(true);
-      }
-
-    } catch (error) {
-      console.error("FULL ERROR:", error);
-      Alert.alert("Error", error.message);
-    } finally {
-      setIsLoading(false);
+    const data = await response.json();
+    if (response.ok && data.translation) {
+      setTranslatedText(data.translation);
+      setTranscript(data.transcript || "Speech captured");
+      
+      // FIX: Check for historyId specifically for Audio results
+      const recordId = data.historyId || data.historyRecord?.id || data.id;
+      setCurrentTranslationId(recordId);
+      
+      animateUI();
+      setShowResult(true);
     }
-  };
+  } catch (error) { 
+    Alert.alert("Error", "Audio processing failed."); 
+  } finally { 
+    setIsLoading(false); 
+    setRecording(null); 
+  }
+};
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Speech</Text>
-      </View>
-
-      <LanguageSelector
-        sourceLang={sourceLang}
-        targetLang={targetLang}
-        translateIcon={translateIcon}
-        onSwap={() => { setSourceLang(targetLang); setTargetLang(sourceLang); }}
-      />
+    <View style={styles.mainWrapper}>
+      <StatusBar barStyle="dark-content" />
+      <TopBar title="DialectoGo" />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>Translate Now!</Text>
+        <View style={styles.headerSection}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#1F2937" />
+          </TouchableOpacity>
+          <View style={styles.introContainer}>
+            <Text style={styles.introTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusDot, (isListening || isLoading) && { backgroundColor: '#EF4444' }]} />
+              <Text style={styles.statusText}>{isLoading ? 'Processing' : isListening ? 'Recording' : 'Voice Mode'}</Text>
+            </View>
+          </View>
+          <View style={{ width: 45 }} />
         </View>
 
-        <TouchableOpacity
-          style={[styles.pulseCircle, isListening && styles.pulseActive]}
-          onPress={toggleListening}
-          disabled={isLoading}
-        >
-          <View style={styles.innerCircle}>
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#B45309" />
-            ) : (
-              <Ionicons name="mic" size={80} color="#B45309" />
-            )}
-          </View>
-        </TouchableOpacity>
+        <LanguageSelector 
+          sourceLang={sourceLang} targetLang={targetLang}
+          translateIcon={translateIcon} onSwap={() => {
+            const temp = sourceLang; setSourceLang(targetLang); setTargetLang(temp);
+          }}
+          onSelectSource={() => { setSelectingFor('source'); setModalVisible(true); }}
+          onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
+        />
 
-        <Text style={styles.listeningText}>
-          {isLoading ? "Processing..." : isListening ? "Listening ..." : "Tap to Speak"}
-        </Text>
+        <View style={styles.pulseWrapper}>
+          <Animated.View style={[styles.pulseOuter, { transform: [{ scale: pulseAnim }] }, isListening && styles.pulseActive]}>
+            <TouchableOpacity onPress={isListening ? stopRecording : startRecording} style={styles.pulseCircle} disabled={isLoading}>
+              <View style={styles.innerCircle}>
+                {isLoading ? <ActivityIndicator size="large" color="#FFF" /> : <Ionicons name={isListening ? "stop" : "mic"} size={70} color="#000" />}
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+          <Text style={styles.listeningText}>{isLoading ? "Analyzing..." : isListening ? "Listening..." : "Tap to Speak"}</Text>
+        </View>
 
-        {transcript ? (
+        {transcript !== '' && (
           <View style={styles.transcriptContainer}>
-            <Text style={styles.transcriptLabel}>{sourceLang}</Text>
-            <Text style={styles.transcriptText}>{transcript}</Text>
+            <Text style={styles.transcriptLabel}>{sourceLang.toUpperCase()}</Text>
+            <Text style={styles.transcriptText}>"{transcript}"</Text>
           </View>
-        ) : null}
+        )}
 
         {showResult && (
-          <View style={styles.resultContainer}>
-            <ResultCard
-              translatedText={translatedText}
-              targetLang={targetLang}
-              onClose={() => { animate(); setShowResult(false); }}
-              pronounceIcon={pronounceIcon}
-            />
+          <View style={styles.resultWrapper}>
+            <ResultCard translatedText={translatedText} targetLang={targetLang} onClose={() => setShowResult(false)} pronounceIcon={pronounceIcon} />
+            <View style={styles.feedbackContainer}>
+              <View style={styles.feedbackIcons}>
+                <TouchableOpacity onPress={() => handleQuickRating(5)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="thumbs-up" size={18} color={feedback === 'like' ? "#FBBF24" : "#9CA3AF"} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleQuickRating(1)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="thumbs-down" size={18} color={feedback === 'unlike' ? "#FBBF24" : "#9CA3AF"} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setIsDetailedModalVisible(true)} style={styles.miniFeedbackBtn}>
+                  <Ionicons name="create-outline" size={20} color="#FBBF24" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      {/* REUSABLE CONTRIBUTION MODAL */}
+      <ContributionModal 
+        visible={isDetailedModalVisible}
+        onClose={() => setIsDetailedModalVisible(false)}
+        onSubmit={handleDetailedSubmit}
+        feedbackComment={feedbackComment}
+        setFeedbackComment={setFeedbackComment}
+        suggestedTranslation={suggestedTranslation}
+        setSuggestedTranslation={setSuggestedTranslation}
+      />
+
+      {/* LANGUAGE PICKER */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Select Language</Text>
+            {LANGUAGE_MAP.map((item) => (
+              <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => {
+                animateUI();
+                if (selectingFor === 'source') {
+                  if (item.name === targetLang) setTargetLang(sourceLang);
+                  setSourceLang(item.name);
+                } else {
+                  if (item.name === sourceLang) setSourceLang(targetLang);
+                  setTargetLang(item.name);
+                }
+                setModalVisible(false);
+                setShowResult(false);
+              }}>
+                <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>{item.name}</Text>
+                {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}><Text style={styles.closeSheetText}>Cancel</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#E5E7EB' },
-  header: {
-    backgroundColor: '#FBBF24',
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-  },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    backgroundColor: '#FFF',
-    padding: 8,
-    borderRadius: 10,
-  },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#4B5563' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 50 },
-  introContainer: { marginTop: 20, alignItems: 'center' },
-  introTitle: { fontSize: 28, fontWeight: '900', color: '#D1D5DB' },
-  introSub: { fontSize: 12, color: '#9CA3AF', fontStyle: 'italic' },
-  pulseCircle: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: '#FBBF24',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 40,
-  },
-  pulseActive: {
-    transform: [{ scale: 1.05 }],
-    backgroundColor: '#F59E0B',
-  },
-  innerCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#FDE68A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listeningText: { marginTop: 20, fontSize: 22, textAlign: 'center' },
-  transcriptContainer: {
-    backgroundColor: '#FEF3C7',
-    padding: 20,
-    borderRadius: 20,
-    marginTop: 20,
-  },
-  transcriptLabel: { fontSize: 12 },
-  transcriptText: { fontSize: 20, textAlign: 'center' },
-  resultContainer: { marginTop: 20 }
+  mainWrapper: { flex: 1, backgroundColor: '#FFFFFF' },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 60, paddingTop: 10 },
+  headerSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 25 },
+  backButton: { width: 45, height: 45, borderRadius: 12, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center' },
+  introContainer: { alignItems: 'center', flex: 1 },
+  introTitle: { fontSize: 28, fontWeight: '900', color: '#111827' },
+  yellowText: { color: '#FBBF24' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FBBF24', marginRight: 4 },
+  statusText: { fontSize: 10, color: '#9CA3AF', fontWeight: '800', textTransform: 'uppercase' },
+  pulseWrapper: { alignItems: 'center', marginVertical: 30 },
+  pulseOuter: { width: 200, height: 200, borderRadius: 100, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  pulseActive: { backgroundColor: '#FDE68A', elevation: 15 },
+  pulseCircle: { width: 170, height: 170, borderRadius: 85, backgroundColor: '#FBBF24', justifyContent: 'center', alignItems: 'center', borderWidth: 6, borderColor: '#FFF' },
+  innerCircle: { width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+  listeningText: { marginTop: 20, fontSize: 24, fontWeight: '800', color: '#1F2937' },
+  transcriptContainer: { backgroundColor: '#F9FAFB', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 20 },
+  transcriptLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
+  transcriptText: { fontSize: 22, fontWeight: '700', color: '#374151', textAlign: 'center', fontStyle: 'italic' },
+  resultWrapper: { marginTop: 10 },
+  feedbackContainer: { marginTop: 15, alignItems: 'center' },
+  feedbackIcons: { flexDirection: 'row', justifyContent: 'center', gap: 20 },
+  miniFeedbackBtn: { padding: 8, borderRadius: 12, backgroundColor: '#F9FAFB' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 20, paddingBottom: 40 },
+  sheetHandle: { width: 40, height: 5, backgroundColor: '#E5E7EB', borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#1F2937', marginBottom: 20, textAlign: 'center' },
+  sheetItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sheetItemText: { fontSize: 18, fontWeight: '600', color: '#4B5563' },
+  activeSheetText: { color: '#FBBF24', fontWeight: '800' },
+  closeSheet: { marginTop: 20, alignItems: 'center', padding: 15, backgroundColor: '#F9FAFB', borderRadius: 15 },
+  closeSheetText: { color: '#9CA3AF', fontWeight: '700', fontSize: 16 },
 });

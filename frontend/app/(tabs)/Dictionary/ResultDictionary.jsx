@@ -1,166 +1,167 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Text, Surface, Button } from 'react-native-paper';
-import pronounceIcon from '@assets/icons/pronounceIcon.png';
+import React, { useState } from 'react';
+import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { supabase } from '../../../shared/lib/supabase';
+import BottomNav from '../../../shared/components/BottomNav';
+import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 
-function WordHeader({ word, phonetic, onPronounce }) {
-  return (
-    <Surface style={styles.wordCard} elevation={0}>
-      <Text style={styles.mainWord}>{word}</Text>
-      <Text style={styles.phonetic}>{phonetic || 'pronunciation N/A'}</Text>
-      <TouchableOpacity style={styles.speakerBtn} onPress={onPronounce}>
-        <Image source={pronounceIcon} style={styles.speakerIcon} />
-      </TouchableOpacity>
-    </Surface>
-  );
-}
+const SAVE_API_URL = 'http://192.168.1.53:5001/api/dictionary/save';
 
-function TranslationBox({ label, language, text }) {
-  return (
-    <View style={styles.defCol}>
-      <Text style={styles.partOfSpeech}>{language}</Text>
-      <Surface style={styles.defBox} elevation={0}>
-        <Text style={styles.defLabel}>{label || 'Translation'}</Text>
-        <Text style={styles.defText}>{text}</Text>
-      </Surface>
-    </View>
-  );
-}
+export default function ResultDictionary() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-function ExampleLine({ label, text }) {
-  return (
-    <View style={styles.exampleLine}>
-      <Text style={styles.langLabel}>{label}: </Text>
-      <Text style={styles.exampleText}>{text}</Text>
-    </View>
-  );
-}
-
-function ExampleSection({ examples }) {
-  const hasValidExamples = examples && examples.length >= 3;
-
-  return (
-    <View style={styles.exampleSection}>
-      <Text style={styles.exampleHeader}>Example Sentences:</Text>
-      {hasValidExamples ? (
-        <>
-          <ExampleLine label="Cebuano" text={examples[2]} />
-          <ExampleLine label="Tagalog" text={examples[1]} />
-          <ExampleLine label="English" text={examples[0]} />
-        </>
-      ) : (
-        <Text style={styles.exampleText}>No examples available for this word.</Text>
-      )}
-    </View>
-  );
-}
-
-export default function ResultDictionary({ data }) {
-  if (!data) return null;
-
+  // Destructure all parameters including the new usage params
   const { 
-    english, 
-    tagalog, 
-    cebuano, 
-    example_usage, 
-    phonetic, 
-    category,
-    id 
-  } = data;
+    id, wordTerm, partOfSpeech, definition, 
+    exampleUsage, phoneticTranscription, 
+    translation1, translation2, 
+    usage1, usage2 
+  } = params;
+
+  const handleSaveWord = async () => {
+    if (!id) {
+      Alert.alert("Error", "ID is missing.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert("Error", "Please login to save words.");
+        return;
+      }
+      
+      const response = await fetch(SAVE_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ dictionary_id: parseInt(id) }),
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setIsBookmarked(true);
+        Alert.alert("Success", `"${wordTerm}" saved.`);
+      } else {
+        throw new Error(result.message || "Failed to save.");
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       
-      <WordHeader 
-        word={cebuano} 
-        phonetic={phonetic} 
-        onPronounce={() => console.log('Playing audio...')} 
-      />
-
-      <View style={styles.definitionRow}>
-        <TranslationBox 
-          language="Tagalog" 
-          label={category} 
-          text={tagalog} 
-        />
-        <TranslationBox 
-          language="English" 
-          label={category} 
-          text={english} 
-        />
+      {/* FIXED UI HEADER: Back button and Title both aligned to the LEFT */}
+      <View style={[styles.topHeader, { 
+        flexDirection: 'row', 
+        justifyContent: 'flex-start', // Align to left
+        alignItems: 'center', 
+        paddingHorizontal: 20,
+        gap: 15 // Space between arrow and text
+      }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtnNoBg}>
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImgLarge} />
+        </TouchableOpacity>
+        
+        <View style={{ alignItems: 'flex-start' }}>
+          <Text style={styles.brandYellow}>DialectGo</Text>
+          <Text style={styles.brandBlack}>Dictionary</Text>
+        </View>
       </View>
 
-      <ExampleSection examples={example_usage} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
+        {/* HERO CARD */}
+        <View style={styles.mainWordCard}>
+          <Text style={styles.heroWord}>{wordTerm}</Text>
+          <Text style={styles.heroPronounce}>
+             {phoneticTranscription ? `//${phoneticTranscription}//` : `[ ${partOfSpeech} ]`}
+          </Text>
+        </View>
 
-      <View style={styles.buttonRow}>
-        
-        <Button 
-          mode="contained" 
-          icon="star-outline"
-          buttonColor="#FFCB45" 
-          textColor="white"
-          style={styles.actionBtn} 
-          labelStyle={styles.btnLabel}
-          onPress={() => console.log('Saved')}
-        >
-          Save
-        </Button>
+        {/* TRANSLATION BOXES */}
+        <View style={styles.definitionsRow}>
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(Translation 1)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>{translation1 || '---'}</Text>
+              <Text style={styles.defText}>Equivalent term</Text>
+            </View>
+          </View>
 
-        <Button 
-          mode="contained" 
-          icon="history"
-          buttonColor="#E5E7EB"
-          textColor="black"
-          style={styles.actionBtn} 
-          labelStyle={styles.btnLabel}
-          onPress={() => console.log('History')}
-        >
-          History
-        </Button>
-        
+          <View style={styles.defColumn}>
+            <Text style={styles.posLabel}>(Translation 2)</Text>
+            <View style={styles.defBox}>
+              <Text style={styles.defHeader}>{translation2 || '---'}</Text>
+              <Text style={styles.defText}>Equivalent term</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* USAGE EXAMPLES SECTION */}
+        <View style={[styles.exampleSection, { marginTop: 20 }]}>
+          <Text style={[styles.exampleTitle, { fontSize: 18, fontWeight: 'bold', color: '#421C00' }]}>Usage Examples:</Text>
+          <View style={styles.exampleContent}>
+            
+            {/* Main Word Example */}
+            <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{wordTerm}:</Text>
+                <Text style={styles.exampleLine}>{exampleUsage || 'No example available.'}</Text>
+            </View>
+            
+            {/* Translation 1 Example */}
+            {translation1 ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation1}:</Text>
+                <Text style={styles.exampleLine}>{usage1 || 'No example available.'}</Text>
+              </View>
+            ) : null}
+
+            {/* Translation 2 Example */}
+            {translation2 ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation2}:</Text>
+                <Text style={styles.exampleLine}>{usage2 || 'No example available.'}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* SAVE WORD BUTTON CONTAINER */}
+      <View style={{ paddingBottom: 20, alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={[styles.floatingSaveBtn, isBookmarked && styles.activeSaveBtn]} 
+            onPress={handleSaveWord}
+            disabled={isSaving || isBookmarked}
+          >
+            {isSaving ? (
+                <ActivityIndicator color="#FFF" />
+            ) : (
+                <>
+                    <Image 
+                        source={require('../../../assets/icons/star.png')} 
+                        style={[styles.starIcon, { tintColor: '#FFFFFF' }]} 
+                    />
+                    <Text style={styles.bookmarkText}>
+                        {isBookmarked ? 'SAVED' : 'SAVE WORD'}
+                    </Text>
+                </>
+            )}
+          </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <BottomNav activeTab="Dictionary" />
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { padding: 20, alignItems: 'center' },
-  wordCard: {
-    width: '100%',
-    backgroundColor: '#FFCB45',
-    borderRadius: 25,
-    padding: 30,
-    alignItems: 'center',
-    position: 'relative',
-    marginBottom: 20,
-  },
-  mainWord: { fontSize: 48, fontWeight: '900', color: '#333' },
-  phonetic: { fontSize: 18, fontStyle: 'italic', color: '#5D4037' },
-  speakerBtn: { position: 'absolute', bottom: 15, right: 15 },
-  speakerIcon: { width: 25, height: 25, resizeMode: 'contain' },
-  definitionRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 30 },
-  defCol: { width: '48%', alignItems: 'center' },
-  partOfSpeech: { fontSize: 16, fontStyle: 'italic', marginBottom: 10, color: '#5D4037' },
-  defBox: {
-    backgroundColor: '#E5E7EB',
-    borderRadius: 20,
-    padding: 20,
-    width: '100%',
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  defLabel: { fontWeight: 'bold', fontSize: 14, marginBottom: 10, color: '#5D4037' },
-  defText: { fontSize: 16, color: '#333', textAlign: 'center' },
-  exampleSection: { width: '100%', marginBottom: 40 },
-  exampleHeader: { fontWeight: 'bold', fontSize: 18, marginBottom: 10, color: '#333' },
-  exampleLine: { flexDirection: 'row', marginBottom: 5, paddingLeft: 10 },
-  langLabel: { fontWeight: 'bold', color: '#5D4037' },
-  exampleText: { color: '#333', flexShrink: 1 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 20, gap: 10,                    
-},
-  actionBtn: { flex: 1, borderRadius: 25, height: 50, justifyContent: 'center',},
-  saveBtnLabel: { fontSize: 14, fontWeight: 'bold', },
-  saveBtnLabel: { fontSize: 18, fontWeight: 'bold' },
-});
