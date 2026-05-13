@@ -2,13 +2,13 @@
 import React from 'react';
 import '../assets/css/sidebar.css';
 
-const Sidebar = ({ isOpen }) => {
+const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   const menuItems = [
-    { name: 'Dashboard', icon: '⊞', active: true },
-    { name: 'Users', icon: '👥', active: false },
-    { name: 'Incidents', icon: '⚠', active: false },
-    { name: 'Translations', icon: '🌍', active: false },
-    { name: 'Dictionaries', icon: '📖', active: false },
+    { name: 'Dashboard', icon: '⊞' },
+    { name: 'Users', icon: '👥' },
+    { name: 'Incidents', icon: '⚠' },
+    { name: 'Translations', icon: '🌍' },
+    { name: 'Dictionaries', icon: '📖' },
   ];
 
   return (
@@ -19,11 +19,16 @@ const Sidebar = ({ isOpen }) => {
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
-          <a key={item.name} href={`#${item.name.toLowerCase()}`} className={`nav-link ${item.active ? 'active' : ''}`}>
-            <span className="nav-icon">{item.icon}</span>
-            {item.name}
-          </a>
-        ))}
+            <button 
+                key={item.name} 
+                onClick={() => onTabChange(item.name)} 
+                className={`nav-link ${activeTab === item.name ? 'active' : ''}`}
+                /* Inline styles removed to allow CSS class priority */
+            >
+                <span className="nav-icon">{item.icon}</span>
+                {item.name}
+            </button>
+            ))}
       </nav>
     </aside>
   );

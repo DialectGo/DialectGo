@@ -246,3 +246,34 @@
 .page-header {
   display: none; /* We are now using the Navbar for the title */
 }
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 30px 0 0 30px; /* This creates the pill effect on the left */
+  gap: 15px;
+  margin-bottom: 5px;
+  transition: all 0.3s ease;
+  
+  /* Critical overrides for <button> elements */
+  border: none; 
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-link.active {
+  background-color: #ffffff; /* The white background from the screenshot */
+  color: #FFD230;            /* The yellow text from the screenshot */
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.05); /* Optional: slight depth */
+}
+
+/* Ensure the icon also changes color if needed */
+.nav-link.active .nav-icon {
+  color: #FFD230;
+}
