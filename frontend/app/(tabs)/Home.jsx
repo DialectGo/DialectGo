@@ -2,124 +2,18 @@ import React, { useEffect, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Image, Alert, TouchableOpacity,
 } from 'react-native';
-import { Text, Avatar } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../shared/lib/supabase';
-
 import { useRouter } from 'expo-router';
+import BottomNav from '../../shared/components/BottomNav';
+import TopBar from '../../shared/components/TopBar';
+import { styles } from '../../shared/styles/HomeStyles';
 
-const YELLOW = '#FFCB45';
-const BROWN = '#5D4037';
-const DARK_BROWN = '#3E2723';
-const MUTED_BROWN = '#8D6E63';
-
-function AvatarDisplay({ uri, onEdit }) {
-  return (
-    <View style={styles.avatarContainer}>
-      <View style={styles.avatarWrapper}>
-        <Image source={uri} style={styles.avatarImage} />
-        {onEdit && (
-          <TouchableOpacity style={styles.editBadge} onPress={onEdit}>
-            <Ionicons name="pencil" size={14} color="black" />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
-
-export default function Home() {
-    const router = useRouter();
-    const [view, setView] = useState('view');
-    const [loading, setLoading] = useState(true); // New: Loading state
-
-    const [userData, setUserData] = useState({
-      firstName: '',
-      lastName: '',
-      age: '',
-      email: '',
-      avatar: require('../../assets/avatars/1.png'), // Default
-      avatarId: 1 // Helper to track which index we are using
-    });
-
-    const avatars = [
-      require('../../assets/avatars/1.png'),
-      require('../../assets/avatars/2.png'),
-      require('../../assets/avatars/3.png'),
-      require('../../assets/avatars/5.png'),
-    ];
-
-    const fetchProfileData = async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-    
-          const response = await fetch('http://192.168.1.50:5001/api/users/profile', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-          });
-    
-          const result = await response.json();
-    
-          if (response.ok) {
-            setUserData({
-              firstName: result.firstName || '',
-              lastName: result.lastName || '',
-              age: result.age || '',
-              email: result.email || '',
-              // Use result.avatar (e.g., "2") to pick from local array
-              avatar: avatars[parseInt(result.avatar) - 1] || avatars[0],
-              avatarId: parseInt(result.avatar) || 1
-            });
-          }
-        } catch (error) {
-          console.error("Profile Fetch Error:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      useEffect(() => {
-        fetchProfileData();
-      }, []);
-  // need pa ito from the database 
-  const wordOfTheDay = {
-    word: '"Puhon"',
-    meaning: 'Meaning: Soon / Hopefully / God willing',
-    usage: '"Magkita ta puhon"',
-    usageTranslation: '(We will see each other soon/hopefully)',
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to sign out of DialectoGo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) Alert.alert('Error', error.message);
-          },
-        },
-      ],
-    );
-  };
-
-  const handleSeeStreak = () => {
-    // palitan ng navigation logic papunta sa streak details screen
-  };
-
-  const handleExplore = () => {
-    // palitan ng navigation logic papunta sa explore screen (ai)
-  };
+export default function Home({ onNavigate, activeTab }) {
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
+      <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -151,8 +45,11 @@ export default function Home() {
 
         {/* ── Word of the Day ── */}
         <View style={styles.wordCard}>
-          <View style={styles.wordCardBadge}>
-            <Text style={styles.wordCardBadgeText}>Word of the day</Text>
+          <Text style={styles.wordLabel}>Word of the day</Text>
+          <Text style={styles.wordText}>"Puhon"</Text>
+          <View style={styles.wordDetails}>
+            <Text style={styles.meaningText}>Meaning: Soon / Hopefully</Text>
+            <Text style={styles.usageText}>"Magkita ta puhon"</Text>
           </View>
           <Text style={styles.mainWord}>{wordOfTheDay.word}</Text>
           <View style={styles.wordDivider} />
@@ -173,29 +70,43 @@ export default function Home() {
             <Text style={styles.streakDaysText}>days streak</Text>
           </View>
 
-          {/* Right — flame */}
-          <View style={styles.streakRight}>
-            <Text style={styles.streakHint}>{'Keep using the app\nfor the flame.'}</Text>
-            <Image
-              source={require('../../assets/images/flame.png')}
-              style={styles.flameImage}
-              resizeMode="contain"
-            />
-            <TouchableOpacity style={styles.streakBtn} onPress={handleSeeStreak} activeOpacity={0.8}>
-              <Text style={styles.streakBtnText}>See Streak</Text>
-            </TouchableOpacity>
+          <View style={styles.largeWeekRow}>
+            {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day, index) => (
+              <View key={index} style={styles.largeDayBox}>
+                <View style={[styles.dayCircleLarge, index < 4 ? styles.dayActive : styles.dayInactive]}>
+                  {index < 4 
+                    ? <Text style={styles.checkMarkLarge}>✓</Text> 
+                    : <Text style={styles.lockIcon}>🔒</Text>
+                  }
+                </View>
+                <Text style={styles.largeDayText}>{day}</Text>
+              </View>
+            ))}
           </View>
 
         </View>
 
-        {/* ── Explore Banner ── */}
-        <View style={styles.banner}>
-          <View style={styles.bannerLeft}>
-            <Text style={styles.bannerLabel}>Learn more about</Text>
-            <Text style={styles.bannerTitle}>dialectGo</Text>
-            <TouchableOpacity style={styles.exploreBtn} onPress={handleExplore} activeOpacity={0.8}>
-              <Text style={styles.exploreBtnText}>Explore</Text>
-            </TouchableOpacity>
+        {/* --- ADVENTURE / JEEPNEY SECTION --- */}
+        <View style={styles.promoCardWrapper}>
+          <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee1]} resizeMode="contain" />
+          <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee2]} resizeMode="contain" />
+          <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee3]} resizeMode="contain" />
+          
+          <View style={styles.promoCard}>
+            <View style={styles.promoTextContainer}>
+              <Text style={styles.promoLabel}>Learn more about</Text>
+              <Text style={styles.promoBrand}>dialectGo</Text>
+
+              {/* ✅ NAVIGATE TO LEARN/CHATBOT */}
+              <TouchableOpacity
+                style={styles.exploreBtn}
+                activeOpacity={0.8}
+                onPress={() => router.push('/(tabs)/Learn/Learn')}
+              >
+                <Text style={styles.exploreBtnText}>Explore Now</Text>
+              </TouchableOpacity>
+            </View>
+            <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
           </View>
           <Image
             source={require('../../assets/images/jeepney.png')}
@@ -205,6 +116,11 @@ export default function Home() {
         </View>
 
       </ScrollView>
+
+      <BottomNav 
+        activeTab={activeTab} 
+        setActiveTab={onNavigate} 
+      /> 
     </SafeAreaView>
   );
 }

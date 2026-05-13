@@ -15,19 +15,38 @@ import ChatBubble from './ChatBubble';
 import ChatInput from './ChatInput';
 import mascotImage from '../../../assets/icons/chatbotIcon1.png';
 
-// Gemini API constants (need ito api key )
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY_HERE';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_KEY = Gemini_Key;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-const SYSTEM_PROMPT = `You are DialectBot, a friendly Filipino language learning assistant for the DialectGo app.
-You help users with Cebuano, Tagalog, and English translations, pronunciation, and conversation practice.
+const SYSTEM_PROMPT = `You are DialectBot, the official assistant of the DialectGo app.
+
+STRICT RULES:
+- You ONLY answer questions about the DialectGo app and Filipino languages (Cebuano, Tagalog, English).
+- If the user asks ANYTHING outside of these topics (weather, math, news, general knowledge, etc.), politely refuse and redirect them back to the app.
+- Never pretend to be a general AI assistant.
+
+WHAT YOU CAN HELP WITH:
+- How to use app features (Translator, Dictionary, Games, History, Account)
+- Cebuano, Tagalog, and English translations and pronunciation
+- Filipino dialect learning tips
+- Navigation and settings within the DialectGo app
+
+WHAT YOU MUST REFUSE:
+- General knowledge questions unrelated to the app or Filipino languages
+- Math, science, news, coding, or any off-topic request
+- Roleplay or pretending to be a different AI
+
+HOW TO REFUSE (use this format for off-topic questions):
+{
+  "text": "That's outside my expertise!",
+  "subtext": "I can only help with DialectGo app questions and Filipino language learning. Try asking me about translations, the Dictionary, or how to use the Translator!"
+}
+
 Always respond ONLY in this exact JSON format (no markdown, no extra text):
 {
   "text": "Short headline answer or translation",
   "subtext": "1-3 lines of explanation, examples, or usage tips"
 }`;
-
-//constants for suggestions and initial bot message
 const SUGGESTIONS = [
   'How to change name?',
   'Do you have other games?',
@@ -43,16 +62,14 @@ const INITIAL_BOT_MESSAGE = {
     'I can help you with Cebuano, Tagalog, and English translations, pronunciation, or practice conversation.\nWhat would you like to learn today?',
 };
 
-// main part
 export default function Learn() {
   const router = useRouter();
-  const [screen, setScreen] = useState('splash'); // 'splash' or  'suggestions' or 'chat'
+  const [screen, setScreen] = useState('splash');
   const [messages, setMessages] = useState([INITIAL_BOT_MESSAGE]);
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
   const chatHistory = useRef([]);
 
-  // send message and call the gemini api
   const sendMessage = async (text) => {
     setScreen('chat');
 
@@ -62,43 +79,72 @@ export default function Learn() {
 
     chatHistory.current.push({ role: 'user', parts: [{ text }] });
 
+    console.log('1️⃣ sendMessage called:', text);
+    console.log('2️⃣ API URL:', GEMINI_URL);
+
     try {
+      console.log('3️⃣ Fetching Gemini...');
+
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents: chatHistory.current,
-          generationConfig: { maxOutputTokens: 300 },
+          generationConfig: {
+            maxOutputTokens: 1024,
+            temperature: 0.7,
+          },
         }),
       });
 
+      console.log('4️⃣ Response status:', response.status);
+
       const data = await response.json();
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+      console.log('5️⃣ Full API response:', JSON.stringify(data));
+
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      console.log('6️⃣ Raw text:', raw);
 
       chatHistory.current.push({ role: 'model', parts: [{ text: raw }] });
 
-      const cleaned = raw.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(cleaned);
+      let botText = 'Hmm, di ko gets!';
+      let botSubtext = '';
+
+      try {
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          botText = parsed.text || botText;
+          botSubtext = parsed.subtext || '';
+        } else {
+          botText = raw || botText;
+        }
+      } catch (parseError) {
+        console.error('7️⃣ JSON parse error:', parseError);
+        botText = raw || botText;
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
-          text: parsed.text || 'Hmm, di ko gets!',
-          subtext: parsed.subtext || '',
+          text: botText,
+          subtext: botSubtext,
         },
       ]);
+
     } catch (error) {
-      console.error('Gemini API error:', error);
+      console.error('❌ FETCH ERROR:', error.message);
+      console.error('❌ FULL ERROR:', error);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
           text: 'Pasensya na!',
-          subtext: 'Something went wrong. Please check your connection and try again.',
+          subtext: error.message,
         },
       ]);
     } finally {
@@ -106,14 +152,22 @@ export default function Learn() {
     }
   };
 
-  // splash screen with mascot and start button
+  const Header = ({ showBack = false }) => (
+    <View style={styles.header}>
+      {showBack && (
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
+      )}
+      <Text style={styles.headerTitle}>DialectBot</Text>
+    </View>
+  );
+
+  // --- SPLASH SCREEN ---
   if (screen === 'splash') {
     return (
       <SafeAreaView style={styles.splashContainer}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>DialectBot</Text>
-        </View>
-
+        <Header showBack={true} />
         <View style={styles.splashBody}>
           <Image source={mascotImage} style={styles.mascot} resizeMode="contain" />
           <Text style={styles.splashTitle}>Welcome to{'\n'}DialectBot</Text>
@@ -132,16 +186,11 @@ export default function Learn() {
     );
   }
 
-  // suggestion screen with buttons for common questions
+  // --- SUGGESTIONS SCREEN ---
   if (screen === 'suggestions') {
     return (
       <SafeAreaView style={styles.container}>
-
-
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>DialectBot</Text>
-        </View>
-
+        <Header showBack={true} />
         <View style={styles.suggestionsBody}>
           <View style={styles.suggestionsWelcome}>
             <Text style={styles.welcomeTitle}>Welcome to{'\n'}DialectBot</Text>
@@ -149,7 +198,6 @@ export default function Learn() {
               DialectBot can help you navigate and learn{'\n'}more about DialectGo.
             </Text>
           </View>
-
           <View style={styles.suggestionButtonsContainer}>
             {SUGGESTIONS.map((suggestion) => (
               <TouchableOpacity
@@ -163,20 +211,15 @@ export default function Learn() {
             ))}
           </View>
         </View>
-
         <ChatInput onSend={sendMessage} disabled={loading} />
       </SafeAreaView>
     );
   }
 
-  //chat screen
+  // --- CHAT SCREEN ---
   return (
     <SafeAreaView style={styles.container}>
-
-
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>DialectBot</Text>
-      </View>
+      <Header showBack={true} />
 
       <FlatList
         ref={flatListRef}
@@ -216,7 +259,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
   header: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -235,10 +277,19 @@ const styles = StyleSheet.create({
     color: '#333333',
     letterSpacing: 0.3,
   },
-
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    padding: 8,
+  },
+  backArrow: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#333333',
+  },
   splashContainer: {
     flex: 1,
-    backgroundColor: '#FFCB45', // yellow fills the safe area top on splash
+    backgroundColor: '#FFCB45',
   },
   splashBody: {
     flex: 1,
@@ -283,7 +334,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#333333',
   },
-
   suggestionsBody: {
     flex: 1,
     justifyContent: 'space-between',
@@ -329,7 +379,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333333',
   },
-
   listContent: {
     paddingHorizontal: 15,
     paddingVertical: 20,
