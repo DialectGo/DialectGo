@@ -34,6 +34,38 @@ export const DictionaryModel = {
         return word; 
     },
 
+    async getPaginatedWords(page = 1, limit = 15, languageId = null, startLetter = null) {
+        const offset = (page - 1) * limit;
+        
+        let query = supabase
+            .from('dictionary_entries')
+            .select(`
+                *,
+                translations:dictionary_translations!dictionary_translations_source_entry_id_fkey (
+                    id,
+                    target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
+                        word_term,
+                        definition,
+                        example_usage
+                    )
+                )
+            `)
+            .order('word_term', { ascending: true })
+            .range(offset, offset + limit - 1);
+
+        if (languageId) {
+            query = query.eq('language_id', languageId);
+        }
+
+        if (startLetter) {
+            query = query.ilike('word_term', `${startLetter}%`);
+        }
+
+        const { data, error, count } = await query;
+        if (error) throw error;
+        return data;
+    },
+
     async saveWord(userId, dictionaryId) {
         return await supabase
             .from('user_saved_words')
