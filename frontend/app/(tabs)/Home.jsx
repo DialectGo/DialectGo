@@ -14,6 +14,7 @@ import { supabase } from '../../shared/lib/supabase';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import { styles } from '../../shared/styles/HomeStyles';
+import { useRouter } from 'expo-router'; 
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
@@ -28,6 +29,7 @@ const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
 const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
 
 export default function Home({ onNavigate, activeTab }) {
+  const router = useRouter();
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('User'); 
@@ -251,7 +253,11 @@ export default function Home({ onNavigate, activeTab }) {
               <View style={styles.promoTextContainer}>
                 <Text style={styles.promoLabel}>Learn more about</Text>
                 <Text style={styles.promoBrand}>dialectGo</Text>
-                <TouchableOpacity style={styles.exploreBtn} activeOpacity={0.8}>
+                <TouchableOpacity 
+                  style={styles.exploreBtn} 
+                  activeOpacity={0.8}
+                  onPress={() => router.push('/Chatbot/ChatOnboarding')}
+                >
                   <Text style={styles.exploreBtnText}>Explore Now</Text>
                 </TouchableOpacity>
               </View>
