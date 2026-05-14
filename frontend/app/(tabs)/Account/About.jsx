@@ -10,6 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 export default function AboutDialectGo() {
   const router = useRouter();
@@ -17,17 +18,7 @@ export default function AboutDialectGo() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-      
-      {/* HEADER */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image 
-            source={require('../../../assets/icons/backArrow.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>About</Text>
-      </View>
+      <ProfileTopBar title="About DialectGo" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.topSection}>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
 import { styles } from '../../../shared/styles/SettingsStyles';
 import { useRouter } from 'expo-router';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 export default function Settings() {
   const router = useRouter();
@@ -32,13 +33,7 @@ export default function Settings() {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
 
-      {/* HEADER */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-      </View>
+      <ProfileTopBar title="Settings" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.topSpacer} />

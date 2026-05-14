@@ -65,9 +65,9 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
               {/* Option 2: About */}
               <TouchableOpacity 
                 style={styles.menuItem} 
-                onPress={() => handleNavigation('/Account/About')}
+                onPress={() => handleNavigation('/Chatbot/ChatOnboarding')} // Example path for About
               >
-                <Text style={styles.menuText}>About the App</Text>
+                <Text style={styles.menuText}>Chatbot</Text>
               </TouchableOpacity>
 
               {/* Option 3: Settings */}

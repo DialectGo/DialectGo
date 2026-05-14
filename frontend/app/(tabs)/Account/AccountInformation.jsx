@@ -16,6 +16,7 @@ import { styles } from '../../../shared/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Assuming you use this for token
 import { supabase } from '../../../shared/lib/supabase';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 const API_BASE_URL = 'http://192.168.1.53:5001/api/v1/users/profile';
 
@@ -163,16 +164,7 @@ const fetchProfile = async () => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
-      {/* HEADER ROW - No background on back button */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Account</Text>
-      </View>
+      <ProfileTopBar title="Account Information" />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         {/* AVATAR SECTION - Replaceable */}
