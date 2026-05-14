@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
+import DictionaryFilters from '../../../shared/components/DictionaryFilters';
+import { useDictionaryBrowse } from '../../../shared/hooks/useDictionaryBrowse';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
@@ -16,6 +18,8 @@ export default function Dictionary() {
   const [error, setError] = useState(null);
   const router = useRouter(); 
   const [searchTimeout, setSearchTimeout] = useState(null);
+
+  const { browseData, isFetchingMore, handleLoadMore, filters } = useDictionaryBrowse(searchQuery);
 
   // Search with debounce
   useEffect(() => {
@@ -163,6 +167,7 @@ export default function Dictionary() {
             <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
           )}
         </View>
+        {!searchQuery.trim() && <DictionaryFilters {...filters} />}
 
         {/* Error Message */}
         {error && !loading && (
@@ -190,10 +195,13 @@ export default function Dictionary() {
         {/* FlatList with Results */}
         {!loading && (
           <FlatList
-            data={filteredData}
+            data={searchQuery.trim() ? filteredData : browseData}
             keyExtractor={(item, index) => item.id?.toString() || index.toString()}
             renderItem={renderItem}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
             contentContainerStyle={styles.listContent}
+            ListFooterComponent={isFetchingMore ? <ActivityIndicator color="#FFD54F" /> : null}
             showsVerticalScrollIndicator={false}
           />
         )}

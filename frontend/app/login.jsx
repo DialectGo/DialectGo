@@ -174,7 +174,11 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>New here? </Text>
-              <TouchableOpacity onPress={onSwitch}>
+              <TouchableOpacity 
+                  onPress={() => {
+                    // Directs the user to app/auth/Register.jsx
+                    router.push('../auth/Register'); 
+                  }}>
                 <Text style={styles.footerLink}>Create Account</Text>
               </TouchableOpacity>
             </View>

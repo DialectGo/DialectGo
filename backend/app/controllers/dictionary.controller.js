@@ -14,6 +14,37 @@ export const getWordDefinition = async (req, res, next) => {
     }
 };
 
+export const getBrowseWords = async (req, res, next) => {
+    try {
+        // Extract query parameters with defaults
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 15;
+        const languageId = req.query.lang ? parseInt(req.query.lang) : null;
+        const letter = req.query.letter || null;
+
+        const data = await DictionaryService.getPaginatedWords(
+            page, 
+            limit, 
+            languageId, 
+            letter
+        );
+
+        res.status(200).json({
+            success: true,
+            page,
+            limit,
+            data
+        });
+    } catch (err) {
+        // Detailed error for debugging, but clean for the frontend
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching dictionary entries',
+            error: err.message 
+        });
+    }
+};
+
 export const saveWord = async (req, res, next) => {
     try {
         const data = await DictionaryService.saveWord(req.user.id, req.body.dictionary_id);

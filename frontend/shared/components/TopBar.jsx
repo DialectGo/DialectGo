@@ -62,14 +62,6 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
                 <Text style={styles.menuText}>Profile</Text>
               </TouchableOpacity>
 
-              {/* Option 2: About */}
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => handleNavigation('/Account/About')}
-              >
-                <Text style={styles.menuText}>About the App</Text>
-              </TouchableOpacity>
-
               {/* Option 3: Settings */}
               <TouchableOpacity 
                 style={styles.menuItem} 

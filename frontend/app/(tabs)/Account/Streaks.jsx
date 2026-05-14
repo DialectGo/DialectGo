@@ -5,6 +5,7 @@ import {
 import { styles } from '../../../shared/styles/StreakStyles';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 export default function Streaks() { 
   const router = useRouter(); 
@@ -75,12 +76,7 @@ export default function Streaks() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Streaks</Text>
-      </View>
+      <ProfileTopBar title="Streaks" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.profileHeader}>

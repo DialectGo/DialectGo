@@ -13,14 +13,17 @@ export const performTranslation = async (text, sourceLang, targetLang) => {
         target_lang: targetLang 
     };
     
-    console.log("Sending to Flask:", payload); // Log this
+    console.log("Sending to Flask:", payload);
 
     try {
-        const response = await axios.post(`${COLAB_URL}/translate`, payload);
+        const response = await axios.post(`${COLAB_URL}/translate`, payload, {
+            headers: {
+                'ngrok-skip-browser-warning': 'true' // Add this here
+            }
+        });
         return response.data.translation;
     } catch (error) {
         if (error.response) {
-            // This will show you exactly what Flask thinks is wrong
             console.error("Flask Error Details:", error.response.data);
         }
         throw error;
@@ -45,6 +48,7 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
     const response = await axios.post(`${COLAB_URL}/translate`, form, {
         headers: {
             ...form.getHeaders(), 
+            'ngrok-skip-browser-warning': 'true'
         },
     });
 

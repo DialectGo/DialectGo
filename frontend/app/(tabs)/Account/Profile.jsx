@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ProfileStyles';
 
@@ -103,13 +104,8 @@ export default function Profile({ onNavigate }) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-      
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+
+      <ProfileTopBar title="Profile" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.profileHeader}>
