@@ -184,3 +184,18 @@ export const calculateAndSyncStreak = async (userId) => {
 
   return { streak, activeDays };
 };
+
+export const loginAsGuest = async () => {
+  // Utilizing Supabase's native anonymous sign-in feature
+  const { data, error } = await supabase.auth.signInAnonymously({
+    options: {
+      data: {
+        role: 'guest',
+        is_anonymous: true
+      }
+    }
+  });
+
+  if (error) throw error;
+  return data; // Returns session token, refresh token, and user properties
+};

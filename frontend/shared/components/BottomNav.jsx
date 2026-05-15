@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Animated, 
   Image, 
@@ -9,6 +9,8 @@ import {
   View 
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import FeatureGateModal from './FeatureGateModal'; // Imported Gate
 
 const TabItem = ({ icon, label, isActive, onPress }) => {
   const animatedValue = useRef(new Animated.Value(isActive ? 1 : 0)).current;
@@ -60,14 +62,26 @@ const TabItem = ({ icon, label, isActive, onPress }) => {
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const [gateVisible, setGateVisible] = useState(false);
 
   const tabs = [
-    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png') },
-    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png') },
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png') }, 
-    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png') },
-    { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png') },
+    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
+    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false }, 
+    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png'), isGated: true }, // Set to true if you want to lock games
+    { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png'), isGated: false },
   ];
+
+  const handleNavigationInterception = async (tab) => {
+    if (tab.isGated) {
+      const role = await AsyncStorage.getItem('@user_role');
+      if (role === 'guest') {
+        setGateVisible(true);
+        return; // Intercept block
+      }
+    }
+    router.push(tab.path);
+  };
   
   return (
     <View style={styles.navContainer}>
@@ -82,35 +96,37 @@ export default function BottomNav() {
               icon={tab.icon}
               label={tab.name}
               isActive={isTabActive} 
-              onPress={() => router.push(tab.path)} 
+              onPress={() => handleNavigationInterception(tab)} 
             />
           );
         })}
       </View>
+
+      {/* Renders the modal overlay portal at the navigation root level layout */}
+      <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
     </View>
   );
 }
 
+// ... styles remain identical to your current BottomNav styles setup
 const styles = StyleSheet.create({
   navContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF', // Changed to white to match your page bg
+    backgroundColor: '#FFFFFF',
     zIndex: 1000,
-    // Add the top border here to define the boundary
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0', // A light grey line for a subtle boundary
+    borderTopColor: '#E0E0E0',
   },
   bottomTab: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF', // Match the container
+    backgroundColor: '#FFFFFF',
     height: Platform.OS === 'ios' ? 90 : 70, 
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 25 : 10, 
-    // Remove elevation/shadow if you want a flat look, or keep it subtle
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.05,
@@ -124,10 +140,10 @@ const styles = StyleSheet.create({
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2, // Binawasan mula 5 para mas malapit sa label
+    marginBottom: 2,
   },
   tabIcon: {
-    width: 38, // Binawasan nang bahagya para hindi masyadong siksik dahil binabaan ang height
+    width: 38,
     height: 38,
   },
   activeShadow: {
@@ -140,12 +156,12 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#757575', // Adjusted to a grey that looks better on white
+    color: '#757575',
     marginTop: 2,
     textAlign: 'center',
   },
   activeLabel: {
-    color: '#FFD54F', // You can use your original yellow as the active text color
+    color: '#FFD54F',
     fontWeight: '900',
     fontSize: 11.5,
   },

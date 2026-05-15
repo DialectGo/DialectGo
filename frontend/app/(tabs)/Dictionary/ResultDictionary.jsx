@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
+import FeatureGateModal from '../../../shared/components/FeatureGateModal';
+import { getAuthMode } from '../../../shared/utils/authMode';
 
 const SAVE_API_URL = 'http://192.168.1.53:5001/api/dictionary/save';
 
@@ -13,6 +15,19 @@ export default function ResultDictionary() {
   const params = useLocalSearchParams();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
+
+  useEffect(() => {
+  checkGuestMode();
+  }, []);
+
+  const checkGuestMode = async () => {
+    const { data: { session } } = await getAuthMode()
+
+    setIsGuestMode(!session);
+  };
 
   // Destructure all parameters including the new usage params
   const { 
@@ -142,7 +157,14 @@ export default function ResultDictionary() {
       <View style={{ paddingBottom: 20, alignItems: 'center' }}>
           <TouchableOpacity 
             style={[styles.floatingSaveBtn, isBookmarked && styles.activeSaveBtn]} 
-            onPress={handleSaveWord}
+            onPress={() => {
+              if (isGuestMode) {
+                setShowFeatureModal(true);
+                return;
+              }
+
+              handleSaveWord();
+            }}
             disabled={isSaving || isBookmarked}
           >
             {isSaving ? (
@@ -160,6 +182,11 @@ export default function ResultDictionary() {
             )}
           </TouchableOpacity>
       </View>
+
+      <FeatureGateModal
+        visible={showFeatureModal}
+        onClose={() => setShowFeatureModal(false)}
+      />
 
       <BottomNav activeTab="Dictionary" />
     </SafeAreaView>
