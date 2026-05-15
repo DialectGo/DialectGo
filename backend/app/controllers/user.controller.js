@@ -57,3 +57,16 @@ export const getAllUsers = async (req, res, next) => {
     next(err);
   }
 };
+
+export const loginGuest = async (req, res, next) => {
+  try {
+    const session = await UserService.loginAsGuest();
+    res.json({ 
+      success: true, 
+      message: "Guest session initialized", 
+      data: session 
+    });
+  } catch (err) {
+    next(err);
+  }
+};

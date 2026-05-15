@@ -11,6 +11,7 @@ const router = express.Router();
 // PUBLIC
 router.post('/register', validate(registerSchema), UserController.register);
 router.post('/login', loginLimiter, validate(loginSchema), UserController.login);
+router.post('/guest-login', loginLimiter, UserController.loginGuest);
 
 // USER
 router.get('/profile', verifyToken, UserController.getProfile);

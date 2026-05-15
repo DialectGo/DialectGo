@@ -69,3 +69,7 @@ export const updateStreakStatus = async (userId) => {
       .eq('id', userId);
   }
 };
+
+export const loginAsGuest = async () => {
+  return await UserModel.loginAsGuest();
+};
