@@ -11,6 +11,8 @@ import {
 import { useRouter, usePathname } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FeatureGateModal from './FeatureGateModal'; // Imported Gate
+import NetInfo from '@react-native-community/netinfo';
+import { supabase } from '../lib/supabase';
 
 const TabItem = ({ icon, label, isActive, onPress }) => {
   const animatedValue = useRef(new Animated.Value(isActive ? 1 : 0)).current;
@@ -64,6 +66,45 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [gateVisible, setGateVisible] = useState(false);
 
+   const [isConnected, setIsConnected] = useState(true);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+      setIsConnected(connected);
+
+      if (!connected) {
+        // FORCE guest mode when offline
+        setIsGuestMode(true);
+      } else {
+        checkUserMode(); // re-check when back online
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const checkUserMode = async () => {
+    try {
+      const role = await AsyncStorage.getItem('@user_role');
+      const guestMode = await AsyncStorage.getItem('@guest_mode');
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const isGuest =
+        role === 'guest' ||
+        guestMode !== null ||
+        !session;
+
+      setIsGuestMode(isGuest);
+
+    } catch (err) {
+      console.log('BottomNav auth check error:', err);
+      setIsGuestMode(true);
+    }
+  };
+
   const tabs = [
     { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
     { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
@@ -74,12 +115,12 @@ export default function BottomNav() {
 
   const handleNavigationInterception = async (tab) => {
     if (tab.isGated) {
-      const role = await AsyncStorage.getItem('@user_role');
-      if (role === 'guest') {
+      if (!isConnected || isGuestMode) {
         setGateVisible(true);
-        return; // Intercept block
+        return;
       }
     }
+
     router.push(tab.path);
   };
   

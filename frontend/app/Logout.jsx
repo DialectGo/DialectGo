@@ -24,7 +24,7 @@ export const handleLogout = async () => {
     ]);
 
     // Redirect to auth screen
-    router.replace('/login');
+    router.replace('/auth/AuthTransition');
 
   } catch (error) {
     console.error("Error during logout:", error.message);
@@ -38,6 +38,6 @@ export const handleLogout = async () => {
       '@guest_history_cache'
     ]);
 
-    router.replace('/login');
+    router.replace('/auth/AuthTransition');
   }
 };
