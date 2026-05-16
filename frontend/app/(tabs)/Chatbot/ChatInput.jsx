@@ -16,8 +16,8 @@ export default function ChatInput({ onSend }) {
   return (
     <Surface style={styles.footer} elevation={4}>
       <View style={styles.inputRow}>
-        <IconButton icon="microphone" size={24} iconColor="black" style={styles.sideIcon} />
-        <IconButton icon="camera-outline" size={24} iconColor="black" style={styles.sideIcon} />
+        {/* <IconButton icon="microphone" size={24} iconColor="black" style={styles.sideIcon} />
+        <IconButton icon="camera-outline" size={24} iconColor="black" style={styles.sideIcon} /> */}
         
         <View style={styles.inputContainer}>
           <TextInput

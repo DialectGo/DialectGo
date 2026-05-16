@@ -61,15 +61,7 @@ export default function ChatInterface() {
 
         {/* INPUT BAR AREA */}
         <View style={styles.inputWrapper}>
-          {/* Mic Button */}
-          <TouchableOpacity style={styles.iconBtn}>
-            <Image source={require('../../../assets/icons/micIcon.png')} style={styles.inputIcon} />
-          </TouchableOpacity>
-
-          {/* OCR/Camera Button */}
-          <TouchableOpacity style={styles.iconBtn}>
-            <Image source={require('../../../assets/icons/cameraIcon.png')} style={styles.inputIcon} />
-          </TouchableOpacity>
+ 
 
           {/* Input Field */}
           <TextInput 
