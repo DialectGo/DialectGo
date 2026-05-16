@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Added missing import
+import NetInfo from '@react-native-community/netinfo';
+
 import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
@@ -18,15 +21,50 @@ export default function ResultDictionary() {
 
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const canUseOnlineFeatures = isConnected && !isGuestMode;
+  
+  // NetInfo network state
+  const [isConnected, setIsConnected] = useState(true);
+
+  // 1. Listen for network changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+      setIsConnected(connected);
+
+      // FORCE guest mode when offline
+      if (!connected) {
+        setIsGuestMode(true);
+      } else {
+        checkGuestMode();
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
-  checkGuestMode();
+    checkGuestMode();
   }, []);
 
   const checkGuestMode = async () => {
-    const { data: { session } } = await getAuthMode()
+    try {
+      const localGuestMode = await AsyncStorage.getItem('@guest_mode');
 
-    setIsGuestMode(!session);
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const role = await AsyncStorage.getItem('@user_role');
+
+      const isGuest =
+        !session ||
+        role === 'guest' ||
+        localGuestMode !== null;
+
+      setIsGuestMode(isGuest);
+
+    } catch (error) {
+      setIsGuestMode(true);
+    }
   };
 
   // Destructure all parameters including the new usage params
@@ -42,6 +80,13 @@ export default function ResultDictionary() {
       Alert.alert("Error", "ID is missing.");
       return;
     }
+    
+    // Safety check if internet drops right as they press save
+    if (!isConnected) {
+      Alert.alert("Network Offline", "You need an internet connection to save words.");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -77,6 +122,15 @@ export default function ResultDictionary() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       
+      {/* 2. Status Banner for Network Drops */}
+      {!isConnected && (
+        <View style={{ backgroundColor: '#D32F2F', padding: 5, alignItems: 'center' }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>
+            OFFLINE MODE: ONLINE ACTIONS ARE TEMPORARILY DISABLED
+          </Text>
+        </View>
+      )}
+
       {/* FIXED UI HEADER: Back button and Title both aligned to the LEFT */}
       <View style={[styles.topHeader, { 
         flexDirection: 'row', 
@@ -156,13 +210,17 @@ export default function ResultDictionary() {
       {/* SAVE WORD BUTTON CONTAINER */}
       <View style={{ paddingBottom: 20, alignItems: 'center' }}>
           <TouchableOpacity 
-            style={[styles.floatingSaveBtn, isBookmarked && styles.activeSaveBtn]} 
+            // 3. Gray out the button background if offline and word isn't bookmarked yet
+            style={[
+              styles.floatingSaveBtn, 
+              isBookmarked && styles.activeSaveBtn,
+              (!isConnected && !isBookmarked) && { backgroundColor: '#A0A0A0' } 
+            ]} 
             onPress={() => {
-              if (isGuestMode) {
+              if (!canUseOnlineFeatures) {
                 setShowFeatureModal(true);
                 return;
               }
-
               handleSaveWord();
             }}
             disabled={isSaving || isBookmarked}

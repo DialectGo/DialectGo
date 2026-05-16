@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router'; 
-// import NetInfo from '@react-native-community/netinfo';
+import NetInfo from '@react-native-community/netinfo';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
@@ -9,6 +9,7 @@ import DictionaryFilters from '../../../shared/components/DictionaryFilters';
 import { useDictionaryBrowse } from '../../../shared/hooks/useDictionaryBrowse';
 import { useOfflineSearch } from '../../../shared/hooks/useOfflineSearch';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuthMode } from '../../../shared/utils/authMode';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
@@ -25,7 +26,7 @@ export default function Dictionary() {
   
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-
+  const [isConnected, setIsConnected] = useState(true);
   const { browseData, isFetchingMore, handleLoadMore, filters } = useDictionaryBrowse(searchQuery);
   const {
     isOffline,
@@ -34,26 +35,52 @@ export default function Dictionary() {
   } = useOfflineSearch(searchQuery, isGuestMode);
 
   useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+      setIsConnected(connected);
+
+      // FORCE guest mode when offline
+      if (!connected) {
+        setIsGuestMode(true);
+      } else {
+        checkGuestMode(); // re-evaluate when back online
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
       checkGuestMode();
     }, []);
 
     const checkGuestMode = async () => {
-      const { data: { session } } = await getAuthMode()
+      const { data: { session } } = await supabase.auth.getSession();
 
-      // If no session -> Guest Mode
-      setIsGuestMode(!session);
+      const role = await AsyncStorage.getItem('@user_role');
+      const guestMode = await AsyncStorage.getItem('@guest_mode');
+
+      const isGuest =
+        !session ||
+        role === 'guest' ||
+        guestMode !== null;
+
+      setIsGuestMode(isGuest);
     };
   // Search with debounce
   useEffect(() => {
     if (searchTimeout) clearTimeout(searchTimeout);
 
-    // Guest Mode uses local JSON only
+    // FORCE guest mode if offline
+    if (!isConnected) {
+      setIsGuestMode(true);
+    }
+
     if (isGuestMode) {
       setSearchResults([]);
       return;
     }
 
-    // Logged-in users require internet/API
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
@@ -66,7 +93,7 @@ export default function Dictionary() {
     setSearchTimeout(timeout);
 
     return () => clearTimeout(timeout);
-  }, [searchQuery, isGuestMode]);
+  }, [searchQuery, isGuestMode, isConnected]);
 
   const handleSearch = async (term) => {
     setLoading(true);
@@ -106,17 +133,12 @@ export default function Dictionary() {
     }
   };
 
-  const displayData = isGuestMode
-  ? (
-      searchQuery.trim()
-        ? offlineResults
-        : offlineBrowseData
-    )
-  : (
-      searchQuery.trim()
-        ? searchResults
-        : browseData
-    );
+  const displayData =
+  !isConnected
+    ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
+    : isGuestMode
+      ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
+      : (searchQuery.trim() ? searchResults : browseData);
 
   const filteredData = searchResults;
 

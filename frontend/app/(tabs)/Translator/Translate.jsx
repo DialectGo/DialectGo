@@ -249,7 +249,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             <View style={[styles.translateCard, styles.resultCardExtra]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.inputLabel}>{targetLang.toUpperCase()}</Text>
-                <Ionicons name="volume-high" size={20} color="#FBBF24" />
+                {/* <Ionicons name="volume-high" size={20} color="#FBBF24" /> */}
               </View>
               {isLoading ? (
                 <View style={styles.loadingArea}>

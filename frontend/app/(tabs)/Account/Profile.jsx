@@ -16,6 +16,7 @@ import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import BottomNav from '../../../shared/components/BottomNav';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal'; // Imported Gate
 import { styles } from '../../../shared/styles/ProfileStyles';
+import NetInfo from '@react-native-community/netinfo';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
@@ -33,6 +34,8 @@ export default function Profile({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [gateVisible, setGateVisible] = useState(false); // Modal visibility control
+  const [isConnected, setIsConnected] = useState(true);
+  const hasInitialized = React.useRef(false);
 
   // Profile States
   const [firstName, setFirstName] = useState('');
@@ -41,27 +44,76 @@ export default function Profile({ onNavigate }) {
   const [streakCount, setStreakCount] = useState(0);
 
   useEffect(() => {
-    const loadProfileData = async () => {
-      setLoading(true);
-      const role = await AsyncStorage.getItem('@user_role');
-      
-      if (role === 'guest') {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+
+      setIsConnected(connected);
+
+      // 🚨 OFFLINE: instant guest mode (NO loading screen)
+      if (!connected) {
+        setLoading(false); // IMPORTANT FIX
         setIsGuest(true);
         setFirstName('Guest');
         setLastName('User');
         setStreakCount(0);
-        setUserAvatar(availableAvatars[0].source); // Default guest fallback icon
-      } else {
-        setIsGuest(false);
-        await Promise.all([
-          fetchUserProfile(),
-          fetchStreak()
-        ]);
+        setUserAvatar(availableAvatars[0].source);
+        return;
       }
-      setLoading(false);
-    };
-    loadProfileData();
+
+      // ONLINE: only run once OR when returning from offline
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        loadProfileData();
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
+
+  const loadProfileData = async () => {
+    if (!isConnected) return; 
+    if (!hasInitialized.current) {
+      setLoading(true);
+    }
+
+    try {
+      const role = await AsyncStorage.getItem('@user_role');
+      const guestMode = await AsyncStorage.getItem('@guest_mode');
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const isGuest =
+        role === 'guest' ||
+        guestMode !== null ||
+        !session ||
+        !isConnected;
+
+      setIsGuest(isGuest);
+
+      if (isGuest) {
+        setFirstName('Guest');
+        setLastName('User');
+        setStreakCount(0);
+        setUserAvatar(availableAvatars[0].source);
+        return;
+      }
+
+      // ONLY fetch online data if fully authenticated + online
+      await Promise.all([
+        fetchUserProfile(),
+        fetchStreak()
+      ]);
+
+    } catch (error) {
+      console.log('Profile load error:', error);
+
+      setIsGuest(true);
+      setFirstName('Guest');
+      setLastName('User');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -109,11 +161,12 @@ export default function Profile({ onNavigate }) {
 
   // Safe layout intercept handling method
   const handleProtectedAction = (targetPath) => {
-    if (isGuest) {
+    if (isGuest || !isConnected) {
       setGateVisible(true);
-    } else {
-      router.push(targetPath);
+      return;
     }
+
+    router.push(targetPath);
   };
 
   const handleLogout = async () => {
