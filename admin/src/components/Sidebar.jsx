@@ -15,7 +15,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
     <aside className={`sidebar-container ${!isOpen ? 'sidebar-hidden' : ''}`}>
       <div className="sidebar-logo">
         <span>🐝</span>
-        <span className="brand-name">dialectGo</span>
+        <span className="brand-name">DialectGo</span>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (

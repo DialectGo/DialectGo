@@ -19,5 +19,6 @@ router.put('/profile', verifyToken, UserController.updateProfile);
 router.get('/streak', verifyToken, UserController.getStreakData);
 // ADMIN
 router.get('/admin/users', verifyToken, authorizeRole('admin'), UserController.getAllUsers);
+router.post('/admin/login', loginLimiter, validate(loginSchema), UserController.adminLogin);
 
 export default router;

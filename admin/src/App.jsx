@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
+import DictionaryManagement from './pages/DictionaryManagement';
 import Incidents from './pages/Incidents';
 import Login from './pages/Login'; // Make sure to save the Login component here!
 import './assets/css/sidebar.css';
@@ -34,6 +35,8 @@ function App() {
         return <UserManagement />;
       case 'Incidents':
         return <Incidents />;
+      case 'Dictionaries':
+        return <DictionaryManagement />;
       default:
         return <Dashboard />;
     }
