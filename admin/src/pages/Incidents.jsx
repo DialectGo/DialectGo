@@ -1,60 +1,153 @@
-// admin-frontend/src/pages/Incidents.jsx
-import React, { useEffect, useState } from 'react';
-import { fetchAuditLogs } from '../services/uam.service';
+// src/pages/Incidents.jsx
+import React, { useState, useEffect } from 'react';
+import '../assets/css/user-management.css';
 
 const Incidents = () => {
-  const [logs, setLogs] = useState([]);
+  const [anomalies, setAnomalies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
-    const loadLogs = async () => {
-      const data = await fetchAuditLogs();
-      setLogs(data);
-    };
-    loadLogs();
+    fetchIncidents();
   }, []);
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'CRITICAL': return 'bg-red-100 text-red-800';
-      case 'WARN': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-blue-100 text-blue-800';
+  // 1. AUTHORIZED FETCH CALL
+  const fetchIncidents = async () => {
+    try {
+      const token = localStorage.getItem('sb-access-token');
+
+      if (!token) {
+        console.error("No administrative session token discovered in memory.");
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/dashboard/security', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const payload = await res.json();
+      if (payload.success) {
+        setAnomalies(payload.data.anomalies);
+      } else {
+        console.error("Backend refused validation token:", payload.message);
+      }
+    } catch (err) {
+      console.error("Failed to fetch threat intelligence feed:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // 2. AUTHORIZED MUTATION (PUT) CALL
+  const resolveThreat = async (id) => {
+    try {
+      const token = localStorage.getItem('sb-access-token');
+
+      const res = await fetch(`/api/dashboard/anomaly/${id}/resolve`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        }
+      });
+      
+      const payload = await res.json();
+      if (payload.success) {
+        setActionMessage(`Incident Tracker ID #${id} successfully marked as resolved.`);
+        fetchIncidents(); // Refresh state data dynamically
+        setTimeout(() => setActionMessage(''), 4000);
+      }
+    } catch (err) {
+      console.error("Error patching security context status state:", err);
+    }
+  }; // <-- Fixed: The functions now close neatly inside the component block
+
+  if (loading) return <div style={{ padding: '40px', color: '#64748b' }}>Parsing threat detection metrics...</div>;
+
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-brand-yellow">UAM Incident Monitoring</h2>
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full table-auto">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {new Date(log.created_at).toLocaleString()}
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                  {log.profiles?.username || 'System/Guest'}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">{log.action_type}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${getSeverityColor(log.severity)}`}>
-                    {log.severity}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">{log.ip_address}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="user-mgmt-container" style={{ padding: 0 }}>
+      {actionMessage && (
+        <div style={{ padding: '12px 20px', backgroundColor: '#dcfce7', color: '#16803d', borderRadius: '12px', fontWeight: '600', marginBottom: '20px' }}>
+          {actionMessage}
+        </div>
+      )}
+
+      <div className="main-bento-grid" style={{ gridTemplateColumns: '1fr' }}>
+        <div className="bento-item">
+          <div className="card-header" style={{ marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Active Threat Logs</h3>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '4px' }}>
+                Monitors user activities to detect insider threats, logging actions and sending alerts for unusual behaviors.
+              </p>
+            </div>
+          </div>
+
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Detected Event Rule</th>
+                  <th>Severity Target Level</th>
+                  <th>Incident Context Description</th>
+                  <th>Logged Date Stamp</th>
+                  <th>Action Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {anomalies.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                      ✓ Zero insider anomalies identified across active storage logs.
+                    </td>
+                  </tr>
+                ) : (
+                  anomalies.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <span className="badge" style={{ backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: '700' }}>
+                          {item.rule_violated}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ 
+                          fontWeight: '800', 
+                          color: item.severity === 'CRITICAL' ? '#ef4444' : item.severity === 'HIGH' ? '#f97316' : '#f59e0b'
+                        }}>
+                          {item.severity}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.9rem', maxWidth: '400px', color: '#334155', lineHeight: '1.4' }}>
+                        {item.description}
+                      </td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                        {new Date(item.created_at).toLocaleString()}
+                      </td>
+                      <td>
+                        {!item.is_resolved ? (
+                          <button 
+                            className="view-all-btn" 
+                            style={{ backgroundColor: '#1a1a1a', color: '#FFD230', cursor: 'pointer' }}
+                            onClick={() => resolveThreat(item.id)}
+                          >
+                            Resolve Threat
+                          </button>
+                        ) : (
+                          <span style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.9rem' }}>✓ Resolved</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
