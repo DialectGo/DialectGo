@@ -1,5 +1,5 @@
 // admin-frontend/src/services/uam.service.js
-import { supabaseAdmin } from '../config/db';
+// import { supabaseAdmin } from '../config/db';
 
 export const fetchAuditLogs = async () => {
   const { data, error } = await supabaseAdmin

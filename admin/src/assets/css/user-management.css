@@ -125,3 +125,35 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+/* Custom Additions for Security Features and Badges */
+.badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.text-red {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Fix floating element positioning rules for UI action popovers */
+.action-cell {
+  position: relative;
+}
+
+.action-dropdown {
+  right: 0;
+  top: 70%;
+  width: 120px;
+}

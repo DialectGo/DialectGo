@@ -14,12 +14,18 @@ import dictionaryRoutes from './routes/dictionary.route.js';
 import gameRoutes from './routes/game.route.js';
 import sessionRoutes from './routes/session.route.js';
 import progressRoutes from './routes/progress.route.js';
+import securityRouter from './routes/security.route.js';
+import { getSecurityMetricsOverview, resolveAnomaly } from './controllers/security.controller.js';
+import datasetRoutes from './routes/dataset.route.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
 
 app.use(helmet());
-app.use(cors({ origin: ['http://localhost:5001'] }));
+app.use(cors({ 
+  origin: ['http://localhost:5001', 'http://localhost:5173'],
+  credentials: true
+}));
 
 app.use(express.json());
 
@@ -28,6 +34,10 @@ app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
 }));
+
+// admin
+app.use('/api', securityRouter);
+app.use('/api/dataset', datasetRoutes);
 
 app.use('/api/v1/users', userRoutes);
 

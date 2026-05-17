@@ -70,3 +70,25 @@ export const loginGuest = async (req, res, next) => {
     next(err);
   }
 };
+
+export const adminLogin = async (req, res, next) => {
+  try {
+    const adminSession = await UserService.adminLogin(
+      req.body.email,
+      req.body.password
+    );
+    
+    // Return the session tokens cleanly to your React frontend workspace
+    res.json({ 
+      success: true, 
+      message: "Administrative portal authentication verified successfully.",
+      data: adminSession 
+    });
+  } catch (err) {
+    // If the role check failed, explicitly flag it as an authentication barrier
+    if (err.message.includes('Access Denied')) {
+      return res.status(403).json({ success: false, message: err.message });
+    }
+    next(err);
+  }
+};
