@@ -11,4 +11,24 @@ router.get('/dictionary/verifications', verifyToken, DatasetController.getPendin
 router.put('/dictionary/verify/:logId', verifyToken, DatasetController.verifyDatasetAction);
 router.get('/dictionary/export', verifyToken, DatasetController.exportDataset);
 
+router.post('/user/stage', verifyToken, async (req, res, next) => {
+    try {
+        const { operationType, targetRowId, proposedData, rationale } = req.body;
+        const { createPendingAction } = await import('../services/dataset.service.js');
+        
+        const stagedPr = await createPendingAction(req.user.id, {
+            targetTable: 'profiles',
+            operationType,
+            targetRowId,
+            proposedData,
+            rationale
+        });
+
+        res.status(202).json({ 
+            success: true, 
+            message: "User account action staged successfully into the audit log layer. Co-admin review required." 
+        });
+    } catch (err) { next(err); }
+});
+
 export default router;

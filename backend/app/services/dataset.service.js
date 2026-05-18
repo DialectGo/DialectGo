@@ -20,10 +20,13 @@ export const createPendingAction = async (makerId, payload) => {
     let originalData = null;
 
     if (payload.operationType !== 'INSERT' && payload.targetRowId) {
+        // Explicitly format row ID parameter as string to prevent auto-casting glitches
+        const targetSearchId = String(payload.targetRowId);
+
         const { data } = await supabaseAdmin
             .from(payload.targetTable)
             .select('*')
-            .eq('id', payload.targetRowId)
+            .eq('id', targetSearchId)
             .single();
         originalData = data;
     }
@@ -34,7 +37,7 @@ export const createPendingAction = async (makerId, payload) => {
             maker_id: makerId,
             target_table: payload.targetTable,
             operation_type: payload.operationType,
-            target_row_id: payload.targetRowId,
+            target_row_id: String(payload.targetRowId), // Coerce down to text for safe unified log table storage
             original_data: originalData,
             proposed_data: payload.proposedData,
             status: 'pending',
@@ -43,7 +46,10 @@ export const createPendingAction = async (makerId, payload) => {
         .select()
         .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error("Auditing log insertion failure trace:", error.message);
+        throw error;
+    }
     return logEntry;
 };
 
