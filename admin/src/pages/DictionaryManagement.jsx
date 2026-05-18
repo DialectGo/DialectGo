@@ -221,7 +221,7 @@ const DictionaryManagement = () => {
                 
                 {/* GRID 1: DICTIONARY LANGUAGES PROFILE (3 Columns) */}
                 <div className="bento-card" style={{ gridColumn: 'span 3', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px' }}>
-                    <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>🌐 Core Languages</h3>
+                    <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>Core Languages</h3>
                     <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '16px' }}>Registered configuration target values.</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {['English (ID: 1)', 'Tagalog (ID: 2)', 'Cebuano (ID: 3)'].map((l, idx) => (
@@ -233,7 +233,7 @@ const DictionaryManagement = () => {
                 {/* GRID 2: CORE GLOSSARY DATA TRACKER (9 Columns) */}
                 <div className="bento-card" style={{ gridColumn: 'span 9', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
-                        <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>📖 Dictionary Entries Matrix</h3>
+                        <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>Dictionary Entries Matrix</h3>
                         <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '16px' }}>Active terms mapped inside relational storage blocks.</p>
                         
                         <div className="table-wrapper" style={{ overflowX: 'auto' }}>
@@ -306,7 +306,7 @@ const DictionaryManagement = () => {
 
                 {/* GRID 3: DYNAMIC TRANSLATION PAIRS */}
                 <div className="bento-card" style={{ gridColumn: 'span 12', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px' }}>
-                    <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>🔗 Cross-Language Dynamic Translations</h3>
+                    <h3 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '4px' }}>Cross-Language Dynamic Translations</h3>
                     <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '16px' }}>Live relational intersections rendering multi-language translations side-by-side.</p>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>

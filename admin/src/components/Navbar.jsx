@@ -121,7 +121,7 @@ const Navbar = ({ title }) => {
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
             }}
           >
-            🔔 PR Actions
+            🔔
             {notifications.length > 0 && (
               <span style={{ 
                 position: 'absolute', 
