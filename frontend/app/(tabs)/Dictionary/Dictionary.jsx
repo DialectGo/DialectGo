@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router'; 
+import NetInfo from '@react-native-community/netinfo';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
+import DictionaryFilters from '../../../shared/components/DictionaryFilters';
+import { useDictionaryBrowse } from '../../../shared/hooks/useDictionaryBrowse';
+import { useOfflineSearch } from '../../../shared/hooks/useOfflineSearch';
+import FeatureGateModal from '../../../shared/components/FeatureGateModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuthMode } from '../../../shared/utils/authMode';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
@@ -16,17 +23,69 @@ export default function Dictionary() {
   const [error, setError] = useState(null);
   const router = useRouter(); 
   const [searchTimeout, setSearchTimeout] = useState(null);
+  
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const { browseData, isFetchingMore, handleLoadMore, filters } = useDictionaryBrowse(searchQuery);
+  const {
+    isOffline,
+    offlineResults,
+    offlineBrowseData
+  } = useOfflineSearch(searchQuery, isGuestMode);
 
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+      setIsConnected(connected);
+
+      // FORCE guest mode when offline
+      if (!connected) {
+        setIsGuestMode(true);
+      } else {
+        checkGuestMode(); // re-evaluate when back online
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+      checkGuestMode();
+    }, []);
+
+    const checkGuestMode = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const role = await AsyncStorage.getItem('@user_role');
+      const guestMode = await AsyncStorage.getItem('@guest_mode');
+
+      const isGuest =
+        !session ||
+        role === 'guest' ||
+        guestMode !== null;
+
+      setIsGuestMode(isGuest);
+    };
   // Search with debounce
   useEffect(() => {
     if (searchTimeout) clearTimeout(searchTimeout);
+
+    // FORCE guest mode if offline
+    if (!isConnected) {
+      setIsGuestMode(true);
+    }
+
+    if (isGuestMode) {
+      setSearchResults([]);
+      return;
+    }
 
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
     }
 
-    // Debounce search to avoid too many API calls
     const timeout = setTimeout(() => {
       handleSearch(searchQuery.trim());
     }, 500);
@@ -34,7 +93,7 @@ export default function Dictionary() {
     setSearchTimeout(timeout);
 
     return () => clearTimeout(timeout);
-  }, [searchQuery]);
+  }, [searchQuery, isGuestMode, isConnected]);
 
   const handleSearch = async (term) => {
     setLoading(true);
@@ -73,6 +132,13 @@ export default function Dictionary() {
       setLoading(false);
     }
   };
+
+  const displayData =
+  !isConnected
+    ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
+    : isGuestMode
+      ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
+      : (searchQuery.trim() ? searchResults : browseData);
 
   const filteredData = searchResults;
 
@@ -125,6 +191,14 @@ export default function Dictionary() {
     <SafeAreaView style={styles.container}>
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
+      {isGuestMode && (
+        <View style={{ backgroundColor: '#421C00', padding: 5, alignItems: 'center' }}>
+          <Text style={{ color: '#FFD54F', fontSize: 11, fontWeight: 'bold' }}>
+            GUEST MODE: OFFLINE DICTIONARY ENABLED
+          </Text>
+        </View>
+      )}
+
       <View style={{ flex: 1 }}>
         {/* Header section na hindi dikit sa taas */}
         <View style={[styles.header, { marginTop: 10 }]}>
@@ -135,13 +209,27 @@ export default function Dictionary() {
           <View style={styles.headerIcons}>
             <TouchableOpacity 
             style={styles.iconCircle}
-            onPress={() => router.push('/Dictionary/History')}
+            onPress={() => {
+                if (isGuestMode) {
+                  setShowFeatureModal(true);
+                  return;
+                }
+
+                router.push('/Dictionary/History');
+              }}
             >
               <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.iconCircle}
-              onPress={() => router.push('/Dictionary/SaveWords')}
+              onPress={() => {
+                if (isGuestMode) {
+                  setShowFeatureModal(true);
+                  return;
+                }
+
+                router.push('/Dictionary/SaveWords');
+              }}
             >
               <Image source={require('../../../assets/icons/star.png')} style={styles.topIcon} />
             </TouchableOpacity>
@@ -152,7 +240,11 @@ export default function Dictionary() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search words..."
+            placeholder={
+              isGuestMode
+                ? "Search offline dictionary..."
+                : "Search words..."
+            }
             placeholderTextColor="#421C00"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -163,6 +255,9 @@ export default function Dictionary() {
             <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
           )}
         </View>
+        {!searchQuery.trim() && !isGuestMode && (
+          <DictionaryFilters {...filters} />
+        )}
 
         {/* Error Message */}
         {error && !loading && (
@@ -179,7 +274,7 @@ export default function Dictionary() {
         )}
 
         {/* Results or Empty State */}
-        {!loading && searchResults.length === 0 && searchQuery.trim() && (
+        {!loading && searchQuery.trim() && displayData.length === 0 && (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 14, color: '#999', textAlign: 'center' }}>
               No results found for "{searchQuery}"
@@ -187,18 +282,23 @@ export default function Dictionary() {
           </View>
         )}
 
-        {/* FlatList with Results */}
         {!loading && (
           <FlatList
-            data={filteredData}
+            data={displayData} // Use the combined variable here
             keyExtractor={(item, index) => item.id?.toString() || index.toString()}
             renderItem={renderItem}
+            onEndReached={!isOffline ? handleLoadMore : null}
+            onEndReachedThreshold={0.5}
             contentContainerStyle={styles.listContent}
+            ListFooterComponent={isFetchingMore && !isOffline ? <ActivityIndicator color="#FFD54F" /> : null}
             showsVerticalScrollIndicator={false}
           />
         )}
       </View>
-
+      <FeatureGateModal
+        visible={showFeatureModal}
+        onClose={() => setShowFeatureModal(false)}
+      />
       <BottomNav activeTab="Dictionary" />
     </SafeAreaView>
   );

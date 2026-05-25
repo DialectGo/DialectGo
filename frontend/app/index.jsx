@@ -3,11 +3,12 @@ import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router'; // Para sa auto-redirect
 import { supabase } from '../shared/lib/supabase';
 import IntroSplash from '../shared/components/IntroSplash';
+import AutoSplash from '../shared/components/AutoSplash';
 import Onboarding from '../shared/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
 
 export default function MainIndex() {
-  const [currentScreen, setCurrentScreen] = useState('splash');
+  const [currentScreen, setCurrentScreen] = useState('loading');
   const [session, setSession] = useState(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
@@ -15,7 +16,7 @@ export default function MainIndex() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setIsAuthChecking(false);
+      setCurrentScreen(session ? 'auto-splash' : 'intro-splash');
     });
 
     // Listen for auth changes (login/logout)
@@ -26,52 +27,41 @@ export default function MainIndex() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSplashFinish = () => {
-    setCurrentScreen('onboarding');
-  };
-
-  const handleOnboardingFinish = () => {
-    // Kung may session na, 'home' na agad. Kung wala, 'auth'.
-    if (session) {
-      setCurrentScreen('home');
-    } else {
-      setCurrentScreen('auth');
-    }
-  };
+  const handleIntroFinish = () => setCurrentScreen('onboarding');
+  const handleAutoFinish = () => setCurrentScreen('home');
+  const handleOnboardingFinish = () => session ? setCurrentScreen('home') : setCurrentScreen('auth');
 
   // STEP 4: Redirect to Tabs if authenticated
   if (currentScreen === 'home' || (currentScreen === 'auth' && session)) {
     return <Redirect href="/(tabs)/Home" />;
   }
 
-  return (
+return (
     <View style={styles.container}>
-      {/* STEP 1: SPLASH */}
-      {currentScreen === 'splash' && (
-        <IntroSplash onFinish={handleSplashFinish} />
+      {/* 1. Loading state while checking Supabase */}
+      {currentScreen === 'loading' && <ActivityIndicator size="large" color="#FFD54F" />}
+
+      {/* 2. New User: Shows Splash with Button */}
+      {currentScreen === 'intro-splash' && (
+        <IntroSplash onFinish={handleIntroFinish} />
       )}
 
-      {/* STEP 2: ONBOARDING */}
+      {/* 3. Existing User: Shows Splash that fades out automatically */}
+      {currentScreen === 'auto-splash' && (
+        <AutoSplash onFinish={handleAutoFinish} />
+      )}
+
       {currentScreen === 'onboarding' && (
         <Onboarding onFinish={handleOnboardingFinish} />
       )}
 
-      {/* STEP 3: AUTH (Only shows if no session) */}
       {currentScreen === 'auth' && !session && (
         <AuthTransition />
-      )}
-      
-      {/* Loading state just in case session check is slow during transition */}
-      {isAuthChecking && currentScreen === 'onboarding' && (
-         <ActivityIndicator style={StyleSheet.absoluteFill} color="#FBBF24" />
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff', justifyContent: 'center' },
 });

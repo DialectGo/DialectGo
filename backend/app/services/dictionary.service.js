@@ -12,6 +12,12 @@ export const findWord = async (term, userId) => {
     return wordData; 
 };
 
+export const getPaginatedWords = async (page, limit, languageId, letter) => {
+    const wordData = await DictionaryModel.getPaginatedWords(page, limit, languageId, letter);
+    if (!wordData) return [];
+    return wordData;
+};
+
 export const saveWord = async (userId, dictionaryId) => {
     return await DictionaryModel.saveWord(userId, dictionaryId);
 };

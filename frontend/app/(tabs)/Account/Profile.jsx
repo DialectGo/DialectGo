@@ -10,11 +10,14 @@ import {
   ActivityIndicator 
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../shared/lib/supabase';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import BottomNav from '../../../shared/components/BottomNav';
+import FeatureGateModal from '../../../shared/components/FeatureGateModal'; // Imported Gate
 import { styles } from '../../../shared/styles/ProfileStyles';
+import NetInfo from '@react-native-community/netinfo';
 
-// Matching your available avatars from Home/Account
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
   { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
@@ -29,6 +32,10 @@ const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
 export default function Profile({ onNavigate }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
+  const [gateVisible, setGateVisible] = useState(false); // Modal visibility control
+  const [isConnected, setIsConnected] = useState(true);
+  const hasInitialized = React.useRef(false);
 
   // Profile States
   const [firstName, setFirstName] = useState('');
@@ -37,16 +44,76 @@ export default function Profile({ onNavigate }) {
   const [streakCount, setStreakCount] = useState(0);
 
   useEffect(() => {
-    const loadProfileData = async () => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected ?? false;
+
+      setIsConnected(connected);
+
+      // 🚨 OFFLINE: instant guest mode (NO loading screen)
+      if (!connected) {
+        setLoading(false); // IMPORTANT FIX
+        setIsGuest(true);
+        setFirstName('Guest');
+        setLastName('User');
+        setStreakCount(0);
+        setUserAvatar(availableAvatars[0].source);
+        return;
+      }
+
+      // ONLINE: only run once OR when returning from offline
+      if (!hasInitialized.current) {
+        hasInitialized.current = true;
+        loadProfileData();
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const loadProfileData = async () => {
+    if (!isConnected) return; 
+    if (!hasInitialized.current) {
       setLoading(true);
+    }
+
+    try {
+      const role = await AsyncStorage.getItem('@user_role');
+      const guestMode = await AsyncStorage.getItem('@guest_mode');
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const isGuest =
+        role === 'guest' ||
+        guestMode !== null ||
+        !session ||
+        !isConnected;
+
+      setIsGuest(isGuest);
+
+      if (isGuest) {
+        setFirstName('Guest');
+        setLastName('User');
+        setStreakCount(0);
+        setUserAvatar(availableAvatars[0].source);
+        return;
+      }
+
+      // ONLY fetch online data if fully authenticated + online
       await Promise.all([
         fetchUserProfile(),
         fetchStreak()
       ]);
+
+    } catch (error) {
+      console.log('Profile load error:', error);
+
+      setIsGuest(true);
+      setFirstName('Guest');
+      setLastName('User');
+    } finally {
       setLoading(false);
-    };
-    loadProfileData();
-  }, []);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -92,6 +159,26 @@ export default function Profile({ onNavigate }) {
     }
   };
 
+  // Safe layout intercept handling method
+  const handleProtectedAction = (targetPath) => {
+    if (isGuest || !isConnected) {
+      setGateVisible(true);
+      return;
+    }
+
+    router.push(targetPath);
+  };
+
+  const handleLogout = async () => {
+    // Clear locally stored authentication state flags cleanly on exit
+    await AsyncStorage.multiRemove(['@user_token', '@user_role', '@user_metadata']);
+    if (onNavigate) {
+      onNavigate('auth');
+    } else {
+      router.replace('/auth/AuthTransition');
+    }
+  };
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
@@ -103,26 +190,23 @@ export default function Profile({ onNavigate }) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-      
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/backArrow.png')} style={styles.backIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
+
+      <ProfileTopBar title="Profile" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
             <Image source={userAvatar} style={styles.avatarImg} />
           </View>
-          {/* Dynamic First and Last Name */}
           <Text style={styles.userName}>{`${firstName} ${lastName}`.trim()}</Text>
-          <Text style={styles.streakText}>{streakCount} days streak</Text>
+          <Text style={styles.streakText}>
+            {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
+          </Text>
         </View>
 
         <View style={styles.settingsContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/AccountInformation')}>
+          {/* Gated Feature */}
+          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/AccountInformation')}>
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/profileIcon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Account Information</Text>
@@ -130,7 +214,8 @@ export default function Profile({ onNavigate }) {
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/Streaks')}>
+          {/* Gated Feature */}
+          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/fireIcon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Streaks</Text>
@@ -154,16 +239,19 @@ export default function Profile({ onNavigate }) {
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.logoutBtn} onPress={() => onNavigate('auth')}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/logout_icon.png')} style={styles.logoutIcon} />
-              <Text style={styles.logoutText}>Log out</Text>
+              <Text style={styles.logoutText}>{isGuest ? 'Exit Guest Mode' : 'Log out'}</Text>
             </View>
           </TouchableOpacity>
           
           <View style={{ height: 50 }} />
         </View>
       </ScrollView>
+
+      {/* Global Gating Component Anchor */}
+      <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
 
       <BottomNav activeTab="Profile" />
     </SafeAreaView>

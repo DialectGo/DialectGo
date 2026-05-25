@@ -1,134 +1,139 @@
-import { StyleSheet, Dimensions } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  header: {
-    height: 60,
-    backgroundColor: '#FFD54F',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    elevation: 4,
-  },
-  backButton: {
-    width: 35,
-    height: 35,
-    backgroundColor: '#FFF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backIcon: {
-    width: 18,
-    height: 18,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
-    marginRight: 35, // Para mag-center ang title kahit may back button
-  },
+
   scrollContent: {
-    paddingBottom: 100, // Space para sa floating input bar
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 120,
+    flexGrow: 1,
   },
+
   welcomeSection: {
     alignItems: 'center',
-    marginTop: 50,
-    paddingHorizontal: 40,
-  },
-  welcomeTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFD54F',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  welcomeSub: {
-    fontSize: 14,
-    color: '#757575',
-    textAlign: 'center',
-    lineHeight: 20,
-    fontWeight: '600',
-  },
-  suggestionsContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-    width: '100%',
-  },
-  chip: {
-    backgroundColor: '#FFD54F',
-    width: width * 0.8,
-    paddingVertical: 12,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  chipText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  // --- INPUT BAR STYLES ---
-  inputWrapper: {
-    position: 'absolute',
-    bottom: 20,
-    left: 15,
-    right: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 30,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  iconBtn: {
-    width: 35,
-    height: 35,
-    backgroundColor: '#FFD54F',
-    borderRadius: 18,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 5,
+    marginTop: 40,
+    marginBottom: 30,
+    paddingHorizontal: 20,
   },
-  inputIcon: {
-    width: 18,
-    height: 18,
+
+  welcomeTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFCB45',
+    textAlign: 'center',
+    lineHeight: 36,
   },
+
+  welcomeSub: {
+    marginTop: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    color: '#666666',
+  },
+
+  suggestionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+
+  chip: {
+    backgroundColor: '#FFCB45',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 30,
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+
+    elevation: 3,
+  },
+
+  chipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#333333',
+  },
+
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+  },
+
   textInput: {
     flex: 1,
-    backgroundColor: '#FFF',
-    height: 35,
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginHorizontal: 5,
-    borderWidth: 1,
-    borderColor: '#D1D1D1',
+    minHeight: 50,
+    maxHeight: 120,
+
+    backgroundColor: '#F5F5F5',
+    borderRadius: 25,
+
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
+
+    fontSize: 15,
+    color: '#333333',
   },
+
   sendBtn: {
-    width: 40,
-    height: 35,
-    backgroundColor: '#FFD54F',
-    borderRadius: 10,
-    justifyContent: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+
+    backgroundColor: '#FFCB45',
+
     alignItems: 'center',
+    justifyContent: 'center',
+
+    marginLeft: 10,
+
+    shadowColor: '#FFCB45',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+
+    elevation: 4,
   },
+
   sendIcon: {
-    width: 20,
-    height: 20,
-    transform: [{ rotate: '0deg' }], // Adjust orientation kung kailangan
-  }
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
+  },
+
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+
+  typingText: {
+    marginLeft: 10,
+    color: '#666666',
+    fontSize: 14,
+  },
 });

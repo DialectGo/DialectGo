@@ -3,6 +3,7 @@ import { Image, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 're
 import { useRouter } from 'expo-router';
 // I-import ang styles dito
 import { styles } from '../../../shared/styles/ChatOnboardingStyles'; 
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 export default function DialectBot() {
   const router = useRouter();
@@ -10,21 +11,7 @@ export default function DialectBot() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>DialectBot</Text>
-        <View style={{ width: 40 }} /> 
-      </View>
+      <ProfileTopBar title="DialectBot" />
 
       <View style={styles.content}>
         {/* CHARACTER IMAGE */}
@@ -45,7 +32,7 @@ export default function DialectBot() {
         <TouchableOpacity 
           style={styles.startBtn}
           activeOpacity={0.8}
-          onPress={() => router.push('/Chatbot/ChatInterface')} 
+          onPress={() => router.push('/Chatbot/Learn')} 
         >
           <Text style={styles.startBtnText}>Start Chat</Text>
         </TouchableOpacity>

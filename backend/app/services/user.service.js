@@ -69,3 +69,36 @@ export const updateStreakStatus = async (userId) => {
       .eq('id', userId);
   }
 };
+
+export const loginAsGuest = async () => {
+  return await UserModel.loginAsGuest();
+};
+
+export const adminLogin = async (email, password) => {
+  // 1. Authenticate credentials against Supabase Auth
+  const sessionData = await UserModel.loginUser(email, password);
+  const userId = sessionData.user.id;
+
+  // 2. Query the profile row to verify application permissions
+  const profile = await UserModel.getProfileById(userId);
+
+  // 3. Enforce strict role check
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Access Denied: You do not have administrative privileges.');
+  }
+
+  // 4. Return the fully signed JWT session tokens
+  return {
+    user: {
+      id: profile.id,
+      email: sessionData.user.email,
+      role: profile.role,
+      username: profile.username
+    },
+    session: {
+      access_token: sessionData.session.access_token,
+      refresh_token: sessionData.session.refresh_token,
+      expires_in: sessionData.session.expires_in
+    }
+  };
+};

@@ -3,388 +3,265 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
+  SafeAreaView,
   FlatList,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+
+import { styles } from '../../../shared/styles/ChatInterfaceStyles';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import ChatBubble from './ChatBubble';
-import ChatInput from './ChatInput';
-import mascotImage from '../../../assets/icons/chatbotIcon1.png';
 
-const GEMINI_API_KEY = Gemini_Key;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// ==========================
+// GEMINI CONFIG
+// ==========================
+const GEMINI_API_KEY = 'AIzaSyD-zAGkmdmdTb5D41LofOhXps0nunju70U';
 
-const SYSTEM_PROMPT = `You are DialectBot, the official assistant of the DialectGo app.
+const GEMINI_URL =
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-STRICT RULES:
-- You ONLY answer questions about the DialectGo app and Filipino languages (Cebuano, Tagalog, English).
-- If the user asks ANYTHING outside of these topics (weather, math, news, general knowledge, etc.), politely refuse and redirect them back to the app.
-- Never pretend to be a general AI assistant.
+const SYSTEM_PROMPT = `
+You are DialectBot, a friendly Filipino language learning assistant for the DialectGo app.
 
-WHAT YOU CAN HELP WITH:
-- How to use app features (Translator, Dictionary, Games, History, Account)
-- Cebuano, Tagalog, and English translations and pronunciation
-- Filipino dialect learning tips
-- Navigation and settings within the DialectGo app
+You help users with:
+- Cebuano translations
+- Tagalog translations
+- English translations
+- Pronunciation
+- Conversation practice
+- Navigation inside the DialectGo app
 
-WHAT YOU MUST REFUSE:
-- General knowledge questions unrelated to the app or Filipino languages
-- Math, science, news, coding, or any off-topic request
-- Roleplay or pretending to be a different AI
+Rules:
+- Be friendly
+- Keep responses concise
+- Explain clearly
+- Use examples when needed
+- Avoid markdown
+`;
 
-HOW TO REFUSE (use this format for off-topic questions):
-{
-  "text": "That's outside my expertise!",
-  "subtext": "I can only help with DialectGo app questions and Filipino language learning. Try asking me about translations, the Dictionary, or how to use the Translator!"
-}
-
-Always respond ONLY in this exact JSON format (no markdown, no extra text):
-{
-  "text": "Short headline answer or translation",
-  "subtext": "1-3 lines of explanation, examples, or usage tips"
-}`;
-const SUGGESTIONS = [
+// ==========================
+// SUGGESTIONS
+// ==========================
+const suggestions = [
   'How to change name?',
   'Do you have other games?',
   'How to use Dictionary?',
   'How can I translate?',
 ];
 
-const INITIAL_BOT_MESSAGE = {
+// ==========================
+// INITIAL MESSAGE
+// ==========================
+const INITIAL_MESSAGE = {
   id: '1',
   sender: 'bot',
-  text: "Kumusta! I'm DialectBot!",
+  text: "Kumusta! I'm DialectBot 👋",
   subtext:
-    'I can help you with Cebuano, Tagalog, and English translations, pronunciation, or practice conversation.\nWhat would you like to learn today?',
+    'I can help you translate Cebuano, Tagalog, and English.',
 };
 
 export default function Learn() {
-  const router = useRouter();
-  const [screen, setScreen] = useState('splash');
-  const [messages, setMessages] = useState([INITIAL_BOT_MESSAGE]);
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
+
+  // conversation history for Gemini
   const chatHistory = useRef([]);
 
-  const sendMessage = async (text) => {
-    setScreen('chat');
+  // ==========================
+  // SEND MESSAGE
+  // ==========================
+  const sendMessage = async (customText = null) => {
+    const messageText = customText || inputText;
 
-    const newUserMsg = { id: Date.now().toString(), sender: 'user', text };
-    setMessages((prev) => [...prev, newUserMsg]);
+    if (!messageText.trim()) return;
+
+    // user message
+    const userMessage = {
+      id: Date.now().toString(),
+      sender: 'user',
+      text: messageText,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText('');
     setLoading(true);
 
-    chatHistory.current.push({ role: 'user', parts: [{ text }] });
-
-    console.log('1️⃣ sendMessage called:', text);
-    console.log('2️⃣ API URL:', GEMINI_URL);
+    // save conversation history
+    chatHistory.current.push({
+      role: 'user',
+      parts: [{ text: messageText }],
+    });
 
     try {
       console.log('3️⃣ Fetching Gemini...');
 
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: chatHistory.current,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `${SYSTEM_PROMPT}\n\nUser: ${messageText}`,
+                },
+              ],
+            },
+          ],
           generationConfig: {
-            maxOutputTokens: 1024,
             temperature: 0.7,
+            maxOutputTokens: 200,
           },
         }),
       });
-
-      console.log('4️⃣ Response status:', response.status);
+      
 
       const data = await response.json();
-      console.log('5️⃣ Full API response:', JSON.stringify(data));
 
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      console.log('6️⃣ Raw text:', raw);
+      console.log(
+        'FULL GEMINI RESPONSE:',
+        JSON.stringify(data, null, 2)
+      );
 
-      chatHistory.current.push({ role: 'model', parts: [{ text: raw }] });
-
-      let botText = 'Hmm, di ko gets!';
-      let botSubtext = '';
-
-      try {
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          botText = parsed.text || botText;
-          botSubtext = parsed.subtext || '';
-        } else {
-          botText = raw || botText;
-        }
-      } catch (parseError) {
-        console.error('7️⃣ JSON parse error:', parseError);
-        botText = raw || botText;
+      // HANDLE API ERRORS
+      if (data.error) {
+        throw new Error(data.error.message);
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: botText,
-          subtext: botSubtext,
-        },
-      ]);
+      // EXTRACT TEXT
+      const botReply =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      // HANDLE EMPTY RESPONSE
+      if (!botReply) {
+        throw new Error('Gemini returned empty response');
+      }
+
+      // SAVE HISTORY
+      chatHistory.current.push({
+        role: 'model',
+        parts: [{ text: botReply }],
+      });
+
+      // SHOW MESSAGE
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: 'bot',
+        text: botReply.trim(),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
 
     } catch (error) {
-      console.error('❌ FETCH ERROR:', error.message);
-      console.error('❌ FULL ERROR:', error);
+      console.log('GEMINI ERROR:', error);
+
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
-          text: 'Pasensya na!',
-          subtext: error.message,
+          text: `Error: ${error.message}`,
         },
       ]);
-    } finally {
-      setLoading(false);
     }
+
+  // ==========================
+  // RENDER
+  // ==========================
+
+    finally {
+    setLoading(false);
+  }
   };
-
-  const Header = ({ showBack = false }) => (
-    <View style={styles.header}>
-      {showBack && (
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-      )}
-      <Text style={styles.headerTitle}>DialectBot</Text>
-    </View>
-  );
-
-  // --- SPLASH SCREEN ---
-  if (screen === 'splash') {
-    return (
-      <SafeAreaView style={styles.splashContainer}>
-        <Header showBack={true} />
-        <View style={styles.splashBody}>
-          <Image source={mascotImage} style={styles.mascot} resizeMode="contain" />
-          <Text style={styles.splashTitle}>Welcome to{'\n'}DialectBot</Text>
-          <Text style={styles.splashSubtext}>
-            DialectBot can help you navigate and learn{'\n'}more about DialectGo.
-          </Text>
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={() => setScreen('suggestions')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.startButtonText}>Start Chat</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // --- SUGGESTIONS SCREEN ---
-  if (screen === 'suggestions') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Header showBack={true} />
-        <View style={styles.suggestionsBody}>
-          <View style={styles.suggestionsWelcome}>
-            <Text style={styles.welcomeTitle}>Welcome to{'\n'}DialectBot</Text>
-            <Text style={styles.welcomeSubtext}>
-              DialectBot can help you navigate and learn{'\n'}more about DialectGo.
-            </Text>
-          </View>
-          <View style={styles.suggestionButtonsContainer}>
-            {SUGGESTIONS.map((suggestion) => (
-              <TouchableOpacity
-                key={suggestion}
-                style={styles.suggestionButton}
-                onPress={() => sendMessage(suggestion)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.suggestionButtonText}>{suggestion}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-        <ChatInput onSend={sendMessage} disabled={loading} />
-      </SafeAreaView>
-    );
-  }
-
-  // --- CHAT SCREEN ---
   return (
     <SafeAreaView style={styles.container}>
-      <Header showBack={true} />
-
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ChatBubble message={item} />}
-        contentContainerStyle={styles.listContent}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {loading && (
-        <View style={styles.typingContainer}>
-          <ChatBubble
-            message={{
-              id: 'typing',
-              sender: 'bot',
-              text: 'DialectBot is typing...',
-              subtext: '',
-            }}
-          />
-        </View>
-      )}
+      {/* TOP BAR */}
+      <ProfileTopBar title="DialectBot" />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        style={{ flex: 1 }}
       >
-        <ChatInput onSend={sendMessage} disabled={loading} />
+        {/* CHAT AREA */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ChatBubble message={item} />
+          )}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
+        />
+
+        {/* SUGGESTION CHIPS */}
+        {messages.length <= 1 && (
+          <View style={styles.suggestionsContainer}>
+            {suggestions.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.chip}
+                onPress={() => sendMessage(item)}
+              >
+                <Text style={styles.chipText}>
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* TYPING */}
+        {loading && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              paddingBottom: 10,
+            }}
+          >
+            <ActivityIndicator size="small" color="#FFCB45" />
+            <Text style={{ marginLeft: 10 }}>
+              DialectBot is typing...
+            </Text>
+          </View>
+        )}
+
+        {/* INPUT BAR */}
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type a message..."
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={styles.sendBtn}
+            onPress={() => sendMessage()}
+            disabled={loading}
+          >
+            <Image
+              source={require('../../../assets/icons/sendButton.png')}
+              style={styles.sendIcon}
+            />
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  header: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFCB45',
-    height: 60,
-    paddingHorizontal: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#333333',
-    letterSpacing: 0.3,
-  },
-  backButton: {
-    position: 'absolute',
-    left: 16,
-    padding: 8,
-  },
-  backArrow: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#333333',
-  },
-  splashContainer: {
-    flex: 1,
-    backgroundColor: '#FFCB45',
-  },
-  splashBody: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 16,
-  },
-  mascot: {
-    width: 200,
-    height: 200,
-    marginBottom: 8,
-  },
-  splashTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFCB45',
-    textAlign: 'center',
-    lineHeight: 36,
-  },
-  splashSubtext: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  startButton: {
-    backgroundColor: '#FFCB45',
-    borderRadius: 30,
-    paddingVertical: 16,
-    paddingHorizontal: 64,
-    marginTop: 20,
-    elevation: 4,
-    shadowColor: '#FFCB45',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-  },
-  startButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#333333',
-  },
-  suggestionsBody: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 16,
-  },
-  suggestionsWelcome: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
-  },
-  welcomeTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#FFCB45',
-    textAlign: 'center',
-    lineHeight: 34,
-  },
-  welcomeSubtext: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  suggestionButtonsContainer: {
-    paddingHorizontal: 24,
-    gap: 10,
-  },
-  suggestionButton: {
-    backgroundColor: '#FFCB45',
-    borderRadius: 25,
-    paddingVertical: 14,
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  suggestionButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333333',
-  },
-  listContent: {
-    paddingHorizontal: 15,
-    paddingVertical: 20,
-    paddingBottom: 100,
-  },
-  typingContainer: {
-    paddingHorizontal: 15,
-  },
-});

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { styles } from '../../../shared/styles/ChatInterfaceStyles'; 
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 export default function ChatInterface() {
   const router = useRouter();
@@ -26,16 +27,7 @@ export default function ChatInterface() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>DialectBot</Text>
-      </View>
+      <ProfileTopBar title="DialectBot" />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
@@ -69,15 +61,7 @@ export default function ChatInterface() {
 
         {/* INPUT BAR AREA */}
         <View style={styles.inputWrapper}>
-          {/* Mic Button */}
-          <TouchableOpacity style={styles.iconBtn}>
-            <Image source={require('../../../assets/icons/micIcon.png')} style={styles.inputIcon} />
-          </TouchableOpacity>
-
-          {/* OCR/Camera Button */}
-          <TouchableOpacity style={styles.iconBtn}>
-            <Image source={require('../../../assets/icons/cameraIcon.png')} style={styles.inputIcon} />
-          </TouchableOpacity>
+ 
 
           {/* Input Field */}
           <TextInput 

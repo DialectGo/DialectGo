@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
-    getWordDefinition, 
+    getWordDefinition,
+    getBrowseWords,
     saveWord, 
     getSavedWords ,
     deleteSelectedWords,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/search/:term', verifyToken, getWordDefinition);
+router.get('/browse', verifyToken, getBrowseWords);
 
 // Protected routes
 router.post('/save', verifyToken, validateDictionarySave, saveWord);

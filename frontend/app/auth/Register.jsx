@@ -14,10 +14,12 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { styles } from '../../shared/styles/LoginStyles';
+import { useRouter } from 'expo-router'; 
 
 const API_URL = 'http://192.168.1.52:5001/api/v1/users/register'; 
 
 export default function SignUp({ onSwitch, onSuccess }) {
+  const router = useRouter(); 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -185,7 +187,11 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
             <View style={[styles.footer, { marginTop: 20 }]}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={onSwitch}>
+              <TouchableOpacity 
+                  onPress={() => {
+                    // Directs the user to app/auth/Register.jsx
+                    router.push('../login'); 
+                  }}>
                 <Text style={styles.footerLink}>Log In</Text>
               </TouchableOpacity>
             </View>
