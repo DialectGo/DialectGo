@@ -14,7 +14,7 @@ import { getAuthMode } from '../../../shared/utils/authMode';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_BASE_URL = 'http://192.168.1.53:5001/api/dictionary/search';
+const API_BASE_URL = 'http://192.168.1.15:5001/api/dictionary/search';
 
 export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');

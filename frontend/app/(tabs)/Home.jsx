@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router'; // 👈 1. IMPORT ROUTER FROM EXPO-ROUTER
 import { supabase } from '../../shared/lib/supabase';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
@@ -24,17 +25,17 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-const WORD_API = 'http://192.168.1.53:5001/api/dictionary/word-of-the-day';
-const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
-const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
+const WORD_API = 'http://192.168.1.22:5001/api/dictionary/word-of-the-day';
+const PROFILE_API = 'http://192.168.1.22:5001/api/v1/users/profile';
+const STREAK_API = 'http://192.168.1.22:5001/api/v1/users/streak';
 
 export default function Home({ onNavigate, activeTab }) {
   const router = useRouter();
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('User'); 
+  const [userName, setUserName] = useState('User');
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
-  
+
   // New Streak State
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
 
@@ -94,7 +95,7 @@ export default function Home({ onNavigate, activeTab }) {
 
       const response = await fetch(PROFILE_API, {
         method: 'GET',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
@@ -120,7 +121,7 @@ export default function Home({ onNavigate, activeTab }) {
       if (!session) return;
 
       const userId = session.user.id;
-      const storageKey = `word_of_the_day_${userId}`; 
+      const storageKey = `word_of_the_day_${userId}`;
       const now = Date.now();
       const storedData = await AsyncStorage.getItem(storageKey);
 
@@ -169,11 +170,11 @@ export default function Home({ onNavigate, activeTab }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
       <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
-      <TopBar onLogout={() => {}} onProfile={() => {}} />
-      
+      <TopBar onLogout={() => { }} onProfile={() => { }} />
+
       <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}>
-          
+
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
               <Text style={styles.helloText}>Maayong Buntag,</Text>
@@ -243,12 +244,12 @@ export default function Home({ onNavigate, activeTab }) {
             </View>
           </View>
 
-           {/* ADVENTURE / PROMO SECTION */}
+          {/* ADVENTURE / PROMO SECTION */}
           <View style={styles.promoCardWrapper}>
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee1]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee2]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee3]} resizeMode="contain" />
-            
+
             <View style={styles.promoCard}>
               <View style={styles.promoTextContainer}>
                 <Text style={styles.promoLabel}>Learn more about</Text>
@@ -260,11 +261,12 @@ export default function Home({ onNavigate, activeTab }) {
                 >
                   <Text style={styles.exploreBtnText}>Explore Now</Text>
                 </TouchableOpacity>
+
               </View>
               <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
             </View>
           </View>
-          
+
         </ScrollView>
       </SafeAreaView>
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />

@@ -26,8 +26,8 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
 ];
 
-const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
-const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
+const PROFILE_API = 'http://192.168.1.30:5001/api/v1/users/profile';
+const STREAK_API = 'http://192.168.1.30:5001/api/v1/users/streak';
 
 export default function Profile({ onNavigate }) {
   const router = useRouter();

@@ -1,4 +1,5 @@
 import { Dimensions, StyleSheet, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 

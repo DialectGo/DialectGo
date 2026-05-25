@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'; // Assumin
 import { supabase } from '../../../shared/lib/supabase';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
-const API_BASE_URL = 'http://192.168.1.53:5001/api/v1/users/profile';
+const API_BASE_URL = 'http://192.168.1.15:5001/api/v1/users/profile';
 
 // Listahan ng iyong available avatars
 const availableAvatars = [
