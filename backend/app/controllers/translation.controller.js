@@ -212,3 +212,79 @@ export const submitUserTranslation = async (req, res, next) => {
         return res.status(500).json({ success: false, message: 'Failed to submit translation: ' + error.message });
     }
 };
+
+export const adminGetAllHistory = async (req, res, next) => {
+    try {
+        const { supabaseAdmin } = await import('../config/db.js');
+        const { data, error } = await supabaseAdmin
+            .from('translation_history')
+            .select(`
+                *,
+                profiles:user_id (username, first_name, last_name),
+                source_lang:source_language_id (name, code),
+                target_lang:target_language_id (name, code)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.status(200).json({ success: true, data: data || [] });
+    } catch (err) { next(err); }
+};
+
+// ADMIN: Fetch all user contributed recommendations
+export const adminGetAllRecommendations = async (req, res, next) => {
+    try {
+        const { supabaseAdmin } = await import('../config/db.js');
+        const { data, error } = await supabaseAdmin
+            .from('user_recommended_translations')
+            .select(`
+                *,
+                profiles:user_id (username, first_name, last_name),
+                source_lang:source_language_id (name, code),
+                target_lang:target_language_id (name, code)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.status(200).json({ success: true, data: data || [] });
+    } catch (err) { next(err); }
+};
+
+// ADMIN: Get metric analytics points for Chart.js daily timeline graphing
+export const adminGetTranslationAnalytics = async (req, res, next) => {
+    try {
+        const { supabaseAdmin } = await import('../config/db.js');
+        
+        // Fetch trailing 7 days timeline rows
+        const trailingWindow = new Date();
+        trailingWindow.setDate(trailingWindow.getDate() - 7);
+
+        const { data, error } = await supabaseAdmin
+            .from('translation_history')
+            .select('created_at')
+            .gte('created_at', trailingWindow.toISOString());
+
+        if (error) throw error;
+
+        // Group rows programmatically by calendar dates
+        const dateBucketMap = {};
+        for (let i = 6; i >= 0; i--) {
+            const dateStr = new Date();
+            dateStr.setDate(dateStr.getDate() - i);
+            const formatted = dateStr.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dateBucketMap[formatted] = 0;
+        }
+
+        data.forEach(row => {
+            const formattedRowDate = new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            if (dateBucketMap[formattedRowDate] !== undefined) {
+                dateBucketMap[formattedRowDate]++;
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: Object.entries(dateBucketMap).map(([date, value]) => ({ date, count: value }))
+        });
+    } catch (err) { next(err); }
+};

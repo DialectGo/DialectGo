@@ -67,9 +67,8 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
       style={{
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'space-between',
         height: '100vh',
-        position: 'sticky',
-        top: 0,
         backgroundColor: '#fff',
         borderRight: '1px solid #e2e8f0',
         width: isOpen ? '260px' : '0px',
@@ -78,7 +77,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
       }}
     >
       {/* TOP: LOGO AND NAVIGATION LINKS */}
-      <div style={{ flex: 1 }}>
+      <div>
         <div className="sidebar-logo" style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ fontSize: '1.4rem' }}>🚀</span>
           <span className="brand-name" style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a' }}>DialectGo</span>
@@ -114,18 +113,17 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
         </nav>
       </div>
 
-      {/* ADJUSTED ADMIN USER COMPLIANCE FOOTER CARD */}
+      {/* BOTTOM: ADMIN USER COMPLIANCE FOOTER CARD */}
       <div 
         className="sidebar-footer-profile" 
         style={{ 
-          padding: '20px', 
-          borderTop: '1px solid #e2e8f0', 
+          padding: '16px 20px', 
+          borderTop: '1px solid #f1f5f9', 
           display: 'flex', 
           alignItems: 'center', 
           gap: '12px', 
           backgroundColor: '#f8fafc',
-          marginTop: 'auto',
-          marginBottom: '8px' // Shifts layout up safely clear of tracking window margins
+          marginBpottom: '30px',
         }}
       >
         {adminData.loading ? (
@@ -148,13 +146,12 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
                 alignItems: 'center', 
                 fontWeight: 800, 
                 fontSize: '0.9rem',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
-                flexShrink: 0
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
               }}
             >
               {adminData.initials}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               <span 
                 style={{ 
                   fontWeight: 700, 
@@ -162,7 +159,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
                   color: '#0f172a', 
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 
-                  textOverflow: 'ellipsis' 
+                  textOverflow: 'ellipsis'
                 }}
               >
                 {`${adminData.firstName} ${adminData.lastName}`.trim()}
@@ -179,4 +176,4 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   );
 };
 
-export default Sidebar;
+export default Sidebar; 
