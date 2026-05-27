@@ -29,8 +29,22 @@ const Login = ({ onLoginSuccess }) => {
         
         if (token) {
             // Store the raw string token securely into your browser context
-            localStorage.setItem('sb-access-token', token);
-            onLoginSuccess();
+            localStorage.setItem(
+              'sb-access-token',
+              payload.data.session.access_token
+            );
+
+            localStorage.setItem(
+              'sb-refresh-token',
+              payload.data.session.refresh_token
+            );
+
+            localStorage.setItem(
+              'admin-profile',
+              JSON.stringify(payload.data.user)
+            );
+
+            onLoginSuccess(payload.data.user);
         } else {
             setError('Authentication succeeded, but no access token was returned.');
         }
