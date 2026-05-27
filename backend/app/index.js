@@ -41,6 +41,9 @@ app.use('/api/dataset', datasetRoutes);
 
 app.use('/api/v1/users', userRoutes);
 
+// Inside index.jsx
+app.use('/api/v1/translations', translationRoutes);
+
 // babaguhin ko pa toh
 app.use('/api', translationRoutes); // 2. Add this
 // ... other middlewares

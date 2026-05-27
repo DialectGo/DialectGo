@@ -1,6 +1,7 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import '../assets/css/sidebar.css';
+import ActiveAdmins from '../components/ActiveAdmins';
 
 const Dashboard = () => {
   const [stats, setStats] = useState([
@@ -91,6 +92,11 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
+         <div>
+
+            <ActiveAdmins />
+
+          </div>
       </section>
     </div>
   );
