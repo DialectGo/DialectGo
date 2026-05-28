@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -51,6 +52,9 @@ export default function LogIn({ onSwitch, onSuccess }) {
         if (sessionError) throw sessionError;
 
         console.log("Supabase session synced successfully");
+
+        await AsyncStorage.removeItem('@guest_mode');
+        await AsyncStorage.setItem('@user_role', 'authenticated');
 
         if (onSuccess) {
           onSuccess();

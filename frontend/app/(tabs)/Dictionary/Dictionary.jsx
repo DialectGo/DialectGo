@@ -57,14 +57,16 @@ export default function Dictionary() {
     const checkGuestMode = async () => {
       const { data: { session } } = await supabase.auth.getSession();
 
+      // If there is an active user session, they are definitely NOT a guest
+      if (session) {
+        setIsGuestMode(false);
+        return;
+      }
+
       const role = await AsyncStorage.getItem('@user_role');
       const guestMode = await AsyncStorage.getItem('@guest_mode');
 
-      const isGuest =
-        !session ||
-        role === 'guest' ||
-        guestMode !== null;
-
+      const isGuest = role === 'guest' || guestMode !== null;
       setIsGuestMode(isGuest);
     };
   // Search with debounce

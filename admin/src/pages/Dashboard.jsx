@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '../utils/authFetch';
 import '../assets/css/sidebar.css';
 import ActiveAdmins from '../components/ActiveAdmins';
 
@@ -10,28 +11,38 @@ const Dashboard = () => {
     { title: 'Monitored Actions', value: 'Active', color: '#FFD230' },
   ]);
   const [recentLogs, setRecentLogs] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function loadDashboardMetrics() {
       try {
-        const res = await fetch('/api/dashboard/security'); // No headers needed during bypass
+        const res = await authFetch('/api/dashboard/security');
+        
+        if (!res.ok) {
+           throw new Error('Backend engine connection failed.');
+        }
+
         const payload = await res.json();
+
         if (payload.success) {
-          const activeThreats = payload.data.anomalies.filter(a => !a.is_resolved).length;
-          
+          // RESTORED: This logic updates your UI with the data from the API
           setStats([
-            { title: 'Active System Anomalies', value: activeThreats.toString(), color: '#ef4444' },
-            { title: 'Total Activity Logs', value: payload.data.recentLogs.length.toString(), color: '#1a1a1a' },
-            { title: 'UAM Telemetry Status', value: 'Healthy', color: '#22c55e' },
+            { title: 'System Anomalies', value: payload.data.unresolvedAnomalies.toString(), color: '#ef4444' },
+            { title: 'Operational Audit Logs', value: payload.data.operationalAuditLogCount.toString(), color: '#1a1a1a' },
+            { title: 'Monitored Actions', value: payload.data.monitoredActionsCount.toString(), color: '#FFD230' },
+            { title: 'Current Active Admins', value: (payload.data?.currentActiveAdmins ?? 0).toString(), color: '#22c55e' }
           ]);
           setRecentLogs(payload.data.recentLogs);
         }
       } catch (err) {
-        console.error("Error reading operational logging data stream:", err);
+        console.error('Dashboard fetch failed:', err);
+        setError('Could not connect to the backend engine core.');
       }
     }
     loadDashboardMetrics();
   }, []);
+
+  if (error) return <div style={{ color: '#ef4444', padding: '20px' }}>{error}</div>;
 
   return (
     <div className="page-content" style={{ padding: 0 }}>
@@ -70,14 +81,8 @@ const Dashboard = () => {
                 recentLogs.map((log) => (
                   <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '14px 12px' }}>
-                      <code style={{ 
-                        backgroundColor: '#f1f5f9', 
-                        padding: '4px 8px', 
-                        borderRadius: '6px', 
-                        fontFamily: 'monospace',
-                        color: '#0f172a'
-                      }}>
-                        {log.action_type}
+                      <code style={{ backgroundColor: '#f1f5f9', padding: '4px 8px', borderRadius: '6px', fontFamily: 'monospace', color: '#0f172a' }}>
+                        {log.operation_type}
                       </code>
                     </td>
                     <td style={{ padding: '14px 12px', color: '#334155' }}>
@@ -92,11 +97,9 @@ const Dashboard = () => {
             </tbody>
           </table>
         </div>
-         <div>
-
-            <ActiveAdmins />
-
-          </div>
+        <div>
+           <ActiveAdmins />
+        </div>
       </section>
     </div>
   );

@@ -1,5 +1,7 @@
 // src/pages/Incidents.jsx
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { authFetch } from '../utils/authFetch';
 import '../assets/css/user-management.css';
 
 const Incidents = () => {
@@ -23,7 +25,12 @@ const Incidents = () => {
   // 1. AUTHORIZED FETCH CALL
   const fetchIncidents = async () => {
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const token =
+        session?.access_token;
 
       if (!token) {
         console.error("No administrative session token discovered in memory.");
@@ -31,14 +38,7 @@ const Incidents = () => {
         return;
       }
 
-      const res = await fetch('/api/dashboard/security', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
+      const res = await authFetch('/api/dashboard/security');
       const payload = await res.json();
       if (payload.success) {
         setAnomalies(payload.data.anomalies);
@@ -55,7 +55,12 @@ const Incidents = () => {
   // 2. AUTHORIZED MUTATION (PUT) CALL
   const resolveThreat = async (id) => {
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const token =
+        session?.access_token;
 
       const res = await fetch(`/api/dashboard/anomaly/${id}/resolve`, {
         method: 'PUT',
@@ -64,6 +69,12 @@ const Incidents = () => {
           'Content-Type': 'application/json' 
         }
       });
+
+      if (res.status === 401) {
+        await supabase.auth.signOut();
+        window.location.href = '/login';
+        return;
+      }
       
       const payload = await res.json();
       if (payload.success) {

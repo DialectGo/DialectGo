@@ -328,6 +328,8 @@ export const adminLogin = async (email, password, req) => {
         });
     }
 
+    console.log('Admin login success for userId:', userId);
+
     return {
       user: {
         id: profile.id,
