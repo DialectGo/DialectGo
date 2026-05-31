@@ -4,9 +4,7 @@ import { ActivityIndicator, Modal, SafeAreaView, StatusBar, Text, TouchableOpaci
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import { styles } from './WordMatcherStyles';
-
-// 1. IMPORT YOUR EXISTING CENTRAL SUPABASE CLIENT INSTANCE
-import { supabase } from '../../../../shared/lib/supabase'; // Adjust this relative directory path if necessary
+import { supabase } from '../../../../shared/lib/supabase';
 
 const API_URL = 'http://192.168.1.53:5001/api';
 
@@ -28,19 +26,18 @@ export default function WordMatcherGame() {
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [isCorrect, setIsCorrect] = useState(null);
   
-  // MODAL STATES
   const [isPaused, setIsPaused] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
-  const [resultType, setResultType] = useState(null); // 'win' or 'lose'
+  const [resultType, setResultType] = useState(null); 
 
   const progressPercent = (currentScore / totalQuestionsInLevel) * 100;
+  const gameDifficulty = params.difficulty || 'easy';
+  const displayLanguagePool = params.targetLanguage || 'english';
 
-  // --- FETCH DATA FROM DATABASE USING SUPABASE USER AUTH ---
   const fetchGameChallenges = useCallback(async () => {
     try {
       setLoading(true);
       
-      // FIX 1: Fetch live access token from Supabase Client instead of AsyncStorage
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         Alert.alert("Authentication Required", "Please re-login to download game assets.");
@@ -48,7 +45,9 @@ export default function WordMatcherGame() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/games/1/challenges?difficulty=${params.difficulty || 'easy'}&level=${level}`, {
+      // Appended targetLanguage preference to endpoint path query string
+      const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${displayLanguagePool}`;
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const result = await response.json();
@@ -57,7 +56,7 @@ export default function WordMatcherGame() {
         setChallengeBank(result.data);
         setupLevelData(result.data);
       } else {
-        Alert.alert("Asset Error", "Could not load challenges for this level.");
+        Alert.alert("Asset Error", "Could not load enough translation items for this filter mode.");
         router.back();
       }
     } catch (e) {
@@ -67,7 +66,7 @@ export default function WordMatcherGame() {
     } finally {
       setLoading(false);
     }
-  }, [level, params.difficulty]);
+  }, [level, gameDifficulty, displayLanguagePool]);
 
   const setupLevelData = (bank) => {
     const numQuestions = Math.min(3 + level, bank.length);
@@ -99,23 +98,21 @@ export default function WordMatcherGame() {
 
   useEffect(() => {
     fetchGameChallenges();
-  }, [level]);
+  }, [fetchGameChallenges]);
 
-  // --- SAVE LEVEL PROGRESS & SEND SESSION TO DB ---
   const handleLevelComplete = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const savedLevels = await AsyncStorage.getItem(`completed_levels_${params.difficulty}`);
+      const savedLevels = await AsyncStorage.getItem(`completed_levels_${gameDifficulty}`);
       let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
       
       if (!levelsArray.includes(level)) {
         levelsArray.push(level);
-        await AsyncStorage.setItem(`completed_levels_${params.difficulty}`, JSON.stringify(levelsArray));
+        await AsyncStorage.setItem(`completed_levels_${gameDifficulty}`, JSON.stringify(levelsArray));
       }
 
-      // FIX 2: Corrected endpoint path mapping from singular '/session' to plural '/sessions'
       const accuracy = (currentScore / totalQuestionsInLevel) * 100;
       await fetch(`${API_URL}/sessions/${params.sessionId}/complete`, {
         method: 'POST',
@@ -125,12 +122,11 @@ export default function WordMatcherGame() {
         },
         body: JSON.stringify({
           accuracy_score: accuracy,
-          session_data: { level, difficulty: params.difficulty }
+          session_data: { level, difficulty: gameDifficulty }
         })
       });
 
-      // FIX 3: Pluralized destination route target parameters for progress tracking updates
-      const xpGained = params.difficulty === 'hard' ? 30 : params.difficulty === 'medium' ? 20 : 10;
+      const xpGained = gameDifficulty === 'hard' ? 30 : gameDifficulty === 'medium' ? 20 : 10;
       await fetch(`${API_URL}/progress/update`, {
         method: 'PATCH',
         headers: {
@@ -221,9 +217,13 @@ export default function WordMatcherGame() {
       </View>
 
       <View style={styles.questionSection}>
-        <Text style={styles.hintText}>Translate to Cebuano:</Text>
+        <Text style={styles.hintText}>
+          Translate to {displayLanguagePool.charAt(0).toUpperCase() + displayLanguagePool.slice(1)}:
+        </Text>
         <View style={styles.questionCard}>
-          <Text style={styles.questionWord}>{currentQuestion?.display_text}</Text>
+          <Text style={[styles.questionWord, gameDifficulty === 'hard' && { fontSize: 20, textAlign: 'center', lineHeight: 28 }]}>
+            {currentQuestion?.display_text}
+          </Text>
         </View>
       </View>
 
@@ -231,11 +231,21 @@ export default function WordMatcherGame() {
         {choices.map((choice, i) => (
           <TouchableOpacity 
             key={i} 
-            style={[styles.choiceBtn, selectedChoice === choice && (isCorrect ? styles.correctChoice : styles.wrongChoice)]}
+            style={[
+              styles.choiceBtn, 
+              selectedChoice === choice && (isCorrect ? styles.correctChoice : styles.wrongChoice),
+              gameDifficulty === 'hard' && { minHeight: 60, paddingVertical: 12 }
+            ]}
             onPress={() => handleAnswer(choice)}
             disabled={selectedChoice !== null}
           >
-            <Text style={[styles.choiceLabel, selectedChoice === choice && { color: '#FFF' }]}>{choice}</Text>
+            <Text style={[
+              styles.choiceLabel, 
+              selectedChoice === choice && { color: '#FFF' },
+              gameDifficulty === 'hard' && { fontSize: 15, textAlign: 'center' }
+            ]}>
+              {choice}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -283,7 +293,6 @@ export default function WordMatcherGame() {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }

@@ -8,107 +8,114 @@ export const GameModel = {
             .eq('is_active', true);
     },
 
-    async getChallengesByGameId(gameId, difficulty = 'easy') {
+    async getChallengesByGameId(gameId, difficulty = 'easy', targetLanguage = 'english') {
         console.log(`\n============== BACKEND DEBUG ROW CHECK ==============`);
-        console.log(`🎯 Targeting Game ID: ${gameId} | Difficulty Mode: ${difficulty}`);
+        console.log(`🎯 Targeting Game ID: ${gameId} | Difficulty Mode: ${difficulty} | Chosen Language: ${targetLanguage}`);
 
-        // 1. SAFE WIDE QUERY: Use the exact relational mapping format from your working dictionary.model.js
-        let query = supabase
-            .from('dictionary_entries')
-            .select(`
-                id,
-                word_term,
-                example_usage,
-                language_id,
-                translations:dictionary_translations!dictionary_translations_source_entry_id_fkey (
-                    id,
-                    target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
-                        word_term,
-                        language_id
-                    )
-                )
-            `)
-            // Safely verify if language_id is 3 or look generally if this fails
-            .eq('language_id', 3);
+        // Language IDs: 1 = Tagalog, 2 = English, 3 = Cebuano
+        const primaryTargetId = targetLanguage.toLowerCase() === 'tagalog' ? 1 : 2;
+        const secondaryTargetId = primaryTargetId === 1 ? 2 : 1;
 
-        // 2. RESILIENT DIFFICULTY FILTERING:
-        // We fallback to a wide collection match if the strict null configurations return empty arrays.
-        if (difficulty === 'easy') {
-            query = query.or('example_usage.is.null,example_usage.eq."",example_usage.eq." "');
-        } else if (difficulty === 'medium') {
-            query = query.or('example_usage.ilike.% %,example_usage.is.null,example_usage.eq.""');
-        } else if (difficulty === 'hard') {
-            // Ensure we don't accidentally wipe out potential values
-            query = query.not('example_usage', 'is', null);
-        }
-
-        const { data, error } = await query.limit(40);
-        
-        if (error) {
-            console.error("❌ SUPABASE EXECUTION ERROR:", error);
-            return { data: null, error };
-        }
-
-        // --- FALLBACK CHECK ---
-        // If the query still yields 0 rows due to strict filters, we run a broad query to get game assets running!
-        let finalData = data;
-        if (!finalData || finalData.length === 0) {
-            console.log("⚠️ Strict filter returned 0 rows. Running broad emergency query to fetch any available Cebuano words...");
-            const fallbackQuery = await supabase
+        try {
+            // 1. Fetch Cebuano entries (language_id: 3) along with their related target translations
+            // using your foreign key: dictionary_translations_source_entry_id_fkey
+            let baseQuery = supabase
                 .from('dictionary_entries')
                 .select(`
-                    id,
-                    word_term,
-                    example_usage,
+                    id, 
+                    word_term, 
+                    example_usage, 
                     language_id,
                     translations:dictionary_translations!dictionary_translations_source_entry_id_fkey (
-                        id,
                         target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
-                            word_term
+                            id,
+                            word_term,
+                            example_usage,
+                            language_id
                         )
                     )
                 `)
-                .eq('language_id', 3)
-                .limit(20);
-                
-            if (!fallbackQuery.error && fallbackQuery.data) {
-                finalData = fallbackQuery.data;
+                .eq('language_id', 3);
+
+            // Clean up difficulty matching parameters safely
+            if (difficulty === 'hard') {
+                // Hard mode requires example usages to exist
+                baseQuery = baseQuery
+                    .not('example_usage', 'is', null)
+                    .neq('example_usage', '')
+                    .neq('example_usage', ' ');
             }
-        }
 
-        console.log(`📊 RAW ROWS RETRIEVED FROM SUPABASE: ${finalData?.length || 0} rows.`);
+            const { data: cebuanoEntries, error: sourceError } = await baseQuery.limit(100);
 
-        if (!finalData || finalData.length === 0) {
-            console.log("❌ CRITICAL DATABASE EMPTY: No records found in 'dictionary_entries' with language_id = 3.");
-            return { data: [], error: null };
-        }
+            if (sourceError) {
+                console.error("❌ SUPABASE SOURCE RELATIONSHIP QUERY ERROR:", sourceError);
+                return { data: null, error: sourceError };
+            }
 
-        // 3. SECURE FORMAT MAPPING
-        const formattedChallenges = finalData
-            .map((entry, idx) => {
-                const translationRelation = entry.translations?.[0];
-                // Handle nested alignment mapping to extract equivalent translation string
-                const targetWord = translationRelation?.target_entry?.word_term;
-                
-                if (!targetWord) {
-                    // Log out specific missing translation linkages for easy tracking
-                    console.log(`   -> Row index ${idx} [Word: "${entry.word_term}"] omitted: No linked translation row found.`);
-                    return null;
+            if (!cebuanoEntries || cebuanoEntries.length === 0) {
+                console.log("⚠️ No Cebuano data entries matched your difficulty filter settings.");
+                return { data: [], error: null };
+            }
+
+            // 2. Data Processing Pipeline Function
+            const buildDataset = (preferredLangId) => {
+                const results = [];
+
+                for (const entry of cebuanoEntries) {
+                    // Extract translations array safely
+                    const translationRows = entry.translations || [];
+                    if (translationRows.length === 0) continue;
+
+                    // Find the matched translation entry that corresponds to our targeted language filter
+                    const match = translationRows.find(t => t.target_entry?.language_id === preferredLangId);
+                    if (!match || !match.target_entry) continue;
+
+                    const target = match.target_entry;
+
+                    let displayText = entry.word_term;
+                    let translationTerm = target.word_term;
+
+                    // Handle Hard Mode Requirements: Render full sentences for both prompt and choices
+                    if (difficulty === 'hard') {
+                        // Ensure both the source text and translation text have valid sentences available
+                        const sourceSentence = entry.example_usage?.trim();
+                        const targetSentence = target.example_usage?.trim();
+
+                        if (!sourceSentence) continue; // Skip entry if empty
+
+                        displayText = sourceSentence;
+                        // Fall back gracefully to word_term if the translated entry lacks a sentence structure
+                        translationTerm = targetSentence && targetSentence.length > 0 ? targetSentence : target.word_term;
+                    }
+
+                    results.push({
+                        id: entry.id,
+                        display_text: displayText,
+                        translation_term: translationTerm
+                    });
                 }
+                return results;
+            };
 
-                const displayText = (difficulty === 'hard' && entry.example_usage) ? entry.example_usage : entry.word_term;
+            // 3. Evaluate matching metrics using the primary target language
+            let dataPayload = buildDataset(primaryTargetId);
 
-                return {
-                    id: entry.id,
-                    display_text: displayText,
-                    translation_term: targetWord
-                };
-            })
-            .filter(Boolean);
+            // 4. Fallback Action: If preference yield is empty, route back up into alternate translation lists
+            if (dataPayload.length === 0) {
+                const alternateLabel = secondaryTargetId === 1 ? 'TAGALOG' : 'ENGLISH';
+                console.log(`⚠️ Selected choice filter returned 0 active links. Routing backup to ${alternateLabel}...`);
+                dataPayload = buildDataset(secondaryTargetId);
+            }
 
-        console.log(`🚀 FINAL FORMATTED CHALLENGES SHIPPED TO APP: ${formattedChallenges.length} items.`);
-        console.log(`=====================================================\n`);
+            console.log(`🚀 SHIPPED ${dataPayload.length} SECURE CHALLENGES TO REACT NATIVE CLIENT`);
+            console.log(`=====================================================\n`);
 
-        return { data: formattedChallenges, error: null };
+            return { data: dataPayload, error: null };
+
+        } catch (err) {
+            console.error("❌ Fatal processing error inside GameModel:", err);
+            return { data: null, error: err };
+        }
     }
 };
