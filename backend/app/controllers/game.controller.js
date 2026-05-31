@@ -16,3 +16,9 @@ export const getGameChallenges = async (req, res, next) => {
     const result = await GameService.getChallenges(req.params.id, difficulty, targetLanguage);
     sendResponse(res, next, result);
 };
+export const getBridgeChallenges = async (req, res, next) => {
+    // Game ID for Word Bridge is 2
+    const { targetLanguage } = req.query; 
+    const result = await GameService.getChallenges(2, 'bridge_mode', targetLanguage);
+    sendResponse(res, next, result);
+};
