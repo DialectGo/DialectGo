@@ -64,7 +64,7 @@ export default function Dictionary() {
       }
 
       const role = await AsyncStorage.getItem('@user_role');
-      const guestMode = await AsyncStorage.getItem('@guest_mode');
+      const guestMode = await AsyncStorage.getItem('@guest_mode'); 
 
       const isGuest = role === 'guest' || guestMode !== null;
       setIsGuestMode(isGuest);

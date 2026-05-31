@@ -12,6 +12,8 @@ export const getAllGames = async (req, res, next) => {
 };
 
 export const getGameChallenges = async (req, res, next) => {
-    const result = await GameService.getChallenges(req.params.id);
+    // Captures ?difficulty=easy/medium/hard from the client request string
+    const { difficulty } = req.query; 
+    const result = await GameService.getChallenges(req.params.id, difficulty);
     sendResponse(res, next, result);
 };

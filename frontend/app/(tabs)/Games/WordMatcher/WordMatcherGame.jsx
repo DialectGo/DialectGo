@@ -1,32 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, SafeAreaView, StatusBar, Text, TouchableOpacity, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import { styles } from './WordMatcherStyles';
 
-// IMPORT DATA
-import easyWords from '../../../../data/games/WordMatch/EasyWords.json';
-import mediumWords from '../../../../data/games/WordMatch/MediumWords.json';
-import hardWords from '../../../../data/games/WordMatch/HardWords.json';
+// 1. IMPORT YOUR EXISTING CENTRAL SUPABASE CLIENT INSTANCE
+import { supabase } from '../../../../shared/lib/supabase'; // Adjust this relative directory path if necessary
+
+const API_URL = 'http://192.168.1.53:5001/api';
 
 export default function WordMatcherGame() {
   const router = useRouter(); 
   const params = useLocalSearchParams();
   
   const [level, setLevel] = useState(parseInt(params.initialLevel) || 1);
-  const [globalHearts, setGlobalHearts] = useState(10);
+  const [globalHearts, setGlobalHearts] = useState(8); 
   const [currentScore, setCurrentScore] = useState(0); 
   const [loading, setLoading] = useState(true);
   
-  const [totalQuestionsInLevel, setTotalQuestionsInLevel] = useState(3);
+  const [totalQuestionsInLevel, setTotalQuestionsInLevel] = useState(4);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [choices, setChoices] = useState([]);
+  const [challengeBank, setChallengeBank] = useState([]);
   const [availableQuestions, setAvailableQuestions] = useState([]); 
   
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [isCorrect, setIsCorrect] = useState(null);
-  const [correctWordsList, setCorrectWordsList] = useState([]);
   
   // MODAL STATES
   const [isPaused, setIsPaused] = useState(false);
@@ -35,86 +35,120 @@ export default function WordMatcherGame() {
 
   const progressPercent = (currentScore / totalQuestionsInLevel) * 100;
 
-  // --- PROGRESS SAVING ---
-  const saveLevelProgress = async (completedLvl) => {
+  // --- FETCH DATA FROM DATABASE USING SUPABASE USER AUTH ---
+  const fetchGameChallenges = useCallback(async () => {
     try {
-      const savedLevels = await AsyncStorage.getItem('completed_levels');
-      let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
+      setLoading(true);
       
-      if (!levelsArray.includes(completedLvl)) {
-        levelsArray.push(completedLvl);
-        await AsyncStorage.setItem('completed_levels', JSON.stringify(levelsArray));
+      // FIX 1: Fetch live access token from Supabase Client instead of AsyncStorage
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert("Authentication Required", "Please re-login to download game assets.");
+        router.back();
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/games/1/challenges?difficulty=${params.difficulty || 'easy'}&level=${level}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        setChallengeBank(result.data);
+        setupLevelData(result.data);
+      } else {
+        Alert.alert("Asset Error", "Could not load challenges for this level.");
+        router.back();
       }
     } catch (e) {
-      console.error("Error saving progress:", e);
+      console.error("Error fetching database challenges:", e);
+      Alert.alert("Network Error", "Could not download game definitions.");
+      router.back();
+    } finally {
+      setLoading(false);
+    }
+  }, [level, params.difficulty]);
+
+  const setupLevelData = (bank) => {
+    const numQuestions = Math.min(3 + level, bank.length);
+    setTotalQuestionsInLevel(numQuestions);
+    
+    const shuffled = [...bank].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
+    setCurrentScore(0);
+    if (shuffled.length > 0) {
+      generateQuestion(shuffled[0], shuffled.slice(1), bank);
     }
   };
 
-  // --- GET DATA BANK ---
-  const getBank = useCallback(() => {
-    const diff = params.difficulty || 'easy';
-    if (diff === 'hard') return hardWords;
-    if (diff === 'medium') return mediumWords;
-    return easyWords;
-  }, [params.difficulty]);
-
-  // --- HEARTS LOGIC ---
-  const loadHearts = useCallback(async () => {
-    try {
-      const saved = await AsyncStorage.getItem('global_hearts');
-      if (saved !== null) setGlobalHearts(parseInt(saved));
-    } catch (e) { console.error(e); }
-  }, []);
-
-  const saveHearts = async (count) => {
-    setGlobalHearts(count);
-    await AsyncStorage.setItem('global_hearts', count.toString());
-  };
-
-  useEffect(() => { loadHearts(); }, [loadHearts]);
-
-  // --- QUESTION GENERATOR ---
-  const generateQuestion = useCallback((nextQ, list) => {
+  const generateQuestion = (nextQ, remainingList, fullBank) => {
     if (!nextQ) return; 
 
-    const bank = getBank();
     setSelectedChoice(null);
     setIsCorrect(null);
     
-    const distractors = [...bank]
-      .filter(item => item && nextQ && item.id !== nextQ.id) 
+    const distractors = fullBank
+      .filter(item => item.id !== nextQ.id) 
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
-      .map(item => item.cebuano);
+      .map(item => item.translation_term); 
 
-    setChoices([...distractors, nextQ.cebuano].sort(() => 0.5 - Math.random()));
+    setChoices([...distractors, nextQ.translation_term].sort(() => 0.5 - Math.random()));
     setCurrentQuestion(nextQ);
-    setAvailableQuestions(list);
-  }, [getBank]);
+    setAvailableQuestions(remainingList);
+  };
 
-  // --- LEVEL SETUP ---
-  const setupLevel = useCallback((lvl) => {
-    setLoading(true);
-    const numQuestions = 2 + lvl; 
-    setTotalQuestionsInLevel(numQuestions);
+  useEffect(() => {
+    fetchGameChallenges();
+  }, [level]);
 
-    const bank = getBank();
-    const shuffled = [...bank].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
+  // --- SAVE LEVEL PROGRESS & SEND SESSION TO DB ---
+  const handleLevelComplete = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    setCurrentScore(0);
-    if (shuffled.length > 0) {
-      generateQuestion(shuffled[0], shuffled.slice(1));
+      const savedLevels = await AsyncStorage.getItem(`completed_levels_${params.difficulty}`);
+      let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
+      
+      if (!levelsArray.includes(level)) {
+        levelsArray.push(level);
+        await AsyncStorage.setItem(`completed_levels_${params.difficulty}`, JSON.stringify(levelsArray));
+      }
+
+      // FIX 2: Corrected endpoint path mapping from singular '/session' to plural '/sessions'
+      const accuracy = (currentScore / totalQuestionsInLevel) * 100;
+      await fetch(`${API_URL}/sessions/${params.sessionId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          accuracy_score: accuracy,
+          session_data: { level, difficulty: params.difficulty }
+        })
+      });
+
+      // FIX 3: Pluralized destination route target parameters for progress tracking updates
+      const xpGained = params.difficulty === 'hard' ? 30 : params.difficulty === 'medium' ? 20 : 10;
+      await fetch(`${API_URL}/progress/update`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ xp_gained: xpGained })
+      });
+
+    } catch (e) {
+      console.error("Error synchronizing level stats to DB:", e);
     }
-    setLoading(false);
-  }, [getBank, generateQuestion]);
+  };
 
-  useEffect(() => { setupLevel(level); }, [level, setupLevel]);
-
-  // --- HANDLERS ---
   const handleAnswer = (selected) => {
     if (selectedChoice !== null || showResultModal || isPaused || !currentQuestion) return;
 
-    const isAnswerCorrect = selected === currentQuestion.cebuano;
+    const isAnswerCorrect = selected === currentQuestion.translation_term;
     setSelectedChoice(selected);
     setIsCorrect(isAnswerCorrect);
 
@@ -124,15 +158,15 @@ export default function WordMatcherGame() {
         setCurrentScore(nextScore);
 
         if (nextScore >= totalQuestionsInLevel) {
-          await saveLevelProgress(level); 
+          await handleLevelComplete(); 
           setResultType('win');
           setShowResultModal(true);
         } else if (availableQuestions.length > 0) {
-          generateQuestion(availableQuestions[0], availableQuestions.slice(1));
+          generateQuestion(availableQuestions[0], availableQuestions.slice(1), challengeBank);
         }
       } else {
         const newHearts = Math.max(0, globalHearts - 1);
-        await saveHearts(newHearts);
+        setGlobalHearts(newHearts);
         if (newHearts <= 0) {
           setResultType('lose');
           setShowResultModal(true);
@@ -165,7 +199,6 @@ export default function WordMatcherGame() {
     <SafeAreaView style={styles.gameContainer}>
       <StatusBar barStyle="dark-content" />
       
-      {/* HEADER */}
       <View style={styles.gameHeader}>
         <TouchableOpacity onPress={() => setIsPaused(true)}>
           <Ionicons name="pause-circle" size={45} color="#421C00" />
@@ -187,15 +220,13 @@ export default function WordMatcherGame() {
         </View>
       </View>
 
-      {/* QUESTION AREA */}
       <View style={styles.questionSection}>
         <Text style={styles.hintText}>Translate to Cebuano:</Text>
         <View style={styles.questionCard}>
-          <Text style={styles.questionWord}>{currentQuestion?.english}</Text>
+          <Text style={styles.questionWord}>{currentQuestion?.display_text}</Text>
         </View>
       </View>
 
-      {/* CHOICES AREA */}
       <View style={styles.choicesContainer}>
         {choices.map((choice, i) => (
           <TouchableOpacity 

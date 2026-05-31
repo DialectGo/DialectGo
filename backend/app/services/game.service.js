@@ -4,11 +4,8 @@ export const getAllGames = async () => {
     return await GameModel.getAllActiveGames();
 };
 
-export const getChallenges = async (gameId) => {
-    const { data, error } = await GameModel.getChallengesByGameId(gameId);
+export const getChallenges = async (gameId, difficulty) => {
+    const { data, error } = await GameModel.getChallengesByGameId(gameId, difficulty);
     if (error) return { error };
-
-    // Business Logic: Data transformation is kept in the Service layer
-    const formattedData = data ? data.map(item => item.dictionary_entry) : [];
-    return { data: formattedData };
+    return { data };
 };
