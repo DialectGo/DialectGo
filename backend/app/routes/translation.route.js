@@ -1,16 +1,25 @@
+// translation.route.js
 import express from 'express';
-import { translateText, getUserHistory, submitFeedback, translateImage, translateAudio, submitUserTranslation } from '../controllers/translation.controller.js';
+import { 
+    translateText, 
+    getUserHistory, 
+    submitFeedback, 
+    translateImage, 
+    translateAudio, 
+    submitUserTranslation, 
+    adminGetAllHistory, 
+    adminGetAllRecommendations, 
+    adminGetTranslationAnalytics 
+} from '../controllers/translation.controller.js';
 import verifyToken from '../middlewares/auth.middleware.js';
+import { authorizeRole } from '../middlewares/role.middleware.js'; 
 import { validateTranslateText, validateTranslateImage, validateUserTranslationSubmit } from '../middlewares/validate.middleware.js';
 import multer from 'multer';
+
 const upload = multer({ dest: 'uploads/' });
-
 const router = express.Router();
-
-// Create a sub-router for translation-related routes
 const translateRouter = express.Router();
 
-// Translation routes
 translateRouter.post('/', verifyToken, validateTranslateText, translateText);
 translateRouter.post('/contribute', verifyToken, validateUserTranslationSubmit, submitUserTranslation);
 translateRouter.post('/image', verifyToken, validateTranslateImage, translateImage);
@@ -22,5 +31,11 @@ router.use('/translate', translateRouter);
 // Other routes that don't fit under /translate
 router.get('/history', verifyToken, getUserHistory);
 router.post('/feedback', verifyToken, submitFeedback);
+
+// --- DUAL-CONTROL WORKSPACE MANAGEMENT ENDPOINTS ---
+// Cleaned: Removed duplicate prefixes and standardized role string to lowercase 'admin'
+router.get('/admin/history', verifyToken, authorizeRole('admin'), adminGetAllHistory);
+router.get('/admin/recommendations', verifyToken, authorizeRole('admin'), adminGetAllRecommendations);
+router.get('/admin/analytics/daily', verifyToken, authorizeRole('admin'), adminGetTranslationAnalytics);
 
 export default router;

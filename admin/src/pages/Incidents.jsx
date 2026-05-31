@@ -8,7 +8,16 @@ const Incidents = () => {
   const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
+
     fetchIncidents();
+
+    const interval = setInterval(
+      fetchIncidents,
+      10000
+    );
+
+    return () => clearInterval(interval);
+
   }, []);
 
   // 1. AUTHORIZED FETCH CALL
@@ -124,6 +133,32 @@ const Incidents = () => {
                       </td>
                       <td style={{ fontSize: '0.9rem', maxWidth: '400px', color: '#334155', lineHeight: '1.4' }}>
                         {item.description}
+                        <details style={{ marginTop: '8px' }}>
+                          <summary
+                            style={{
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
+                          >
+                            View Context
+                          </summary>
+
+                          <pre
+                            style={{
+                              background: '#f8fafc',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              overflowX: 'auto',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            {JSON.stringify(
+                              item.context_data,
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </details>
                       </td>
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>
                         {new Date(item.created_at).toLocaleString()}

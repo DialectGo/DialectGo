@@ -75,7 +75,8 @@ export const adminLogin = async (req, res, next) => {
   try {
     const adminSession = await UserService.adminLogin(
       req.body.email,
-      req.body.password
+      req.body.password,
+      req
     );
     
     // Return the session tokens cleanly to your React frontend workspace

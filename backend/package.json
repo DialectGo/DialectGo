@@ -21,7 +21,7 @@
   "homepage": "https://github.com/garu10/DialectGo#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
-    "axios": "^1.15.2",
+    "axios": "^1.16.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
