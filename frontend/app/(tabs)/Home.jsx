@@ -38,13 +38,26 @@ export default function Home({ onNavigate, activeTab }) {
   // New Streak State
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
 
+  // ✅ NEW: Dynamic Time-based Cebuano Greeting Helper
+  const getCebuanoGreeting = () => {
+    const currentHour = new Date().getHours();
+
+    if (currentHour >= 5 && currentHour < 12) {
+      return 'Maayong Buntag,'; // Morning (5:00 AM - 11:59 AM)
+    } else if (currentHour >= 12 && currentHour < 18) {
+      return 'Maayong Hapon,';  // Afternoon (12:00 PM - 5:59 PM)
+    } else {
+      return 'Maayong Gabii,';  // Evening/Night (6:00 PM - 4:59 AM)
+    }
+  };
+
   useEffect(() => {
     const loadAllData = async () => {
       setLoading(true);
       await Promise.all([
         fetchUserProfile(),
         fetchDailyWord(),
-        fetchStreak() // Added Streak Fetch
+        fetchStreak()
       ]);
       setLoading(false);
     };
@@ -66,7 +79,6 @@ export default function Home({ onNavigate, activeTab }) {
     }
   };
 
-  // Logic to determine which days of the week are highlighted
   const getWeeklyStatus = () => {
     const status = [false, false, false, false, false, false, false];
     const today = new Date();
@@ -176,7 +188,8 @@ export default function Home({ onNavigate, activeTab }) {
           
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
-              <Text style={styles.helloText}>Maayong Buntag,</Text>
+              {/* ✅ UPDATED: Dynamic time-based greeting renders here */}
+              <Text style={styles.helloText}>{getCebuanoGreeting()}</Text>
               <Text style={styles.userName}>{userName}</Text>
               <View style={styles.statusBadge}><Text style={styles.statusText}>• Online</Text></View>
             </View>
