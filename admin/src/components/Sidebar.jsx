@@ -1,6 +1,7 @@
 // src/components/Sidebar.jsx
 import React, { useEffect, useState } from 'react';
 import '../assets/css/sidebar.css';
+import { authFetch } from '../utils/authFetch';
 
 const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   const [adminData, setAdminData] = useState({
@@ -15,19 +16,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       try {
-        const token = localStorage.getItem('sb-access-token');
-        if (!token) {
-          setAdminData(prev => ({ ...prev, loading: false }));
-          return;
-        }
-
-        const response = await fetch(PROFILE_API, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await authFetch(PROFILE_API);
 
         const result = await response.json();
         
@@ -43,6 +32,8 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
             initials: initials,
             loading: false
           });
+        } else {
+          setAdminData(prev => ({ ...prev, loading: false }));
         }
       } catch (error) {
         console.error("Sidebar Admin Profile Fetch Error:", error);
@@ -54,11 +45,11 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   }, []);
 
   const menuItems = [
-    { name: 'Dashboard', icon: '⊞' },
-    { name: 'Users', icon: '👥' },
-    { name: 'Incidents', icon: '⚠' },
-    { name: 'Translations', icon: '🌍' },
-    { name: 'Dictionaries', icon: '📖' },
+    { name: 'Dashboard'},
+    { name: 'Users' },
+    { name: 'Incidents'},
+    { name: 'Translations'},
+    { name: 'Dictionaries'},
   ];
 
   return (
@@ -67,7 +58,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        justifyContent: 'justify-end',
         height: '100vh',
         backgroundColor: '#fff',
         borderRight: '1px solid #e2e8f0',
@@ -79,8 +70,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
       {/* TOP: LOGO AND NAVIGATION LINKS */}
       <div>
         <div className="sidebar-logo" style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.4rem' }}>🚀</span>
-          <span className="brand-name" style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a' }}>DialectGo</span>
+          <span className="brand-name" style={{ fontWeight: 800, fontSize: '1.75rem', color: '#0f172a', paddingTop: '25px' }}>DialectGo</span>
         </div>
 
         <nav className="sidebar-nav" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -102,7 +92,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
                 cursor: 'pointer',
                 textAlign: 'left',
                 width: '100%',
-                fontSize: '0.9rem',
+                fontSize: '1.25rem',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -136,8 +126,8 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
             <div 
               className="admin-avatar-chip" 
               style={{ 
-                width: '40px', 
-                height: '40px', 
+                width: '60px', 
+                height: '60px', 
                 borderRadius: '50%', 
                 backgroundColor: '#1a1a1a', 
                 color: '#FFD230', 
@@ -145,7 +135,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
                 justifyContent: 'center', 
                 alignItems: 'center', 
                 fontWeight: 800, 
-                fontSize: '0.9rem',
+                fontSize: '1.25rem',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
               }}
             >
@@ -155,7 +145,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
               <span 
                 style={{ 
                   fontWeight: 700, 
-                  fontSize: '0.85rem', 
+                  fontSize: '1.10rem', 
                   color: '#0f172a', 
                   whiteSpace: 'nowrap', 
                   overflow: 'hidden', 

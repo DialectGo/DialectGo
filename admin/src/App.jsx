@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -17,14 +18,54 @@ function App() {
 
   // Check if a valid login session already exists when the page loads
   useEffect(() => {
-    const sessionStr = localStorage.getItem('sb-access-token');
-    if (sessionStr) {
-      setIsAuthenticated(true);
-    }
+    const checkSession = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      console.debug('Initial supabase session on App mount:', session);
+
+      setIsAuthenticated(!!session);
+    };
+    
+    checkSession();
+    
+    // Listen for auth changes to update UI reactively
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.debug('Auth state changed:', event, session);
+      setIsAuthenticated(!!session);
+    });
+
+    // AGGRESSIVE TOKEN REFRESH: Refresh every 2 minutes to prevent expiration
+    // This is more aggressive than the 5-minute cycle to ensure token never expires
+    const refreshInterval = setInterval(async () => {
+      try {
+        console.debug('Running token refresh cycle...');
+        
+        // Always attempt a refresh to keep token fresh
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData?.session) {
+          console.warn('Token refresh failed:', refreshError?.message);
+          setIsAuthenticated(false);
+          window.location.href = '/login';
+        } else {
+          console.log('Token successfully refreshed at:', new Date().toLocaleTimeString());
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error('Token refresh error:', e);
+        setIsAuthenticated(false);
+      }
+    }, 2 * 60 * 1000); // Refresh every 2 minutes (more aggressive)
+
+    return () => {
+      authListener?.subscription?.unsubscribe?.();
+      clearInterval(refreshInterval);
+    };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('sb-access-token');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
   };
 

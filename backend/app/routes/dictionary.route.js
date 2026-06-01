@@ -3,6 +3,7 @@ import {
     getWordDefinition,
     getBrowseWords,
     saveWord, 
+    checkSavedStatus,
     getSavedWords ,
     deleteSelectedWords,
     getSearchHistory,
@@ -20,6 +21,7 @@ router.get('/browse', verifyToken, getBrowseWords);
 
 // Protected routes
 router.post('/save', verifyToken, validateDictionarySave, saveWord);
+router.get('/check-saved/:id', verifyToken, checkSavedStatus);
 router.get('/saved', verifyToken, getSavedWords);
 router.delete('/delete-multiple', verifyToken, deleteSelectedWords);
 router.get('/history', verifyToken, getSearchHistory);

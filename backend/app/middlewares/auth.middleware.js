@@ -1,31 +1,24 @@
-import { supabase } from '../config/db.js';
+// middlewares/auth.middleware.js
+import { supabaseAdmin } from '../config/db.js';
 
 const verifyToken = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: No token provided"
-      });
-    }
-
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: Invalid or expired token"
-      });
-    }
-
-    req.user = user;
-    next();
-
-  } catch (err) {
-    next(err);
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
   }
+
+  const token = authHeader.split(' ')[1];
+
+  // Use getUser(token) to verify the JWT against your Supabase project
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !user) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+
+  req.user = user;
+  next();
 };
 
 export default verifyToken;

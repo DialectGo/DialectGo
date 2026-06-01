@@ -11,6 +11,7 @@ const router = express.Router();
 
 // Base Security Monitoring Endpoint
 router.get('/dashboard/security', verifyToken, authorizeRole('admin'), SecurityController.getSecurityMetricsOverview);
+router.get('/dashboard/active-admins', verifyToken, authorizeRole('admin'), SecurityController.getActiveAdmins);
 router.put('/dashboard/anomaly/:id/resolve', verifyToken, authorizeRole('admin'), SecurityController.resolveAnomaly);
 
 // High Risk Route 1: Dataset Export

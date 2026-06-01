@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Modal,
   SafeAreaView,
@@ -9,28 +9,68 @@ import {
   Text,
   TouchableOpacity,
   View,
-  StyleSheet
+  StyleSheet,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../WordBridge/WordBridgeStyles';
+import { supabase } from '../../../../shared/lib/supabase';
 
-export default function WordBridgeHome({ unlockedLevel = 1 }) {
+const API_URL = 'http://192.168.1.53:5001/api';
+
+export default function WordBridgeHome() {
   const router = useRouter();
+  
+  // DYNAMIC LEVEL TRACKING STATE
+  const [completedLevels, setCompletedLevels] = useState([]);
   
   // NAVIGATION STATES
   const [viewState, setViewState] = useState('home'); 
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
   
-  // Configuration: Ngayon dalawa na lang ang mode
-  const [gameMode, setGameMode] = useState(''); // 'ceb-tag' or 'ceb-eng'
+  const [gameMode, setGameMode] = useState(''); // 'Cebuano - Tagalog' or 'Cebuano - English'
 
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [isMusicEnabled, setIsMusicEnabled] = useState(true);
 
-  const totalLevels = 50; 
+  const totalLevels = 24; 
   const levels = Array.from({ length: totalLevels }, (_, i) => i + 1);
+
+  // Fetch the latest progression from your backend database
+  const fetchUserProgression = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // FIXED: Points to the unified profile progression route path
+      const response = await fetch(`${API_URL}/progress/me`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // WordBridge defaults to hard mode structures natively
+        const saved = await AsyncStorage.getItem(`completed_levels_hard`);
+        if (saved !== null) {
+          setCompletedLevels(JSON.parse(saved));
+        }
+      }
+    } catch (error) {
+      console.error("Failed syncing WordBridge progression index logs:", error);
+    }
+  };
+
+  // Triggers automatically whenever the user focuses back to the screen from a game session
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserProgression();
+    }, [])
+  );
 
   const handleBackPress = () => {
     if (viewState === 'levels') setViewState('home');
@@ -43,34 +83,87 @@ export default function WordBridgeHome({ unlockedLevel = 1 }) {
     setViewState('levels');
   };
 
+  const startGameEngineInstance = async (lvl) => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.access_token) {
+        Alert.alert("Authentication Session Expired", "Please authenticate credentials to join tracking logs.");
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/sessions/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ game_id: 1 }) // Points to WordBridge tracking target node
+      });
+      
+      const resData = await response.json();
+      
+      if (response.ok && resData.success && resData.data) {
+        // MATCH LOGIC: Extract target language dynamically based on what was picked
+        // If mode is 'Cebuano - Tagalog', target language context is 'tagalog'
+        const targetLangParam = gameMode.toLowerCase().includes('tagalog') ? 'english' : 'tagalog';
+
+        router.push({
+          pathname: '/Games/WordBridge/WordBridgeGame',
+          params: { 
+            initialLevel: lvl, 
+            gameMode: gameMode,
+            targetLanguage: targetLangParam, // <-- PASSES TRANSLATION PREFERENCE
+            sessionId: resData.data.session_id
+          }
+        });
+      } else {
+        Alert.alert("Session Error", resData.message || "Could not spin up tracking nodes.");
+      }
+    } catch (error) {
+      console.error("Critical handshake failure on WordBridge initiation path:", error);
+      Alert.alert("Network Timeout", "Could not verify device telemetry with processing server target endpoints.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#FF9800" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
-      {/* --- MODAL: LANGUAGE PICKER (2 CHOICES ONLY) --- */}
+      {/* --- MODAL: LANGUAGE PICKER --- */}
       <Modal animationType="fade" transparent visible={showLanguagePicker}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { width: '85%' }]}>
             <Text style={[styles.modalTitle, { marginBottom: 25 }]}>PUMILI NG MODE</Text>
             
             <View style={{ width: '100%', gap: 15 }}>
-              {/* CHOICE 1: CEBUANO - TAGALOG */}
-              <TouchableOpacity 
-                style={localStyles.langCard} 
-                onPress={() => selectModeAndProceed('Cebuano - Tagalog')}
-              >
-                <Ionicons name="swap-horizontal" size={24} color="#FF9800" style={{ marginBottom: 5 }} />
-                <Text style={localStyles.langLabel}>Cebuano - Tagalog</Text>
-                <Text style={localStyles.subLabel}>Vice Versa</Text>
-              </TouchableOpacity>
-              
-              {/* CHOICE 2: CEBUANO - ENGLISH */}
               <TouchableOpacity 
                 style={localStyles.langCard} 
                 onPress={() => selectModeAndProceed('Cebuano - English')}
               >
                 <Ionicons name="swap-horizontal" size={24} color="#FF9800" style={{ marginBottom: 5 }} />
                 <Text style={localStyles.langLabel}>Cebuano - English</Text>
+                <Text style={localStyles.subLabel}>Vice Versa</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={localStyles.langCard} 
+                onPress={() => selectModeAndProceed('Cebuano - Tagalog')}
+              >
+                <Ionicons name="swap-horizontal" size={24} color="#FF9800" style={{ marginBottom: 5 }} />
+                <Text style={localStyles.langLabel}>Cebuano - Tagalog</Text>
                 <Text style={localStyles.subLabel}>Vice Versa</Text>
               </TouchableOpacity>
             </View>
@@ -151,7 +244,7 @@ export default function WordBridgeHome({ unlockedLevel = 1 }) {
         {viewState === 'home' && (
           <View style={[styles.menuWrapper, { marginTop: 60 }]}>
             <View style={{ alignItems: 'center', marginBottom: 50 }}>
-              <Ionicons name="bridge" size={120} color="#FF9800" />
+              <Ionicons name="git-commit-outline" size={120} color="#FF9800" />
               <Text style={[styles.headerTitle, { textAlign: 'center', fontSize: 38 }]}>
                 DIALECT{'\n'}<Text style={styles.yellowText}>BRIDGE</Text>
               </Text>
@@ -182,18 +275,18 @@ export default function WordBridgeHome({ unlockedLevel = 1 }) {
           <View style={[styles.levelWrapper, { marginTop: 20 }]}>
             <View style={styles.levelGrid}>
               {levels.map((lvl) => {
-                const currentUnlocked = Number(unlockedLevel) || 1;
-                const isLocked = lvl > currentUnlocked;
-                const isCompleted = lvl < currentUnlocked;
+                // ✅ FIXED LEVEL VALIDATION MATRIX RULES LIKE WORDMATCHER
+                const isCompleted = completedLevels.includes(lvl);
+                const isLocked = lvl !== 1 && !completedLevels.includes(lvl - 1);
 
                 return (
                   <TouchableOpacity
                     key={lvl}
                     disabled={isLocked}
-                    onPress={() => console.log(`Start Level ${lvl} - ${gameMode}`)}
+                    onPress={() => startGameEngineInstance(lvl)}
                     style={[
                       styles.levelBtn, 
-                      isLocked ? styles.lockedLevel : (isCompleted ? styles.completedLevel : styles.currentLevel)
+                      isLocked ? styles.lockedLevel : (isCompleted ? [styles.completedLevel, { backgroundColor: '#4CAF50' }] : styles.currentLevel)
                     ]}
                   >
                     {isLocked ? (

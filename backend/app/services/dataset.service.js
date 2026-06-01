@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/db.js';
+import { notifyAllAdmins } from './notification.service.js';
 
 export const fetchAllDictionaryEntries = async () => {
     const { data, error } = await supabaseAdmin
@@ -50,6 +51,20 @@ export const createPendingAction = async (makerId, payload) => {
         console.error("Auditing log insertion failure trace:", error.message);
         throw error;
     }
+
+    await notifyAllAdmins({
+        type: 'PENDING_DATASET_VERIFICATION',
+        title: 'New dataset change request pending approval',
+        message: `A new ${payload.operationType.toLowerCase()} request on ${payload.targetTable} requires a second admin's verification.`,
+        metadata: {
+            maker_id: makerId,
+            target_table: payload.targetTable,
+            operation_type: payload.operationType,
+            target_row_id: payload.targetRowId,
+            rationale: payload.rationale
+        }
+    });
+
     return logEntry;
 };
 

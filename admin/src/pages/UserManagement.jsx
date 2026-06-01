@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import '../assets/css/user-management.css';
+import { supabase } from '../lib/supabase';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -41,7 +42,13 @@ const UserManagement = () => {
   const hydrateDashboardData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const token =
+        session?.access_token;
+
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // 1. Fetch Core Users Directory
@@ -114,7 +121,12 @@ const UserManagement = () => {
   const handleActionStageSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      const token =
+        session?.access_token;
       
       const proposedData = operation === 'DISABLE' 
         ? { is_disabled: !targetUser.is_disabled } 

@@ -165,4 +165,19 @@ export const DictionaryModel = {
         if (error) throw error;
         return data;
     },
+    // Add this inside the DictionaryModel object wrapper inside dictionary.model.js
+    async isWordSaved(userId, dictionaryId) {
+        const { data, error } = await supabase
+            .from('user_saved_words')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('dictionary_id', dictionaryId)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Database query error checking bookmark status:", error);
+            throw error;
+        }
+        return !!data; // Returns true if a row match is found, false otherwise
+    },
 };
