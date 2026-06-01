@@ -57,3 +57,8 @@ export const getRandomCebuanoWord = async () => {
     if (!wordData) throw new Error('No words available');
     return wordData;
 };
+
+// Add this inside dictionary.service.js
+export const checkIfSaved = async (userId, dictionaryId) => {
+    return await DictionaryModel.isWordSaved(userId, dictionaryId);
+};

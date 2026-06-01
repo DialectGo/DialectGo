@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Image,
   SafeAreaView,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -13,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../shared/lib/supabase';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
+import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
 import { styles } from '../../shared/styles/HomeStyles';
 import { useRouter } from 'expo-router'; 
 
@@ -32,36 +32,43 @@ export default function Home({ onNavigate, activeTab }) {
   const router = useRouter();
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ NEW REFRESHING CONTROL STATE
   const [userName, setUserName] = useState('User'); 
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   
-  // New Streak State
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
 
-  // ✅ NEW: Dynamic Time-based Cebuano Greeting Helper
   const getCebuanoGreeting = () => {
     const currentHour = new Date().getHours();
-
-    if (currentHour >= 5 && currentHour < 12) {
-      return 'Maayong Buntag,'; // Morning (5:00 AM - 11:59 AM)
-    } else if (currentHour >= 12 && currentHour < 18) {
-      return 'Maayong Hapon,';  // Afternoon (12:00 PM - 5:59 PM)
-    } else {
-      return 'Maayong Gabii,';  // Evening/Night (6:00 PM - 4:59 AM)
-    }
+    if (currentHour >= 5 && currentHour < 12) return 'Maayong Buntag,';
+    if (currentHour >= 12 && currentHour < 18) return 'Maayong Hapon,';
+    return 'Maayong Gabii,';
   };
 
+  // Base loader module
+  const loadAllData = async (forceRefresh = false) => {
+    await Promise.all([
+      fetchUserProfile(),
+      fetchDailyWord(forceRefresh), // Pass down force refresh boolean tag
+      fetchStreak()
+    ]);
+  };
+
+  // On First Mount
   useEffect(() => {
-    const loadAllData = async () => {
+    const initializeData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchUserProfile(),
-        fetchDailyWord(),
-        fetchStreak()
-      ]);
+      await loadAllData(false);
       setLoading(false);
     };
-    loadAllData();
+    initializeData();
+  }, []);
+
+  // ✅ NEW: Pull-To-Refresh Event Handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData(true); // force underlying fetch operations to clear cache locks
+    setRefreshing(false);
   }, []);
 
   const fetchStreak = async () => {
@@ -126,7 +133,7 @@ export default function Home({ onNavigate, activeTab }) {
     }
   };
 
-  const fetchDailyWord = async () => {
+  const fetchDailyWord = async (forceRefresh = false) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -134,13 +141,16 @@ export default function Home({ onNavigate, activeTab }) {
       const userId = session.user.id;
       const storageKey = `word_of_the_day_${userId}`; 
       const now = Date.now();
-      const storedData = await AsyncStorage.getItem(storageKey);
 
-      if (storedData) {
-        const { data, timestamp } = JSON.parse(storedData);
-        if (now - timestamp < 86400000) {
-          setWordOfDay(data);
-          return;
+      // Skip cache verification check if the user physically triggers a pull refresh action
+      if (!forceRefresh) {
+        const storedData = await AsyncStorage.getItem(storageKey);
+        if (storedData) {
+          const { data, timestamp } = JSON.parse(storedData);
+          if (now - timestamp < 86400000) {
+            setWordOfDay(data);
+            return;
+          }
         }
       }
 
@@ -184,11 +194,15 @@ export default function Home({ onNavigate, activeTab }) {
       <TopBar onLogout={() => {}} onProfile={() => {}} />
       
       <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}>
+        {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}
+        <RefreshContainer
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
+        >
           
           <View style={styles.header}>
             <View style={styles.headerTextGroup}>
-              {/* ✅ UPDATED: Dynamic time-based greeting renders here */}
               <Text style={styles.helloText}>{getCebuanoGreeting()}</Text>
               <Text style={styles.userName}>{userName}</Text>
               <View style={styles.statusBadge}><Text style={styles.statusText}>• Online</Text></View>
@@ -278,7 +292,7 @@ export default function Home({ onNavigate, activeTab }) {
             </View>
           </View>
           
-        </ScrollView>
+        </RefreshContainer>
       </SafeAreaView>
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>
