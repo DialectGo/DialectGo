@@ -1,74 +1,78 @@
 import dotenv from 'dotenv';
-dotenv.config(); // MUST be first line
+dotenv.config();
 
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
-import userRoutes from './routes/user.route.js';
+// Config & Middleware
+import { connectDB } from './config/db.js';
 import errorHandler from './middlewares/error.middleware.js';
-import { supabase, connectDB } from './config/db.js';
+
+// Routes
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.route.js';
 import translationRoutes from './routes/translation.route.js';
 import dictionaryRoutes from './routes/dictionary.route.js';
 import gameRoutes from './routes/game.route.js';
 import sessionRoutes from './routes/session.route.js';
 import progressRoutes from './routes/progress.route.js';
 import securityRouter from './routes/security.route.js';
-import { getSecurityMetricsOverview, resolveAnomaly } from './controllers/security.controller.js';
 import datasetRoutes from './routes/dataset.route.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
 
+// ─── Core Middleware ─────────────────────────────────────────────────────────
+
 app.use(helmet());
-app.use(cors({ 
+
+app.use(cors({
   origin: ['http://localhost:5001', 'http://localhost:5173'],
-  credentials: true
+  credentials: true,
 }));
 
-app.use(express.json());
+// Body parsers — MUST be before routes
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Rate limit
-app.use(rateLimit({
+// ─── Routes ──────────────────────────────────────────────────────────────────
+
+// Rate limit ONLY the login endpoint — not internal admin API polling
+app.use('/api/auth', rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 20, // 20 login attempts per 15 minutes
+  message: { success: false, message: 'Too many login attempts. Try again later.' },
 }));
 
-// admin
-app.use('/api', securityRouter);
-app.use('/api/dataset', datasetRoutes);
-
+app.use('/api/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
-
-// Inside index.jsx
 app.use('/api/v1/translations', translationRoutes);
-
-// babaguhin ko pa toh
-app.use('/api', translationRoutes); // 2. Add this
-// ... other middlewares
 app.use('/api/dictionary', dictionaryRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/progress', progressRoutes);
-// babaguhin ko pa toh
+app.use('/api/dataset', datasetRoutes);
+app.use('/api', securityRouter);
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// ─── Error Handler (MUST be last) ────────────────────────────────────────────
 
 app.use(errorHandler);
 
-const startServer = async () => {
-    await connectDB();
+// ─── Start Server ─────────────────────────────────────────────────────────────
 
-    app.listen(port, '0.0.0.0', () => {
-        console.log(`🚀 Server is running on http://localhost:${port}`);
-        console.log(`📱 For Expo Go, use: http://YOUR_IP_ADDRESS:${port}`);
-    });
+const startServer = async () => {
+  await connectDB();
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://localhost:${port}`);
+    console.log(`📱 For Expo Go, use: http://YOUR_IP_ADDRESS:${port}`);
+  });
 };
 
 startServer().catch((error) => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
+
 export default app;

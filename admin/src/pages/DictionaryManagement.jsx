@@ -1,6 +1,5 @@
 // src/pages/DictionaryManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import '../assets/css/user-management.css';
 
 const DictionaryManagement = () => {
@@ -35,25 +34,10 @@ const DictionaryManagement = () => {
     const loadDatasetCollection = async () => {
         setLoading(true);
         try {
-            const {
-              data: { session }
-            } = await supabase.auth.getSession();
-
-            if (!session) {
-              window.location.href = '/login';
-              return;
-            }
-
+            const token = localStorage.getItem('admin_token');
             const res = await fetch('/api/dataset/dictionary', {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (res.status === 401) {
-              await supabase.auth.signOut();
-              window.location.href = '/login';
-              return;
-            }
-
             const payload = await res.json();
             if (payload.success) {
                 setDataset(payload.data);
@@ -108,15 +92,7 @@ const DictionaryManagement = () => {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         try {
-            const {
-              data: { session }
-            } = await supabase.auth.getSession();
-
-            if (!session) {
-              window.location.href = '/login';
-              return;
-            }
-
+            const token = localStorage.getItem('admin_token');
             const proposedData = operation === 'DELETE' ? null : {
                 language_id: Number(langId),
                 word_term: wordTerm,
@@ -129,7 +105,7 @@ const DictionaryManagement = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     targetTable: 'dictionary_entries',
@@ -139,12 +115,6 @@ const DictionaryManagement = () => {
                     rationale
                 })
             });
-
-            if (res.status === 401) {
-              await supabase.auth.signOut();
-              window.location.href = '/login';
-              return;
-            }
 
             const payload = await res.json();
             alert(payload.message);
@@ -158,12 +128,7 @@ const DictionaryManagement = () => {
 
     const triggerExportDownload = async (format) => {
         try {
-            const {
-            data: { session }
-            } = await supabase.auth.getSession();
-
-            const token =
-            session?.access_token;
+            const token = localStorage.getItem('admin_token');
             window.open(`/api/dataset/dictionary/export?format=${format}&token=${token}`, '_blank');
         } catch (err) { 
             console.error("Export failure stream transformation creation:", err); 
