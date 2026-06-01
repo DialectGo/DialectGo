@@ -46,7 +46,7 @@ const TranslationManagement = () => {
     setLoading(true);
     setError(null);
     try {
-        const token = localStorage.getItem('sb-access-token');
+        const token = localStorage.getItem('admin_token');
         const headers = { 'Authorization': `Bearer ${token}` };
 
         // PATH FIXED: Pointing accurately to the nested /api/v1/translations base route context
@@ -97,7 +97,7 @@ const TranslationManagement = () => {
   const handleStageRequestSubmission = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const token = localStorage.getItem('admin_token');
       
       let proposedData = {};
       if (targetTable === 'translation_history' && operationType === 'UPDATE') {

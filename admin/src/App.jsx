@@ -7,7 +7,8 @@ import UserManagement from './pages/UserManagement';
 import DictionaryManagement from './pages/DictionaryManagement';
 import TranslationManagement from './pages/TranslationManagement';
 import Incidents from './pages/Incidents';
-import Login from './pages/Login'; // Make sure to save the Login component here!
+import Login from './pages/Login';
+import { authService } from './services/authService'; // ← JWT auth
 import './assets/css/sidebar.css';
 
 function App() {
@@ -15,17 +16,21 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // Check if a valid login session already exists when the page loads
+  // Check if a valid JWT token exists when the page loads
   useEffect(() => {
-    const sessionStr = localStorage.getItem('sb-access-token');
-    if (sessionStr) {
+    if (authService.isAuthenticated()) {
       setIsAuthenticated(true);
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('sb-access-token');
+    authService.clearToken(); // clears 'admin_token' from localStorage
     setIsAuthenticated(false);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    setActiveTab('Dashboard');
   };
 
   const renderActiveView = () => {
@@ -45,35 +50,40 @@ function App() {
     }
   };
 
-  // 1. Unauthenticated Guard Check Layer
+  // 1. Unauthenticated Guard — show Login if no valid token
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 2. Main Authenticated Application View Workspace Screen Layout
+  // 2. Main Authenticated Application Layout
   return (
     <div className="app-layout">
-      <button 
-        className="hamburger-btn" 
+      <button
+        className="hamburger-btn"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
       >
         {isSidebarOpen ? '✕' : '☰'}
       </button>
 
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        activeTab={activeTab} 
-        onTabChange={(tab) => setActiveTab(tab)} 
+      <Sidebar
+        isOpen={isSidebarOpen}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
       />
 
       <div className={`main-viewport ${!isSidebarOpen ? 'full-width' : ''}`}>
         <Navbar title={activeTab} />
-        
-        {/* Simple inline signout link option for panel dashboard */}
+
         <div style={{ textAlign: 'right', paddingRight: '40px' }}>
-          <button 
-            onClick={handleLogout} 
-            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: '600' }}
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ef4444',
+              cursor: 'pointer',
+              fontWeight: '600',
+            }}
           >
             ↳ Sign Out
           </button>

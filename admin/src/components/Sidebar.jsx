@@ -1,13 +1,14 @@
 // src/components/Sidebar.jsx
 import React, { useEffect, useState } from 'react';
 import '../assets/css/sidebar.css';
+import { authService } from '../services/authService';
 
 const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   const [adminData, setAdminData] = useState({
     firstName: 'Admin',
     lastName: 'User',
     initials: 'AD',
-    loading: true
+    loading: true,
   });
 
   const PROFILE_API = '/api/v1/users/profile';
@@ -15,22 +16,29 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   useEffect(() => {
     const fetchAdminProfile = async () => {
       try {
-        const token = localStorage.getItem('sb-access-token');
+        const token = authService.getToken(); // ← correct key: 'admin_token'
+
         if (!token) {
-          setAdminData(prev => ({ ...prev, loading: false }));
+          setAdminData((prev) => ({ ...prev, loading: false }));
           return;
         }
 
         const response = await fetch(PROFILE_API, {
           method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         });
 
+        if (!response.ok) {
+          // Don't log out — just show default name if profile fetch fails
+          setAdminData((prev) => ({ ...prev, loading: false }));
+          return;
+        }
+
         const result = await response.json();
-        
+
         if (result.success) {
           const user = result.data;
           const first = user.first_name || 'Admin';
@@ -40,13 +48,15 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
           setAdminData({
             firstName: first,
             lastName: last,
-            initials: initials,
-            loading: false
+            initials,
+            loading: false,
           });
+        } else {
+          setAdminData((prev) => ({ ...prev, loading: false }));
         }
       } catch (error) {
-        console.error("Sidebar Admin Profile Fetch Error:", error);
-        setAdminData(prev => ({ ...prev, loading: false }));
+        console.error('Sidebar Admin Profile Fetch Error:', error);
+        setAdminData((prev) => ({ ...prev, loading: false }));
       }
     };
 
@@ -62,7 +72,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   ];
 
   return (
-    <aside 
+    <aside
       className={`sidebar-container ${!isOpen ? 'sidebar-hidden' : ''}`}
       style={{
         display: 'flex',
@@ -73,21 +83,43 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
         borderRight: '1px solid #e2e8f0',
         width: isOpen ? '260px' : '0px',
         transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       {/* TOP: LOGO AND NAVIGATION LINKS */}
       <div>
-        <div className="sidebar-logo" style={{ padding: '24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div
+          className="sidebar-logo"
+          style={{
+            padding: '24px',
+            borderBottom: '1px solid #f1f5f9',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+          }}
+        >
           <span style={{ fontSize: '1.4rem' }}>🚀</span>
-          <span className="brand-name" style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a' }}>DialectGo</span>
+          <span
+            className="brand-name"
+            style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a' }}
+          >
+            DialectGo
+          </span>
         </div>
 
-        <nav className="sidebar-nav" style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <nav
+          className="sidebar-nav"
+          style={{
+            padding: '16px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
           {menuItems.map((item) => (
-            <button 
-              key={item.name} 
-              onClick={() => onTabChange(item.name)} 
+            <button
+              key={item.name}
+              onClick={() => onTabChange(item.name)}
               className={`nav-link ${activeTab === item.name ? 'active' : ''}`}
               style={{
                 display: 'flex',
@@ -103,69 +135,106 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
                 textAlign: 'left',
                 width: '100%',
                 fontSize: '0.9rem',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.15s ease',
               }}
             >
-              <span className="nav-icon" style={{ fontSize: '1.1rem', minWidth: '20px' }}>{item.icon}</span>
+              <span
+                className="nav-icon"
+                style={{ fontSize: '1.1rem', minWidth: '20px' }}
+              >
+                {item.icon}
+              </span>
               {item.name}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* BOTTOM: ADMIN USER COMPLIANCE FOOTER CARD */}
-      <div 
-        className="sidebar-footer-profile" 
-        style={{ 
-          padding: '16px 20px', 
-          borderTop: '1px solid #f1f5f9', 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '12px', 
+      {/* BOTTOM: ADMIN USER PROFILE FOOTER */}
+      <div
+        className="sidebar-footer-profile"
+        style={{
+          padding: '16px 20px',
+          borderTop: '1px solid #f1f5f9',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
           backgroundColor: '#f8fafc',
-          marginBpottom: '30px',
+          marginBottom: '30px',
         }}
       >
         {adminData.loading ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#e2e8f0' }} />
-            <div style={{ height: '12px', width: '80px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                backgroundColor: '#e2e8f0',
+              }}
+            />
+            <div
+              style={{
+                height: '12px',
+                width: '80px',
+                backgroundColor: '#e2e8f0',
+                borderRadius: '4px',
+              }}
+            />
           </div>
         ) : (
           <>
-            <div 
-              className="admin-avatar-chip" 
-              style={{ 
-                width: '40px', 
-                height: '40px', 
-                borderRadius: '50%', 
-                backgroundColor: '#1a1a1a', 
-                color: '#FFD230', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                fontWeight: 800, 
+            <div
+              className="admin-avatar-chip"
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#1a1a1a',
+                color: '#FFD230',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                fontWeight: 800,
                 fontSize: '0.9rem',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                flexShrink: 0,
               }}
             >
               {adminData.initials}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <span 
-                style={{ 
-                  fontWeight: 700, 
-                  fontSize: '0.85rem', 
-                  color: '#0f172a', 
-                  whiteSpace: 'nowrap', 
-                  overflow: 'hidden', 
-                  textOverflow: 'ellipsis'
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  color: '#0f172a',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {`${adminData.firstName} ${adminData.lastName}`.trim()}
               </span>
-              <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                <span style={{ width: '6px', height: '6px', backgroundColor: '#22c55e', borderRadius: '50%' }}></span>
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  color: '#16a34a',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  marginTop: '2px',
+                }}
+              >
+                <span
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    backgroundColor: '#22c55e',
+                    borderRadius: '50%',
+                  }}
+                />
                 System Administrator
               </span>
             </div>
@@ -176,4 +245,4 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

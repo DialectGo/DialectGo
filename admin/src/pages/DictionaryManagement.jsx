@@ -34,7 +34,7 @@ const DictionaryManagement = () => {
     const loadDatasetCollection = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('sb-access-token');
+            const token = localStorage.getItem('admin_token');
             const res = await fetch('/api/dataset/dictionary', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -92,7 +92,7 @@ const DictionaryManagement = () => {
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('sb-access-token');
+            const token = localStorage.getItem('admin_token');
             const proposedData = operation === 'DELETE' ? null : {
                 language_id: Number(langId),
                 word_term: wordTerm,
@@ -128,7 +128,7 @@ const DictionaryManagement = () => {
 
     const triggerExportDownload = async (format) => {
         try {
-            const token = localStorage.getItem('sb-access-token');
+            const token = localStorage.getItem('admin_token');
             window.open(`/api/dataset/dictionary/export?format=${format}&token=${token}`, '_blank');
         } catch (err) { 
             console.error("Export failure stream transformation creation:", err); 

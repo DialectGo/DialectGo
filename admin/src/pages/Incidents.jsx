@@ -23,7 +23,7 @@ const Incidents = () => {
   // 1. AUTHORIZED FETCH CALL
   const fetchIncidents = async () => {
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const token = localStorage.getItem('admin_token');
 
       if (!token) {
         console.error("No administrative session token discovered in memory.");
@@ -55,7 +55,7 @@ const Incidents = () => {
   // 2. AUTHORIZED MUTATION (PUT) CALL
   const resolveThreat = async (id) => {
     try {
-      const token = localStorage.getItem('sb-access-token');
+      const token = localStorage.getItem('admin_token');
 
       const res = await fetch(`/api/dashboard/anomaly/${id}/resolve`, {
         method: 'PUT',
