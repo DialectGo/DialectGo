@@ -159,24 +159,6 @@ export default function LogIn({ onSwitch, onSuccess }) {
               <View style={styles.line} />
             </View>
 
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.bubbleSocialBtn} activeOpacity={0.7}>
-                <Image 
-                  source={require('../assets/logo/googleLogo.png')}
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.bubbleSocialBtn} activeOpacity={0.7}>
-                <Image 
-                  source={require('../assets/logo/facebookLogo.jpg')}
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Facebook</Text>
-              </TouchableOpacity>
-            </View>
-
             <View style={styles.footer}>
               <Text style={styles.footerText}>New here? </Text>
               <TouchableOpacity 
