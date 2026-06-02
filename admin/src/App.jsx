@@ -8,6 +8,7 @@ import UserManagement from './pages/UserManagement';
 import DictionaryManagement from './pages/DictionaryManagement';
 import TranslationManagement from './pages/TranslationManagement';
 import Incidents from './pages/Incidents';
+import GameManagement from './pages/GameManagement';
 import Login from './pages/Login'; // Make sure to save the Login component here!
 import './assets/css/sidebar.css';
 
@@ -81,6 +82,8 @@ function App() {
         return <DictionaryManagement />;
       case 'Translations':
         return <TranslationManagement />;
+      case 'Game Management':
+        return <GameManagement />;
       default:
         return <Dashboard />;
     }

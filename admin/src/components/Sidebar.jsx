@@ -50,7 +50,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
     { name: 'Incidents'},
     { name: 'Translations'},
     { name: 'Dictionaries'},
-  ];
+    { name: 'Game Management'},];
 
   return (
     <aside 
