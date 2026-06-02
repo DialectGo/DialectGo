@@ -55,12 +55,8 @@ const verifyToken = async (req, res, next) => {
       });
     }
 
-    req.user = user;
-    next();
-
-  } catch (err) {
-    next(err);
-  }
+  req.user = user;
+  next();
 };
 
 export default verifyToken;

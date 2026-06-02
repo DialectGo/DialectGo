@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { authFetch } from '../utils/authFetch';
 import '../assets/css/sidebar.css';
 import ActiveAdmins from '../components/ActiveAdmins';
 import { apiFetch } from '../services/apiService'; 

@@ -7,47 +7,53 @@ import {
   StatusBar,
   Text,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './WordMatcherStyles';
+import { supabase } from '../../../../shared/lib/supabase';
+
+const API_URL = 'http://192.168.1.53:5001/api';
 
 export default function WordMatcherHome({ route }) {
   const router = useRouter();
   
   const [viewState, setViewState] = useState('home'); 
   const [selectedDifficulty, setSelectedDifficulty] = useState(null); 
+  const [targetLanguage, setTargetLanguage] = useState('english'); // Default translation pool preference
   const [showHowToPlay, setShowHowToPlay] = useState(false);
-  
-  // State para sa progress ng user
   const [completedLevels, setCompletedLevels] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const levels = Array.from({ length: 20 }, (_, i) => i + 1);
+  const levels = Array.from({ length: 24 }, (_, i) => i + 1);
 
-  // --- PROGRESS TRACKER ---
-  // Gumagamit ng useFocusEffect para mag-refresh ang colors tuwing babalik ka galing sa game
   useFocusEffect(
     useCallback(() => {
-      const loadProgress = async () => {
+      const loadRemoteProgress = async () => {
         try {
-          const saved = await AsyncStorage.getItem('completed_levels');
-          if (saved !== null) {
-            setCompletedLevels(JSON.parse(saved));
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+
+          const response = await fetch(`${API_URL}/progress/me`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+          const result = await response.json();
+          if (result.success && result.data) {
+            const saved = await AsyncStorage.getItem(`completed_levels_${selectedDifficulty}`);
+            if (saved !== null) {
+              setCompletedLevels(JSON.parse(saved));
+            }
           }
         } catch (e) {
-          console.error("Failed to load progress", e);
+          console.error("Failed to load progress from server", e);
         }
       };
-      loadProgress();
-    }, [])
+      if (selectedDifficulty) loadRemoteProgress();
+    }, [selectedDifficulty])
   );
-
-  useEffect(() => {
-    if (route?.params?.openLevels) {
-      setViewState('difficulty');
-    }
-  }, [route?.params]);
 
   const handleBackPress = () => {
     if (viewState === 'levels') {
@@ -64,16 +70,58 @@ export default function WordMatcherHome({ route }) {
     setViewState('levels');
   };
 
-  const startGame = (lvl) => {
-    router.push({
-      pathname: '/Games/WordMatcher/WordMatcherGame',
-      params: { 
-        initialLevel: lvl, 
-        difficulty: selectedDifficulty 
+  const startGame = async (lvl) => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session || !session.access_token) {
+        Alert.alert("Authentication Required", "No active user session found. Please re-login.");
+        setLoading(false);
+        return;
       }
-    });
+      
+      const response = await fetch(`${API_URL}/sessions/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ game_id: 1 }) 
+      });
+      
+      const responseText = await response.text();
+      const resData = JSON.parse(responseText);
+      
+      if (response.ok && resData.success && resData.data) {
+        router.push({
+          pathname: '/Games/WordMatcher/WordMatcherGame',
+          params: { 
+            initialLevel: lvl, 
+            difficulty: selectedDifficulty,
+            targetLanguage: targetLanguage, // Pass down language preferences cleanly
+            sessionId: resData.data.session_id
+          }
+        });
+      } else {
+        Alert.alert("Game Error", resData.message || "Failed to establish game session.");
+      }
+    } catch (error) {
+      console.error("Error starting game session:", error);
+      Alert.alert("Connection Failure", "Could not reach target host destination server.");
+    } finally {
+      setLoading(false);
+    }
   };
   
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color="#421C00" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFF9E1" barStyle="dark-content" />
@@ -86,7 +134,7 @@ export default function WordMatcherHome({ route }) {
         <View style={{ flex: 1, marginLeft: 15 }}>
             <Text style={[styles.gameTitle, { fontSize: 18 }]}>
             {viewState === 'levels' ? `${selectedDifficulty?.toUpperCase()} LEVELS` : 
-            viewState === 'difficulty' ? "SELECT DIFFICULTY" : "WORD MATCHER"}
+            viewState === 'difficulty' ? "CHOOSE MODE" : "WORD MATCHER"}
             </Text>
         </View>
       </View>
@@ -117,9 +165,29 @@ export default function WordMatcherHome({ route }) {
           </View>
         )}
 
-        {/* VIEW 2: DIFFICULTY SELECTION */}
+        {/* VIEW 2: DIFFICULTY & LANGUAGE SELECTION */}
         {viewState === 'difficulty' && (
           <View style={styles.menuWrapper}>
+            
+            {/* INLINE LANGUAGE SELECTOR TOGGLE */}
+            <Text style={{ fontWeight: '800', color: '#421C00', marginBottom: 10, textAlign: 'center', fontSize: 14 }}>
+              TRANSLATION CHOICES LANGUAGE:
+            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25, backgroundColor: '#EFE6C9', padding: 5, borderRadius: 25 }}>
+              <TouchableOpacity 
+                onPress={() => setTargetLanguage('english')}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 20, alignItems: 'center', backgroundColor: targetLanguage === 'english' ? '#421C00' : 'transparent' }}
+              >
+                <Text style={{ fontWeight: 'bold', color: targetLanguage === 'english' ? '#FFF' : '#421C00' }}>TAGALOG</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setTargetLanguage('tagalog')}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 20, alignItems: 'center', backgroundColor: targetLanguage === 'tagalog' ? '#421C00' : 'transparent' }}
+              >
+                <Text style={{ fontWeight: 'bold', color: targetLanguage === 'tagalog' ? '#FFF' : '#421C00' }}>ENGLISH</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity 
               style={[styles.mainButton, { backgroundColor: '#4CAF50', marginBottom: 15 }]} 
               onPress={() => handleDifficultySelect('easy')}
@@ -149,7 +217,6 @@ export default function WordMatcherHome({ route }) {
             <View style={styles.levelGrid}>
               {levels.map((lvl) => {
                 const isCompleted = completedLevels.includes(lvl);
-                // Locked ang level kung hindi Level 1 AT ang previous level ay hindi pa tapos
                 const isLocked = lvl !== 1 && !completedLevels.includes(lvl - 1);
 
                 return (
@@ -181,7 +248,7 @@ export default function WordMatcherHome({ route }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>HOW TO PLAY</Text>
             <Text style={{ textAlign: 'center', marginVertical: 15, lineHeight: 20 }}>
-              Match the given English word with its correct Cebuano translation. 
+              Match the given Cebuano word or sentence with its correct translation choice based on your selected language filter. 
               Complete a level to unlock the next one. Don't lose all your hearts!
             </Text>
             <TouchableOpacity style={styles.mainButton} onPress={() => setShowHowToPlay(false)}>
@@ -190,7 +257,6 @@ export default function WordMatcherHome({ route }) {
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }

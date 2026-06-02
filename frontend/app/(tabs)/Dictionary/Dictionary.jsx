@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ActivityIndicator, Alert, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router'; 
 import NetInfo from '@react-native-community/netinfo';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import DictionaryFilters from '../../../shared/components/DictionaryFilters';
+import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
 import { useDictionaryBrowse } from '../../../shared/hooks/useDictionaryBrowse';
 import { useOfflineSearch } from '../../../shared/hooks/useOfflineSearch';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuthMode } from '../../../shared/utils/authMode';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
@@ -20,6 +20,7 @@ export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
   const [error, setError] = useState(null);
   const router = useRouter(); 
   const [searchTimeout, setSearchTimeout] = useState(null);
@@ -27,7 +28,9 @@ export default function Dictionary() {
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
-  const { browseData, isFetchingMore, handleLoadMore, filters } = useDictionaryBrowse(searchQuery);
+  
+  // Destructured `refreshBrowseData` from your browse hook if it supports manual re-fetches
+  const { browseData, isFetchingMore, handleLoadMore, filters, refreshBrowseData } = useDictionaryBrowse(searchQuery);
   const {
     isOffline,
     offlineResults,
@@ -39,11 +42,10 @@ export default function Dictionary() {
       const connected = state.isConnected ?? false;
       setIsConnected(connected);
 
-      // FORCE guest mode when offline
       if (!connected) {
         setIsGuestMode(true);
       } else {
-        checkGuestMode(); // re-evaluate when back online
+        checkGuestMode(); 
       }
     });
 
@@ -51,27 +53,28 @@ export default function Dictionary() {
   }, []);
 
   useEffect(() => {
-      checkGuestMode();
-    }, []);
+    checkGuestMode();
+  }, []);
 
-    const checkGuestMode = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+  const checkGuestMode = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
 
-      const role = await AsyncStorage.getItem('@user_role');
-      const guestMode = await AsyncStorage.getItem('@guest_mode');
+    if (session) {
+      setIsGuestMode(false);
+      return;
+    }
 
-      const isGuest =
-        !session ||
-        role === 'guest' ||
-        guestMode !== null;
+    const role = await AsyncStorage.getItem('@user_role');
+    const guestMode = await AsyncStorage.getItem('@guest_mode'); 
 
-      setIsGuestMode(isGuest);
-    };
+    const isGuest = role === 'guest' || guestMode !== null;
+    setIsGuestMode(isGuest);
+  };
+
   // Search with debounce
   useEffect(() => {
     if (searchTimeout) clearTimeout(searchTimeout);
 
-    // FORCE guest mode if offline
     if (!isConnected) {
       setIsGuestMode(true);
     }
@@ -99,7 +102,6 @@ export default function Dictionary() {
     setLoading(true);
     setError(null);
     try {
-      // Get session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         Alert.alert("Authentication Required", "Please log in to search.");
@@ -107,7 +109,6 @@ export default function Dictionary() {
         return;
       }
 
-      // Fetch from backend
       const response = await fetch(`${API_BASE_URL}/${encodeURIComponent(term)}`, {
         method: 'GET',
         headers: {
@@ -122,7 +123,6 @@ export default function Dictionary() {
         setSearchResults(result.data); 
       } else {
         setSearchResults([]);
-        // setError(result.message || 'Word not found');
       }
     } catch (err) {
       console.error("Search Error:", err);
@@ -133,26 +133,57 @@ export default function Dictionary() {
     }
   };
 
+  // ✅ PULL-TO-REFRESH HANDLER
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+    
+    try {
+      await checkGuestMode();
+      
+      if (searchQuery.trim() && !isGuestMode && isConnected) {
+        await handleSearch(searchQuery.trim());
+      } else if (refreshBrowseData) {
+        await refreshBrowseData();
+      }
+    } catch (err) {
+      console.error("Refresh failure:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchQuery, isGuestMode, isConnected, refreshBrowseData]);
+
+  // ✅ INFINITE SCROLL EVENT MONITOR FOR SCROLLVIEW MATCHING
+  const handleScroll = ({ nativeEvent }) => {
+    if (isOffline || isFetchingMore || !handleLoadMore) return;
+
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+
+    if (isCloseToBottom) {
+      handleLoadMore();
+    }
+  };
+
   const displayData =
-  !isConnected
-    ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
-    : isGuestMode
+    !isConnected
       ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
-      : (searchQuery.trim() ? searchResults : browseData);
+      : isGuestMode
+        ? (searchQuery.trim() ? offlineResults : offlineBrowseData)
+        : (searchQuery.trim() ? searchResults : browseData);
 
-  const filteredData = searchResults;
-
-  const renderItem = ({ item }) => {
-    // Extract first 2 translations
+  const renderItem = (item, index) => {
     const translations = item.translations || [];
     const trans1 = translations[0]?.target_entry?.word_term || '';
     const trans2 = translations[1]?.target_entry?.word_term || '';
     const usage1 = translations[0]?.target_entry?.example_usage || '';
     const usage2 = translations[1]?.target_entry?.example_usage || '';
     const translationDisplay = [trans1, trans2].filter(Boolean).join(' / ') || 'No translation';
-
+    const def1 = translations[0]?.target_entry?.definition || '';
+    const def2 = translations[1]?.target_entry?.definition || '';
     return (
       <TouchableOpacity 
+        key={item.id?.toString() || index.toString()}
         activeOpacity={0.7} 
         style={styles.entryCard} 
         onPress={() => {
@@ -161,14 +192,17 @@ export default function Dictionary() {
             params: { 
               id: item.id,
               wordTerm: item.word_term || '',
+              languageId: item.language_id,
               definition: item.definition || '',
               partOfSpeech: item.part_of_speech || 'Word',
               exampleUsage: item.example_usage || '', 
               phoneticTranscription: item.phonetic_transcription || '',
               translation1: trans1,
               translation2: trans2,
-              usage1: usage1, // Matched
-              usage2: usage2  // Matched
+              translationDef1: def1,
+              translationDef2: def2,
+              usage1: usage1,
+              usage2: usage2
             }
           });
         }} 
@@ -176,6 +210,11 @@ export default function Dictionary() {
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text style={styles.entryWord}>{item.word_term}</Text>
           <Text style={styles.entryTranslation}>{translationDisplay}</Text>
+          {def1 ? (
+            <Text style={{ fontSize: 12, color: '#78909C', marginTop: 4 }} numberOfLines={1}>
+              Def: {def1}
+            </Text>
+          ) : null}
         </View>
 
         {item.part_of_speech && (
@@ -199,106 +238,107 @@ export default function Dictionary() {
         </View>
       )}
 
-      <View style={{ flex: 1 }}>
-        {/* Header section na hindi dikit sa taas */}
-        <View style={[styles.header, { marginTop: 10 }]}>
-          <View>
-            <Text style={styles.headerTitleYellow}>DialectGo</Text>
-            <Text style={styles.headerTitleBlack}>Dictionary</Text>
+      {/* ✅ REFRESH CONTAINER WRAPPING THE BODY CONTENT AT THE TOP LEVEL */}
+      <RefreshContainer
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16} // Evaluates scroll calculations smoothly
+      >
+        <View style={{ flex: 1 }}>
+          {/* Header section */}
+          <View style={[styles.header, { marginTop: 10 }]}>
+            <View>
+              <Text style={styles.headerTitleYellow}>DialectGo</Text>
+              <Text style={styles.headerTitleBlack}>Dictionary</Text>
+            </View>
+            <View style={styles.headerIcons}>
+              <TouchableOpacity 
+                style={styles.iconCircle}
+                onPress={() => {
+                  if (isGuestMode) {
+                    setShowFeatureModal(true);
+                    return;
+                  }
+                  router.push('/Dictionary/History');
+                }}
+              >
+                <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.iconCircle}
+                onPress={() => {
+                  if (isGuestMode) {
+                    setShowFeatureModal(true);
+                    return;
+                  }
+                  router.push('/Dictionary/SaveWords');
+                }}
+              >
+                <Image source={require('../../../assets/icons/star.png')} style={styles.topIcon} />
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity 
-            style={styles.iconCircle}
-            onPress={() => {
-                if (isGuestMode) {
-                  setShowFeatureModal(true);
-                  return;
-                }
 
-                router.push('/Dictionary/History');
-              }}
-            >
-              <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.iconCircle}
-              onPress={() => {
-                if (isGuestMode) {
-                  setShowFeatureModal(true);
-                  return;
-                }
-
-                router.push('/Dictionary/SaveWords');
-              }}
-            >
-              <Image source={require('../../../assets/icons/star.png')} style={styles.topIcon} />
-            </TouchableOpacity>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder={isGuestMode ? "Search offline dictionary..." : "Search words..."}
+              placeholderTextColor="#421C00"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFD54F" style={{ marginRight: 10 }} />
+            ) : (
+              <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
+            )}
           </View>
-        </View>
+          
+          {!searchQuery.trim() && !isGuestMode && (
+            <DictionaryFilters {...filters} />
+          )}
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder={
-              isGuestMode
-                ? "Search offline dictionary..."
-                : "Search words..."
-            }
-            placeholderTextColor="#421C00"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {loading ? (
-            <ActivityIndicator size="small" color="#FFD54F" style={{ marginRight: 10 }} />
-          ) : (
-            <Image source={require('../../../assets/images/search.png')} style={styles.searchIcon} />
+          {/* Error Message */}
+          {error && !loading && (
+            <View style={{ padding: 10, backgroundColor: '#FFE0E0', marginHorizontal: 10, borderRadius: 8 }}>
+              <Text style={{ color: '#C00', fontSize: 12 }}>{error}</Text>
+            </View>
+          )}
+
+          {/* Loading Indicator */}
+          {loading && (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 30 }}>
+              <ActivityIndicator size="large" color="#FFD54F" />
+            </View>
+          )}
+
+          {/* Empty Results State */}
+          {!loading && searchQuery.trim() && displayData.length === 0 && (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+              <Text style={{ fontSize: 14, color: '#999', textAlign: 'center' }}>
+                No results found for "{searchQuery}"
+              </Text>
+            </View>
+          )}
+
+          {/* ✅ RENDER ITEMS DIRECTLY WITHOUT NESTED FLATLIST PERFORMANCE WARNINGS */}
+          {!loading && displayData.length > 0 && (
+            <View style={styles.listContent}>
+              {displayData.map((item, index) => renderItem(item, index))}
+            </View>
+          )}
+
+          {/* Loading More Footer Component Indicator */}
+          {isFetchingMore && !isOffline && (
+            <ActivityIndicator color="#FFD54F" style={{ marginVertical: 15 }} />
           )}
         </View>
-        {!searchQuery.trim() && !isGuestMode && (
-          <DictionaryFilters {...filters} />
-        )}
+      </RefreshContainer>
 
-        {/* Error Message */}
-        {error && !loading && (
-          <View style={{ padding: 10, backgroundColor: '#FFE0E0', marginHorizontal: 10, borderRadius: 8 }}>
-            <Text style={{ color: '#C00', fontSize: 12 }}>{error}</Text>
-          </View>
-        )}
-
-        {/* Loading Indicator */}
-        {loading && (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#FFD54F" />
-          </View>
-        )}
-
-        {/* Results or Empty State */}
-        {!loading && searchQuery.trim() && displayData.length === 0 && (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, color: '#999', textAlign: 'center' }}>
-              No results found for "{searchQuery}"
-            </Text>
-          </View>
-        )}
-
-        {!loading && (
-          <FlatList
-            data={displayData} // Use the combined variable here
-            keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-            renderItem={renderItem}
-            onEndReached={!isOffline ? handleLoadMore : null}
-            onEndReachedThreshold={0.5}
-            contentContainerStyle={styles.listContent}
-            ListFooterComponent={isFetchingMore && !isOffline ? <ActivityIndicator color="#FFD54F" /> : null}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
-      <FeatureGateModal
-        visible={showFeatureModal}
-        onClose={() => setShowFeatureModal(false)}
-      />
+      <FeatureGateModal visible={showFeatureModal} onClose={() => setShowFeatureModal(false)} />
       <BottomNav activeTab="Dictionary" />
     </SafeAreaView>
   );

@@ -1,17 +1,21 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { authFetch } from '../utils/authFetch';
 import '../assets/css/sidebar.css';
 import { authService } from '../services/authService';
 
 const Navbar = ({ title }) => {
-
   const now = new Date();
   const hours = now.getHours();
 
-  const [notifications, setNotifications] = useState([]);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [securityAlerts, setSecurityAlerts] = useState([]);
   const [showHub, setShowHub] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+  const formattedDate = now.toLocaleDateString('en-US', dateOptions);
   const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
   const formattedDate = now.toLocaleDateString('en-US', dateOptions);
 
@@ -41,14 +45,12 @@ const Navbar = ({ title }) => {
       }
 
       const payload = await res.json();
-
       if (payload.success) {
         const unresolved = payload.data.anomalies.filter(
           (item) => !item.is_resolved
         );
         setNotifications(unresolved);
       }
-
     } catch (err) {
       console.error('Notification fetch error:', err);
     } finally {
@@ -56,7 +58,11 @@ const Navbar = ({ title }) => {
     }
   };
 
+  const notificationCount = pendingVerifications.length + securityAlerts.length;
+
   let greeting = 'Good Evening!';
+  if (hours < 12) greeting = 'Good Morning!';
+  else if (hours < 18) greeting = 'Good Afternoon!';
   if (hours < 12) greeting = 'Good Morning!';
   else if (hours < 18) greeting = 'Good Afternoon!';
 
@@ -66,6 +72,7 @@ const Navbar = ({ title }) => {
       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
     >
       <div className="navbar-left">
+        <h1 className="nav-page-title">{title}</h1>
         <h1 className="nav-page-title">{title}</h1>
       </div>
 
@@ -133,7 +140,7 @@ const Navbar = ({ title }) => {
                   onClick={fetchNotifications}
                   style={{ border: 'none', background: 'none', cursor: 'pointer' }}
                 >
-                  {loading ? 'Syncing...' : '🔄'}
+                  {isRefreshing ? 'Syncing...' : '🔄 Refresh'}
                 </button>
               </div>
 

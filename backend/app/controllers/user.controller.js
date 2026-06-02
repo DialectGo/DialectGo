@@ -86,10 +86,17 @@ export const adminLogin = async (req, res, next) => {
       data: adminSession 
     });
   } catch (err) {
-    // If the role check failed, explicitly flag it as an authentication barrier
-    if (err.message.includes('Access Denied')) {
+    // Provide clearer responses for common auth failures
+    if (err.message && err.message.includes('Access Denied')) {
       return res.status(403).json({ success: false, message: err.message });
     }
-    next(err);
+
+    if (err.message && err.message.includes('Invalid login credentials')) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+
+    // Fallback: return generic error without exposing stack traces
+    console.error('adminLogin error:', err.message || err);
+    return res.status(500).json({ success: false, message: 'Authentication failed.' });
   }
 };

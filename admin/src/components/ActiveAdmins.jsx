@@ -1,3 +1,5 @@
+// src/components/ActiveAdmins.jsx
+
 import React, { useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 

@@ -120,3 +120,23 @@ export const getWordOfTheDay = async (req, res, next) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+export const checkSavedStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Dictionary Entry ID is missing.' });
+        }
+
+        const isBookmarked = await DictionaryService.checkIfSaved(userId, parseInt(id, 10));
+        
+        res.status(200).json({ 
+            success: true, 
+            isBookmarked 
+        });
+    } catch (err) {
+        next(err);
+    }
+};
