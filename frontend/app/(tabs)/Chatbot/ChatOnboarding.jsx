@@ -32,7 +32,7 @@ export default function DialectBot() {
         <TouchableOpacity 
           style={styles.startBtn}
           activeOpacity={0.8}
-          onPress={() => router.push('/Chatbot/Learn')} 
+          onPress={() => router.push('/Chatbot/ChatInterface')} 
         >
           <Text style={styles.startBtnText}>Start Chat</Text>
         </TouchableOpacity>

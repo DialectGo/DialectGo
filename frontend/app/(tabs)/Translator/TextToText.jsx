@@ -13,8 +13,9 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/api/translate';
-const FEEDBACK_URL = 'http://192.168.1.50:5000/api/feedback';
+import { API_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${API_API_BASE}/translate`;
+const FEEDBACK_URL = `${API_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 

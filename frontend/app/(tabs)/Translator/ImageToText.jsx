@@ -14,7 +14,8 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const API_URL = 'http://192.168.1.50:5001/api/ocr-translate';
+import { API_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${API_API_BASE}/ocr-translate`;
 
 // --- Sub-components ---
 

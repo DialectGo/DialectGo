@@ -14,7 +14,8 @@ import LanguageSelector from '../../shared/components/LanguageSelector';
 import ContributionModal from '../../shared/components/ContributionModal';
 import translateIcon from '../../assets/icons/translateIcon.png';
 
-const API_BASE = 'http://192.168.1.53:5001/api';
+import { API_API_BASE } from '../../shared/config/apiConfig';
+const API_BASE = API_API_BASE;
 const ENDPOINTS = {
   TRANSLATE: `${API_BASE}/translate/image`,
   FEEDBACK: `${API_BASE}/feedback`,

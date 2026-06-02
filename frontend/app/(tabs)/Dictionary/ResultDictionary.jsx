@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Image, SafeAreaView, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,18 +7,28 @@ import NetInfo from '@react-native-community/netinfo';
 
 import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
+import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal';
+import { endpoints } from '../../../shared/config/apiConfig';
 
-const SAVE_API_URL = 'http://192.168.1.53:5001/api/dictionary/save';
-// ✅ NEW: Endpoint to check if this dictionary item was already saved by the user
-const CHECK_SAVED_API_URL = 'http://192.168.1.53:5001/api/dictionary/check-saved'; 
+const SAVE_API_URL = endpoints.DICTIONARY_SAVE;
+const CHECK_SAVED_API_URL = endpoints.DICTIONARY_CHECK_SAVED;
+
 
 export default function ResultDictionary() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { 
+    id, wordTerm, partOfSpeech, definition, languageId,
+    exampleUsage, phoneticTranscription, 
+    translation1, translation2, 
+    usage1, usage2, translationDef1, translationDef2
+  } = params;
+
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
 
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
@@ -46,33 +56,42 @@ export default function ResultDictionary() {
     checkGuestMode();
   }, []);
 
-  // ✅ NEW: Verify bookmark status on mount
-  useEffect(() => {
-    const verifyBookmarkStatus = async () => {
-      if (!id || isGuestMode || !isConnected) return;
+  // Extraction handler to verify initial bookmark state
+  const verifyBookmarkStatus = async () => {
+    if (!id || isGuestMode || !isConnected) return;
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-        const response = await fetch(`${CHECK_SAVED_API_URL}/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        const result = await response.json();
-        if (response.ok && result.success) {
-          setIsBookmarked(result.isBookmarked); // Expecting boolean back from your API
+      const response = await fetch(`${CHECK_SAVED_API_URL}/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        console.error("Failed to fetch initial word bookmark state:", error);
-      }
-    };
+      });
 
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setIsBookmarked(result.isBookmarked); 
+      }
+    } catch (error) {
+      console.error("Failed to fetch initial word bookmark state:", error);
+    }
+  };
+
+  // Verify bookmark status on mount
+  useEffect(() => {
     verifyBookmarkStatus();
+  }, [id, isGuestMode, isConnected]);
+
+  // ✅ PULL-TO-REFRESH LIFECYCLE HANDLER
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkGuestMode();
+    await verifyBookmarkStatus(); // Re-checks database if word state has been saved/altered
+    setRefreshing(false);
   }, [id, isGuestMode, isConnected]);
 
   const checkGuestMode = async () => {
@@ -87,13 +106,6 @@ export default function ResultDictionary() {
       setIsGuestMode(true);
     }
   };
-
-  const { 
-    id, wordTerm, partOfSpeech, definition, languageId,
-    exampleUsage, phoneticTranscription, 
-    translation1, translation2, 
-    usage1, usage2, translationDef1, translationDef2
-  } = params;
 
   const currentLangId = parseInt(languageId, 10);
 
@@ -143,7 +155,7 @@ export default function ResultDictionary() {
 
       const result = await response.json();
       if (response.ok && result.success) {
-        setIsBookmarked(true); // ✅ Updates state variable immediately upon successful API return
+        setIsBookmarked(true); 
         Alert.alert("Success", `"${wordTerm}" saved.`);
       } else {
         throw new Error(result.message || "Failed to save.");
@@ -185,7 +197,12 @@ export default function ResultDictionary() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
+      {/* ✅ REPLACED SCROLLVIEW WITH REFRESHCONTAINER */}
+      <RefreshContainer 
+        refreshing={refreshing} 
+        onRefresh={handleRefresh} 
+        contentContainerStyle={styles.scrollPadding}
+      >
         {/* HERO CARD */}
         <View style={styles.mainWordCard}>
           <Text style={styles.heroWord}>{wordTerm}</Text>
@@ -312,10 +329,10 @@ export default function ResultDictionary() {
             ) : null}
           </View>
         </View>
-      </ScrollView>
+      </RefreshContainer>
 
-      {/* SAVE BUTTON */}
-      <View style={{ paddingBottom: 20, alignItems: 'center' }}>
+      {/* SAVE BUTTON CONTAINER */}
+      <View style={{ paddingBottom: 20, alignItems: 'center', backgroundColor: '#FFFFFF' }}>
           <TouchableOpacity 
             style={[
               styles.floatingSaveBtn, 
@@ -329,7 +346,7 @@ export default function ResultDictionary() {
               }
               handleSaveWord();
             }}
-            disabled={isSaving || isBookmarked} // ✅ Disables interaction once saved
+            disabled={isSaving || isBookmarked}
           >
             {isSaving ? (
                 <ActivityIndicator color="#FFF" />

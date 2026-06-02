@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-  FlatList,
   Image,
   SafeAreaView,
   StyleSheet,
@@ -12,24 +11,27 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
+import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import { endpoints } from '../../../shared/config/apiConfig';
 
-// Use your specific API endpoint for search history
-const API_BASE = 'http://192.168.1.53:5001/api/dictionary';
+// Use centralized API endpoints
+const API_BASE = endpoints.DICTIONARY_BASE;
 
 export default function History() {
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
   const [selectedIds, setSelectedIds] = useState(new Set()); // Track selections
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   // Load history on mount
   useEffect(() => {
-    fetchHistory();
+    fetchHistory(true); // show full-screen spinner on first mount
   }, []);
 
-  const fetchHistory = async () => {
-    setLoading(true);
+  const fetchHistory = async (showInitialSpinner = false) => {
+    if (showInitialSpinner) setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -38,7 +40,7 @@ export default function History() {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/history`, {
+      const response = await fetch(endpoints.DICTIONARY_HISTORY, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -49,7 +51,6 @@ export default function History() {
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Backend returns search_history records
         setHistoryItems(result.data);
       } else {
         setHistoryItems([]);
@@ -60,6 +61,15 @@ export default function History() {
       setLoading(false);
     }
   };
+
+  // ✅ PULL-TO-REFRESH LIFECYCLE CALLBACK HANDLER
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Keep selections unless items are wiped, or reset it safely to prevent array bugs
+    setSelectedIds(new Set());
+    await fetchHistory(false); // pass false so the RefreshControl handles the loader UI
+    setRefreshing(false);
+  }, []);
 
   // Toggle single selection
   const toggleSelect = (id) => {
@@ -100,8 +110,7 @@ export default function History() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Call the bulk history delete endpoint
-      const response = await fetch(`${API_BASE}/history/delete-multiple`, {
+      const response = await fetch(endpoints.DICTIONARY_HISTORY_DELETE, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -124,11 +133,11 @@ export default function History() {
     }
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = (item, index) => {
     const isSelected = selectedIds.has(item.id);
     
     return (
-      <View style={styles.cardContainer}>
+      <View key={item.id?.toString() || index.toString()} style={styles.cardContainer}>
         {/* Checkbox Section */}
         <TouchableOpacity 
           style={styles.checkboxContainer} 
@@ -144,7 +153,6 @@ export default function History() {
           activeOpacity={0.7}
           style={styles.historyCard} 
           onPress={() => {
-            // Trigger a new search for the term
             router.push(`/Dictionary/Search?term=${item.search_term}`);
           }} 
         >
@@ -174,55 +182,62 @@ export default function History() {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* LIST SECTION */}
+      {/* LIST / LOADING SECTION WRAPPED IN THE REFRESH CONTAINER */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFD54F" />
         </View>
-      ) : historyItems.length > 0 ? (
-        <>
-          <FlatList
-            data={historyItems}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listPadding}
-            showsVerticalScrollIndicator={false}
-          />
-
-          {/* FOOTER NAVIGATION */}
-          <View style={styles.footerNav}>
-            <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
-              <View style={[
-                styles.checkbox, 
-                selectedIds.size === historyItems.length && historyItems.length > 0 && styles.checkboxActive
-              ]}>
-                {selectedIds.size === historyItems.length && historyItems.length > 0 && (
-                  <View style={styles.checkboxInner} />
-                )}
-              </View>
-              <Text style={styles.selectAllText}>All</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.deleteBtn, selectedIds.size === 0 && styles.deleteBtnDisabled]} 
-              onPress={confirmDelete}
-              disabled={selectedIds.size === 0 || isDeleting}
-            >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Text style={styles.deleteBtnText}>Delete ({selectedIds.size})</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </>
       ) : (
-        <View style={styles.emptyState}>
-          <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
-            style={[styles.emptyIcon, { opacity: 0.2 }]} 
-          />
-          <Text style={styles.emptyText}>No recent searches yet.</Text>
+        <View style={{ flex: 1 }}>
+          <RefreshContainer
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            contentContainerStyle={styles.listPadding}
+          >
+            {historyItems.length > 0 ? (
+              // ✅ MAPPED RENDERING PREVENTS FLATLIST WITHIN SCROLLVIEW COMPATIBILITY CRASHES
+              <View style={{ paddingBottom: 40 }}>
+                {historyItems.map((item, index) => renderItem(item, index))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Image 
+                  source={require('../../../assets/icons/back_arrow.png')} 
+                  style={[styles.emptyIcon, { opacity: 0.2 }]} 
+                />
+                <Text style={styles.emptyText}>No recent searches yet.</Text>
+              </View>
+            )}
+          </RefreshContainer>
+
+          {/* FOOTER FIXED SELECTION NAVIGATION */}
+          {historyItems.length > 0 && (
+            <View style={styles.footerNav}>
+              <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
+                <View style={[
+                  styles.checkbox, 
+                  selectedIds.size === historyItems.length && historyItems.length > 0 && styles.checkboxActive
+                ]}>
+                  {selectedIds.size === historyItems.length && historyItems.length > 0 && (
+                    <View style={styles.checkboxInner} />
+                  )}
+                </View>
+                <Text style={styles.selectAllText}>All</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.deleteBtn, selectedIds.size === 0 && styles.deleteBtnDisabled]} 
+                onPress={confirmDelete}
+                disabled={selectedIds.size === 0 || isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={styles.deleteBtnText}>Delete ({selectedIds.size})</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -247,12 +262,13 @@ const styles = StyleSheet.create({
   title: { 
     fontSize: 22, 
     fontFamily: 'Poppins-Bold', 
-    color: '#FFB800' // Aligned with SaveWords Yellow
+    color: '#FFB800' 
   },
   listPadding: { 
     paddingHorizontal: 20,
-    paddingBottom: 100, 
-    paddingTop: 10 
+    paddingBottom: 120, // Expanded padding to clear space above footer controls cleanly
+    paddingTop: 10,
+    flexGrow: 1
   },
   cardContainer: { 
     flexDirection: 'row', 
@@ -305,6 +321,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
+    paddingVertical: 60, // Better center layout when rendering empty inside the container
     paddingHorizontal: 40 
   },
   emptyIcon: { width: 50, height: 50, marginBottom: 15 },
@@ -315,7 +332,6 @@ const styles = StyleSheet.create({
   },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   
-  // Footer Styles from SaveWords
   footerNav: {
     position: 'absolute',
     bottom: 0,
