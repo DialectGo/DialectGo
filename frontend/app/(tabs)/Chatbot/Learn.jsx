@@ -99,6 +99,8 @@ export default function Learn() {
     });
 
     try {
+      console.log('3️⃣ Fetching Gemini...');
+
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: {
@@ -263,3 +265,4 @@ export default function Learn() {
     </SafeAreaView>
   );
 }
+

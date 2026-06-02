@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { 
   Animated, 
   Image, 
-  Platform, 
   StyleSheet, 
   Text, 
   TouchableOpacity, 
@@ -10,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import FeatureGateModal from './FeatureGateModal'; // Imported Gate
+import FeatureGateModal from './FeatureGateModal'; 
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../lib/supabase';
 
@@ -66,7 +65,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [gateVisible, setGateVisible] = useState(false);
 
-   const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(true);
   const [isGuestMode, setIsGuestMode] = useState(false);
 
   useEffect(() => {
@@ -75,10 +74,9 @@ export default function BottomNav() {
       setIsConnected(connected);
 
       if (!connected) {
-        // FORCE guest mode when offline
         setIsGuestMode(true);
       } else {
-        checkUserMode(); // re-check when back online
+        checkUserMode(); 
       }
     });
 
@@ -89,14 +87,9 @@ export default function BottomNav() {
     try {
       const role = await AsyncStorage.getItem('@user_role');
       const guestMode = await AsyncStorage.getItem('@guest_mode');
-
       const { data: { session } } = await supabase.auth.getSession();
 
-      const isGuest =
-        role === 'guest' ||
-        guestMode !== null ||
-        !session;
-
+      const isGuest = role === 'guest' || guestMode !== null || !session;
       setIsGuestMode(isGuest);
 
     } catch (err) {
@@ -109,7 +102,7 @@ export default function BottomNav() {
     { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
     { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
     { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false }, 
-    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png'), isGated: true }, // Set to true if you want to lock games
+    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png'), isGated: true }, 
     { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png'), isGated: false },
   ];
 
@@ -120,7 +113,6 @@ export default function BottomNav() {
         return;
       }
     }
-
     router.push(tab.path);
   };
   
@@ -142,14 +134,11 @@ export default function BottomNav() {
           );
         })}
       </View>
-
-      {/* Renders the modal overlay portal at the navigation root level layout */}
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
     </View>
   );
 }
 
-// ... styles remain identical to your current BottomNav styles setup
 const styles = StyleSheet.create({
   navContainer: {
     position: 'absolute',
@@ -164,46 +153,50 @@ const styles = StyleSheet.create({
   bottomTab: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    height: Platform.OS === 'ios' ? 90 : 70, 
+    // ✅ FIX 1: Standardized a unified height across iOS and Android
+    height: 65, 
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 25 : 10, 
+    // ✅ FIX 2: Removed Platform specific bottom padding causing the empty float gap
+    paddingBottom: 0, 
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 3,
+    elevation: 10,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    height: '100%', // ✅ Ensures full touch target engagement
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   tabIcon: {
-    width: 38,
-    height: 38,
+    width: 28, // ✅ Scaled down slightly so layout remains perfectly balanced at 65px height
+    height: 28,
   },
   activeShadow: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 4,
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: '#757575',
-    marginTop: 2,
+    marginTop: 1,
     textAlign: 'center',
   },
   activeLabel: {
     color: '#FFD54F',
     fontWeight: '900',
-    fontSize: 11.5,
+    fontSize: 10.5,
   },
 });

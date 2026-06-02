@@ -1,8 +1,9 @@
 // shared/hooks/useDictionaryBrowse.js
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { endpoints } from '../config/apiConfig';
 
-const BROWSE_API_URL = 'http://192.168.1.53:5001/api/dictionary/browse';
+const BROWSE_API_URL = endpoints.DICTIONARY_BROWSE;
 
 export function useDictionaryBrowse(searchQuery) {
   const [browseData, setBrowseData] = useState([]);

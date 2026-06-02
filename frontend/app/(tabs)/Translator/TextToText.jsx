@@ -3,38 +3,49 @@ import { View, Keyboard, KeyboardAvoidingView, Platform, LayoutAnimation, Scroll
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import TextShadow from '../../../shared/components/TextShadow';
 import LanguageSelector from '../../../shared/components/LanguageSelector';
 import TranslationInput from '../../../shared/components/TranslationInput';
 import ResultCard from '../../../shared/components/ResultCard';
+
 import cameraIcon from '../../../assets/icons/cameraIcon.png';
 import micIcon from '../../../assets/icons/micIcon.png';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+
 import { supabase } from '../../../shared/lib/supabase';
 
-const API_URL = 'https://lateritic-vocally-steffanie.ngrok-free.dev/api/translate';
-const FEEDBACK_URL = 'http://192.168.1.50:5000/api/feedback';
+import { API_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${API_API_BASE}/translate`;
+const FEEDBACK_URL = `${API_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
-function TranslationResult({ showResult, translatedText, targetLang, onClose, onFeedback, translationId }) {
+function TranslationResult({
+  showResult,
+  translatedText,
+  targetLang,
+  onClose,
+  onFeedback
+}) {
   if (!showResult) return null;
 
   return (
     <View style={{ marginTop: 20 }}>
-      <ResultCard 
-        translatedText={translatedText} 
-        targetLang={targetLang} 
+      <ResultCard
+        translatedText={translatedText}
+        targetLang={targetLang}
         onClose={onClose}
         pronounceIcon={pronounceIcon}
       />
-      {/* Feedback Buttons */}
+
       <View style={styles.feedbackContainer}>
         <TouchableOpacity style={styles.feedbackBtn} onPress={() => onFeedback(1)}>
           <Ionicons name="thumbs-up-outline" size={24} color="#4CAF50" />
           <Text style={styles.feedbackText}>Correct</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.feedbackBtn} onPress={() => onFeedback(0)}>
           <Ionicons name="thumbs-down-outline" size={24} color="#F44336" />
           <Text style={styles.feedbackText}>Incorrect</Text>
@@ -46,6 +57,7 @@ function TranslationResult({ showResult, translatedText, targetLang, onClose, on
 
 export default function TextToText() {
   const router = useRouter();
+
   const [sourceLang, setSourceLang] = useState('Tagalog');
   const [targetLang, setTargetLang] = useState('Cebuano');
   const [inputText, setInputText] = useState('');
@@ -116,27 +128,28 @@ export default function TextToText() {
         Keyboard.dismiss();
         setIsLoading(false);
     }
-};
+  };
 
   const handleFeedback = async (rating) => {
     if (!currentTranslationId) return;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(FEEDBACK_URL, {
+
+      await fetch(FEEDBACK_URL, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` 
+          'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
-          translationId: currentTranslationId, 
-          rating 
+        body: JSON.stringify({
+          translationId: currentTranslationId,
+          rating
         }),
       });
 
-      if (response.ok) {
-        Alert.alert("Thank you!", "Your feedback helps improve DialectoGo.");
-      }
+      Alert.alert("Thank you!", "Your feedback helps improve DialectoGo.");
+
     } catch (error) {
       console.error("Feedback Error:", error);
     }
@@ -157,15 +170,16 @@ export default function TextToText() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Header with History Link */}
-      <View style={{marginTop: 10 , flexDirection: 'row', justifyContent: 'flex-center'}}>
+
+      {/* HEADER */}
+      <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
         <TextShadow />
         <TouchableOpacity onPress={() => router.push('/History/History')}>
-          <Ionicons name="time-outline" size={28} color="#333"/>
+          <Ionicons name="time-outline" size={28} color="#333" />
         </TouchableOpacity>
       </View>
-      
-      <LanguageSelector 
+
+      <LanguageSelector
         sourceLang={sourceLang}
         targetLang={targetLang}
         translateIcon={translateIcon}
@@ -175,20 +189,20 @@ export default function TextToText() {
         }}
       />
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer} 
-        keyboardShouldPersistTaps="handled" 
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
         scrollEnabled={showResult}
       >
         <View style={{ height: showResult ? HEIGHT_RESULT_SHOWN : HEIGHT_RESULT_HIDDEN }}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: isFocused ? 0.59 : 1 }}
           >
-            <TranslationInput 
+            <TranslationInput
               value={inputText}
               onChangeText={setInputText}
-              onTranslate={handleTranslate}
+              onTranslate={handleTranslate} 
               sourceLang={sourceLang}
               isFocused={isFocused}
               onFocus={() => handleToggleFocus(true)}
@@ -199,11 +213,10 @@ export default function TextToText() {
           </KeyboardAvoidingView>
         </View>
 
-        <TranslationResult 
+        <TranslationResult
           showResult={showResult}
           translatedText={translatedText}
           targetLang={targetLang}
-          translationId={currentTranslationId}
           onFeedback={handleFeedback}
           onClose={() => {
             animateTransition();
@@ -217,15 +230,8 @@ export default function TextToText() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    marginTop: 10
-  },
   scrollContainer: { paddingBottom: 20 },
-  resultWrapper: { marginTop: 20, paddingHorizontal: 20 },
+
   feedbackContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -234,6 +240,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12
   },
+
   feedbackBtn: { alignItems: 'center' },
-  feedbackText: { fontSize: 12, color: '#666', marginTop: 4 }
+
+  feedbackText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4
+  }
 });

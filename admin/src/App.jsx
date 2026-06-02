@@ -1,6 +1,5 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -9,7 +8,8 @@ import DictionaryManagement from './pages/DictionaryManagement';
 import TranslationManagement from './pages/TranslationManagement';
 import Incidents from './pages/Incidents';
 import GameManagement from './pages/GameManagement';
-import Login from './pages/Login'; // Make sure to save the Login component here!
+import Login from './pages/Login';
+import { authService } from './services/authService'; // ← JWT auth
 import './assets/css/sidebar.css';
 
 function App() {
@@ -17,57 +17,21 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // Check if a valid login session already exists when the page loads
+  // Check if a valid JWT token exists when the page loads
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-      console.debug('Initial supabase session on App mount:', session);
-
-      setIsAuthenticated(!!session);
-    };
-    
-    checkSession();
-    
-    // Listen for auth changes to update UI reactively
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.debug('Auth state changed:', event, session);
-      setIsAuthenticated(!!session);
-    });
-
-    // AGGRESSIVE TOKEN REFRESH: Refresh every 2 minutes to prevent expiration
-    // This is more aggressive than the 5-minute cycle to ensure token never expires
-    const refreshInterval = setInterval(async () => {
-      try {
-        console.debug('Running token refresh cycle...');
-        
-        // Always attempt a refresh to keep token fresh
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData?.session) {
-          console.warn('Token refresh failed:', refreshError?.message);
-          setIsAuthenticated(false);
-          window.location.href = '/login';
-        } else {
-          console.log('Token successfully refreshed at:', new Date().toLocaleTimeString());
-          setIsAuthenticated(true);
-        }
-      } catch (e) {
-        console.error('Token refresh error:', e);
-        setIsAuthenticated(false);
-      }
-    }, 2 * 60 * 1000); // Refresh every 2 minutes (more aggressive)
-
-    return () => {
-      authListener?.subscription?.unsubscribe?.();
-      clearInterval(refreshInterval);
-    };
+    if (authService.isAuthenticated()) {
+      setIsAuthenticated(true);
+    }
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    authService.clearToken(); // clears 'admin_token' from localStorage
     setIsAuthenticated(false);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    setActiveTab('Dashboard');
   };
 
   const renderActiveView = () => {
@@ -89,35 +53,40 @@ function App() {
     }
   };
 
-  // 1. Unauthenticated Guard Check Layer
+  // 1. Unauthenticated Guard — show Login if no valid token
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 2. Main Authenticated Application View Workspace Screen Layout
+  // 2. Main Authenticated Application Layout
   return (
     <div className="app-layout">
-      <button 
-        className="hamburger-btn" 
+      <button
+        className="hamburger-btn"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
       >
         {isSidebarOpen ? '✕' : '☰'}
       </button>
 
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        activeTab={activeTab} 
-        onTabChange={(tab) => setActiveTab(tab)} 
+      <Sidebar
+        isOpen={isSidebarOpen}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
       />
 
       <div className={`main-viewport ${!isSidebarOpen ? 'full-width' : ''}`}>
         <Navbar title={activeTab} />
-        
-        {/* Simple inline signout link option for panel dashboard */}
+
         <div style={{ textAlign: 'right', paddingRight: '40px' }}>
-          <button 
-            onClick={handleLogout} 
-            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: '600' }}
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ef4444',
+              cursor: 'pointer',
+              fontWeight: '600',
+            }}
           >
             ↳ Sign Out
           </button>

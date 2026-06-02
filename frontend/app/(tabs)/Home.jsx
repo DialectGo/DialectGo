@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router'; // 👈 1. IMPORT ROUTER FROM EXPO-ROUTER
 import { supabase } from '../../shared/lib/supabase';
+import { endpoints } from '../../shared/config/apiConfig';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
@@ -24,9 +26,9 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-const WORD_API = 'http://192.168.1.53:5001/api/dictionary/word-of-the-day';
-const PROFILE_API = 'http://192.168.1.53:5001/api/v1/users/profile';
-const STREAK_API = 'http://192.168.1.53:5001/api/v1/users/streak';
+const WORD_API = endpoints.WORD_OF_DAY;
+const PROFILE_API = endpoints.USER_PROFILE;
+const STREAK_API = endpoints.USER_STREAK;
 
 export default function Home({ onNavigate, activeTab }) {
   const router = useRouter();
@@ -71,6 +73,19 @@ export default function Home({ onNavigate, activeTab }) {
     setRefreshing(false);
   }, []);
 
+  const parseJsonResponse = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${body}`);
+    }
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
+    const body = await response.text();
+    throw new Error(`Expected JSON response but got ${contentType}: ${body}`);
+  };
+
   const fetchStreak = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -79,7 +94,7 @@ export default function Home({ onNavigate, activeTab }) {
       const response = await fetch(STREAK_API, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success) setStreakData(result.data);
     } catch (error) {
       console.error("Home Fetch Streak Error:", error);
@@ -113,13 +128,13 @@ export default function Home({ onNavigate, activeTab }) {
 
       const response = await fetch(PROFILE_API, {
         method: 'GET',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success) {
         const user = result.data;
         setUserName(user.first_name || 'User');
@@ -139,7 +154,7 @@ export default function Home({ onNavigate, activeTab }) {
       if (!session) return;
 
       const userId = session.user.id;
-      const storageKey = `word_of_the_day_${userId}`; 
+      const storageKey = `word_of_the_day_${userId}`;
       const now = Date.now();
 
       // Skip cache verification check if the user physically triggers a pull refresh action
@@ -162,7 +177,7 @@ export default function Home({ onNavigate, activeTab }) {
         }
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success && result.data) {
         const raw = result.data;
         const translations = raw.translations || [];
@@ -191,8 +206,8 @@ export default function Home({ onNavigate, activeTab }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
       <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
-      <TopBar onLogout={() => {}} onProfile={() => {}} />
-      
+      <TopBar onLogout={() => { }} onProfile={() => { }} />
+
       <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}
         <RefreshContainer
@@ -270,12 +285,12 @@ export default function Home({ onNavigate, activeTab }) {
             </View>
           </View>
 
-           {/* ADVENTURE / PROMO SECTION */}
+          {/* ADVENTURE / PROMO SECTION */}
           <View style={styles.promoCardWrapper}>
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee1]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee2]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee3]} resizeMode="contain" />
-            
+
             <View style={styles.promoCard}>
               <View style={styles.promoTextContainer}>
                 <Text style={styles.promoLabel}>Learn more about</Text>
@@ -287,6 +302,7 @@ export default function Home({ onNavigate, activeTab }) {
                 >
                   <Text style={styles.exploreBtnText}>Explore Now</Text>
                 </TouchableOpacity>
+
               </View>
               <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
             </View>

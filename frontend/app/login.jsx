@@ -16,9 +16,10 @@ import {
 import { styles } from '../shared/styles/LoginStyles';
 import { useRouter } from 'expo-router'; 
 import { supabase } from '../shared/lib/supabase';
+import { endpoints } from '../shared/config/apiConfig';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.53:5001/api/v1/users';
+const LOGIN_URL = endpoints.USER_LOGIN;
 
 export default function LogIn({ onSwitch, onSuccess }) {
   const router = useRouter(); 
@@ -35,7 +36,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
     setLoading(true);
     try {
-        const response = await axios.post(`${API_BASE_URL}/login`, {
+        const response = await axios.post(LOGIN_URL, {
           email,
           password,
         });
@@ -156,24 +157,6 @@ export default function LogIn({ onSwitch, onSuccess }) {
               <View style={styles.line} />
               <Text style={styles.lineText}>OR</Text>
               <View style={styles.line} />
-            </View>
-
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.bubbleSocialBtn} activeOpacity={0.7}>
-                <Image 
-                  source={require('../assets/logo/googleLogo.png')}
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.bubbleSocialBtn} activeOpacity={0.7}>
-                <Image 
-                  source={require('../assets/logo/facebookLogo.jpg')}
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Facebook</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.footer}>

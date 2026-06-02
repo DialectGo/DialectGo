@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
-import localDictionary from '../../assets/data/dictionary.json';
-
+import localDictionary from '../../assets/data/dictionary/cebuano_dictionary.json';
 export function useOfflineSearch(searchQuery, isGuestMode) {
   const [isOffline, setIsOffline] = useState(false);
 

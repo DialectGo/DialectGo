@@ -29,8 +29,9 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 const { width } = Dimensions.get('window');
 
 // API Endpoints
-const API_URL = 'http://192.168.1.53:5001/api/translate';
-const FEEDBACK_URL = 'http://192.168.1.53:5001/api/feedback';
+import { API_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${API_API_BASE}/translate`;
+const FEEDBACK_URL = `${API_API_BASE}/feedback`;
 
 const LANGUAGES = [
   { name: 'English', id: 1 },
@@ -203,8 +204,11 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         <View style={styles.content}>
           <View style={styles.headerRow}>
               <Text style={styles.headerTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
-              <Text style={styles.subHeader}>TEXT MODE</Text>
+              <TouchableOpacity onPress={() => router.push('/History/History')} style={{ padding: 8 }}>
+                <Ionicons name="time-outline" size={26} color="#FBBF24" />
+              </TouchableOpacity>
           </View>
+          <Text style={styles.subHeader}>TEXT MODE</Text>
 
           <LanguageSelector 
             sourceLang={sourceLang} targetLang={targetLang}

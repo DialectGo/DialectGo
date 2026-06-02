@@ -1,22 +1,105 @@
-import React from 'react';
-import { Platform, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../../shared/lib/supabase';
+import { API_BASE_URL } from '../../../shared/config/apiConfig';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import { styles } from '../../../shared/styles/GamesStyles';
 
+const API_URL = `${API_BASE_URL}/api`;
+
 export default function Games({ activeTab, onNavigate }) {
   const forcedActiveTab = "Games";
   const router = useRouter();
 
+  // Dashboard Stats States
+  const [xp, setXp] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [hearts, setHearts] = useState(8); 
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Fetch real-time progress values when user navigates to the screen
+  useFocusEffect(
+    useCallback(() => {
+      async function loadUserStats() {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+
+          // Fetch user progress metrics
+          const res = await fetch(`${API_URL}/progress/me`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+          const result = await res.json();
+          if (result.success && result.data) {
+            setXp(result.data.total_xp || 0);
+            setHighScore(result.data.high_score || 0);
+          }
+
+          // Fetch locally stored shared hearts
+          const localHearts = await AsyncStorage.getItem('@central_hearts');
+          if (localHearts !== null) {
+            setHearts(parseInt(localHearts));
+          } else {
+            await AsyncStorage.setItem('@central_hearts', '8');
+            setHearts(8);
+          }
+        } catch (err) {
+          console.error("Error loading centralized game stats:", err);
+        } finally {
+          setLoadingStats(false);
+        }
+      }
+      loadUserStats();
+    }, [])
+  );
+
+  // Helper utility tracking session initialization pipelines
+  const handleStartGameSession = async (gameId, targetUrl) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`${API_URL}/sessions/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ game_id: gameId })
+      });
+      const result = await response.json();
+      if (result.success) {
+        router.push(`${targetUrl}?sessionId=${result.data.session_id}`);
+      }
+    } catch (error) {
+      console.error("Failed creating dynamic game tracking session:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Ginawa nating translucent para sumagad ang background sa pinakataas */}
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-
-      {/* TOPBAR: Inilagay natin sa labas ng ScrollView para fixed sa taas tulad ng Dictionary */}
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
+
+      {/* ✅ STATS BAR HEADER: Displays current Central High Score, Hearts, and XP metrics */}
+      <View style={{
+        flexDirection: 'row', 
+        backgroundColor: '#FFFDE7', 
+        paddingVertical: 12, 
+        paddingHorizontal: 20, 
+        justifyContent: 'space-between',
+        borderBottomWidth: 1,
+        borderColor: '#FFD54F',
+        marginTop: Platform.OS === 'ios' ? 45 : 25
+      }}>
+        <Text style={{ fontSize: 13, fontWeight: '900', color: '#421C00' }}>🏆 HIGH SCORE: {highScore}</Text>
+        <Text style={{ fontSize: 13, fontWeight: '900', color: '#F44336' }}>❤️ LIVES: {hearts}/8</Text>
+        <Text style={{ fontSize: 13, fontWeight: '900', color: '#FF9800' }}>⭐ XP: {xp}</Text>
+      </View>
 
       <ScrollView 
         contentContainerStyle={{ paddingBottom: 120 }} 
@@ -51,7 +134,7 @@ export default function Games({ activeTab, onNavigate }) {
             </View>
             <TouchableOpacity 
               style={[styles.getBtn, { backgroundColor: '#FF9800' }]}
-               onPress={() => router.push('/Games/WordBridge/WordBridgeHome')} 
+              onPress={() => handleStartGameSession(2, '/Games/WordBridge/WordBridgeHome')} 
               activeOpacity={0.8}
             >
               <Text style={styles.getBtnText}>GET STARTED</Text>
@@ -71,7 +154,7 @@ export default function Games({ activeTab, onNavigate }) {
             </View>
             <TouchableOpacity 
               style={[styles.getBtn, { backgroundColor: '#2196F3' }]}
-              onPress={() => router.push('/Games/WordMatcher/WordMatcherHome')}
+              onPress={() => handleStartGameSession(1, '/Games/WordMatcher/WordMatcherHome')}
               activeOpacity={0.8}
             >
               <Text style={styles.getBtnText}>GET STARTED</Text>

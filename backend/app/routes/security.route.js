@@ -6,6 +6,7 @@ import * as DatasetService from '../services/dataset.service.js';
 import * as PromptService from '../services/prompt.service.js';
 import * as ModerationService from '../services/moderation.service.js';
 import { logAdminActivity } from '../middlewares/activityLogger.middleware.js';
+import { supabaseAdmin } from '../config/db.js';
 
 const router = express.Router();
 
@@ -13,6 +14,30 @@ const router = express.Router();
 router.get('/dashboard/security', verifyToken, authorizeRole('admin'), SecurityController.getSecurityMetricsOverview);
 router.get('/dashboard/active-admins', verifyToken, authorizeRole('admin'), SecurityController.getActiveAdmins);
 router.put('/dashboard/anomaly/:id/resolve', verifyToken, authorizeRole('admin'), SecurityController.resolveAnomaly);
+
+// Active Admin Sessions
+router.get('/admin/active-sessions', verifyToken, authorizeRole('admin'), async (req, res, next) => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('active_admin_sessions')
+            .select('*')
+            .order('login_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formatted = data.map((session) => ({
+            id: session.id,
+            username: session.profiles?.username || 'Unknown',
+            city_name: session.city_name,
+            country_code: session.country_code,
+            created_at: session.created_at,
+        }));
+
+        res.status(200).json({ success: true, data: formatted });
+    } catch (err) {
+        next(err);
+    }
+});
 
 // High Risk Route 1: Dataset Export
 router.get('/dataset/export/:langId', verifyToken, authorizeRole('admin'), logAdminActivity('BULK_DATA_EXPORT', () => 'dictionary_entries'), async (req, res, next) => {

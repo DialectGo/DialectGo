@@ -1,6 +1,5 @@
 // src/pages/TranslationManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 
@@ -47,13 +46,7 @@ const TranslationManagement = () => {
     setLoading(true);
     setError(null);
     try {
-        const {
-          data: { session }
-        } = await supabase.auth.getSession();
-
-        const token =
-          session?.access_token;
-
+        const token = localStorage.getItem('admin_token');
         const headers = { 'Authorization': `Bearer ${token}` };
 
         // PATH FIXED: Pointing accurately to the nested /api/v1/translations base route context
@@ -104,12 +97,7 @@ const TranslationManagement = () => {
   const handleStageRequestSubmission = async (e) => {
     e.preventDefault();
     try {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession();
-
-      const token =
-        session?.access_token;
+      const token = localStorage.getItem('admin_token');
       
       let proposedData = {};
       if (targetTable === 'translation_history' && operationType === 'UPDATE') {
