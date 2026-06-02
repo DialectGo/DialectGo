@@ -6,6 +6,7 @@ import { styles } from '../../../shared/styles/StreakStyles';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import { endpoints } from '../../../shared/config/apiConfig';
 
 export default function Streaks() { 
   const router = useRouter(); 
@@ -19,7 +20,7 @@ export default function Streaks() {
   const fetchStreak = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('http://192.168.1.15:5001/api/v1/users/streak', {
+      const response = await fetch(endpoints.USER_STREAK, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const result = await response.json();

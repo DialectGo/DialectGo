@@ -4,7 +4,6 @@ import {
   ScrollView,
   StatusBar,
   Text,
-  TouchableOpacity,
   View,
   SafeAreaView,
   StyleSheet
@@ -20,7 +19,12 @@ export default function AboutDialectGo() {
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="About DialectGo" />
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
+      {/* ✅ Now uniform white backdrop across all device screens */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        style={styles.scrollBody}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.topSection}>
           <View style={styles.logoWrapper}>
             <Image 
@@ -32,7 +36,7 @@ export default function AboutDialectGo() {
           <Text style={styles.versionTag}>Version 1.0.4</Text>
         </View>
 
-        {/* YELLOW BUBBLY CONTAINER */}
+        {/* ✅ Clean white container instead of yellow */}
         <View style={styles.contentContainer}>
           <View style={styles.infoCard}>
             <Text style={styles.cardTitle}>Our Mission</Text>
@@ -62,7 +66,7 @@ export default function AboutDialectGo() {
             <Text style={styles.copyrightText}>© 2026 DialectGo Project</Text>
           </View>
           
-          <View style={{ height: 60 }} />
+          <View style={{ height: 40 }} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -74,35 +78,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFD54F',
-    paddingVertical: 20,
-    position: 'relative',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    padding: 5,
-  },
-  backIcon: {
-    width: 25,
-    height: 25,
-    resizeMode: 'contain',
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: '#2D1606',
-    fontWeight: '900',
-  },
   scrollBody: {
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContent: {
+    flexGrow: 1,
     backgroundColor: '#FFFFFF',
   },
   topSection: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingTop: 40,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
   },
   logoWrapper: {
     width: 120,
@@ -133,20 +120,18 @@ const styles = StyleSheet.create({
     color: '#777',
   },
   contentContainer: {
-    backgroundColor: '#FFD54F',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
+    backgroundColor: '#FFFFFF', // ✅ Changed from yellow (#FFD54F) to pure white
     paddingHorizontal: 25,
-    paddingTop: 40,
-    flex: 1,
-    minHeight: 500,
+    paddingTop: 20,
+    flex: 1, 
   },
   infoCard: {
-    backgroundColor: '#FFF176', 
-    borderRadius: 25,
+    backgroundColor: '#FFFDE7', // ✅ Soft warm tint so cards remain readable against the white backdrop
+    borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#FFE082', // Adds a subtle border outline for clean element separation
   },
   cardTitle: {
     fontSize: 18,
@@ -163,13 +148,13 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   bullet: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2D1606',
+    backgroundColor: '#FFB300', // Cohesive gold accent tone for bullets
     marginRight: 10,
   },
   featureText: {
@@ -177,7 +162,8 @@ const styles = StyleSheet.create({
     color: '#2D1606',
   },
   footerInfo: {
-    marginTop: 20,
+    marginTop: 'auto', 
+    paddingTop: 30,
     alignItems: 'center',
   },
   devText: {
@@ -187,8 +173,7 @@ const styles = StyleSheet.create({
   },
   copyrightText: {
     fontSize: 12,
-    color: '#2D1606',
-    opacity: 0.6,
+    color: '#777777', // Slightly muted gray for standard secondary copyright look
     marginTop: 5,
   },
 });

@@ -13,8 +13,9 @@ import FeatureGateModal from '../../../shared/components/FeatureGateModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../../../shared/styles/DictionaryStyles';
 import { supabase } from '../../../shared/lib/supabase';
+import { endpoints } from '../../../shared/config/apiConfig';
 
-const API_BASE_URL = 'http://192.168.1.15:5001/api/dictionary/search';
+const API_BASE_URL = endpoints.DICTIONARY_SEARCH;   
 
 export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');

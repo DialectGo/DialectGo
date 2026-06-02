@@ -14,13 +14,13 @@ import {
 } from 'react-native';
 import { styles } from '../../../shared/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Assuming you use this for token
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { supabase } from '../../../shared/lib/supabase';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import { endpoints } from '../../../shared/config/apiConfig';
 
-const API_BASE_URL = 'http://192.168.1.15:5001/api/v1/users/profile';
+const API_BASE_URL = endpoints.USER_PROFILE;
 
-// Listahan ng iyong available avatars
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
   { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
@@ -38,43 +38,33 @@ export default function AccountInformation() {
   const [lastName, setLastName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState(''); // Combined display string
+  const [address, setAddress] = useState(''); 
 
   // AVATAR STATES
   const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0]);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // 1. FETCH PROFILE DATA ON MOUNT
   useEffect(() => {
     fetchProfile();
   }, []);
 
-const fetchProfile = async () => {
+  const fetchProfile = async () => {
     try {
-      // 1. Give Supabase a moment to initialize storage (optional but helpful)
-      // await new Promise(resolve => setTimeout(resolve, 500)); 
-
       const { data, error: sessionError } = await supabase.auth.getSession();
       
-      // DEBUG: Let's see what is actually happening
-      console.log("Session Data:", data.session);
-      console.log("Session Error:", sessionError);
-
+      let session;
       if (sessionError || !data.session) {
-          // If session is null, try to refresh it once
           const { data: refreshData } = await supabase.auth.refreshSession();
           if (!refreshData.session) {
             Alert.alert("Authentication Required", "Please log in again.");
             setLoading(false);
             return;
           }
-          // If refresh worked, use that session
-          var session = refreshData.session;
+          session = refreshData.session;
       } else {
-          var session = data.session;
+          session = data.session;
       }
 
-      // 2. Make the fetch call
       const response = await fetch(API_BASE_URL, {
         method: 'GET',
         headers: { 
@@ -110,7 +100,6 @@ const fetchProfile = async () => {
     }
   };
 
-  // 2. SAVE LOGIC
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -121,7 +110,6 @@ const fetchProfile = async () => {
           return;
       }
       
-      // Parse address back into components if user edited the single string
       const [country, province, city] = address.split(',').map(s => s.trim());
 
       const response = await fetch(API_BASE_URL, {
@@ -137,7 +125,7 @@ const fetchProfile = async () => {
           country,
           province,
           city,
-          profile_avatar_url: currentAvatar.name // Saving the filename string
+          profile_avatar_url: currentAvatar.name 
         }),
       });
 
@@ -167,7 +155,7 @@ const fetchProfile = async () => {
       <ProfileTopBar title="Account Information" />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* AVATAR SECTION - Replaceable */}
+        {/* AVATAR SECTION */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrapper}>
             <Image source={currentAvatar.source} style={styles.avatarImg} />
@@ -184,7 +172,7 @@ const fetchProfile = async () => {
           <Text style={styles.changeText}>Tap to change avatar</Text>
         </View>
 
-        {/* FORM SECTION - Yellow Rounded Container */}
+        {/* FORM SECTION */}
         <View style={styles.settingsContainer}>
           <View style={styles.inputGroup}>
             <Text style={styles.fieldLabel}>First Name</Text>
@@ -233,16 +221,27 @@ const fetchProfile = async () => {
             />
           </View>
 
+          {/* ✅ FIXED: Restyled Change Password button for better contrast and UI harmony */}
           <TouchableOpacity 
-            style={[styles.saveBtn, { backgroundColor: '#424242', marginBottom: 10 }]} 
+            style={[
+              styles.saveBtn, 
+              { 
+                backgroundColor: '#FFFDE7', 
+                borderWidth: 2, 
+                borderColor: '#FFD54F',
+                marginBottom: 14 
+              }
+            ]} 
             onPress={() => {
               router.push({
-                  pathname: '/auth/ForgotPassword', // Absolute path from the app root
+                  pathname: '/auth/ForgotPassword', 
                   params: { email }
                 });
             }}
           >
-            <Text style={styles.saveBtnText}>Change Password</Text>
+            <Text style={[styles.saveBtnText, { color: '#5D4037', fontWeight: 'bold' }]}>
+              Change Password
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>

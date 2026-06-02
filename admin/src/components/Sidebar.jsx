@@ -64,11 +64,11 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   }, []);
 
   const menuItems = [
-    { name: 'Dashboard'},
-    { name: 'Users' },
-    { name: 'Incidents'},
-    { name: 'Translations'},
-    { name: 'Dictionaries'},
+    { name: 'Dashboard', icon: '⊞' },
+    { name: 'Users', icon: '👥' },
+    { name: 'Incidents', icon: '⚠' },
+    { name: 'Translations', icon: '🌍' },
+    { name: 'Dictionaries', icon: '📖' },
   ];
 
   return (
@@ -77,7 +77,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'justify-end',
+        justifyContent: 'space-between',
         height: '100vh',
         backgroundColor: '#fff',
         borderRight: '1px solid #e2e8f0',

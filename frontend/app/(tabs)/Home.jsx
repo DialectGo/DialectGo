@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router'; // 👈 1. IMPORT ROUTER FROM EXPO-ROUTER
 import { supabase } from '../../shared/lib/supabase';
+import { endpoints } from '../../shared/config/apiConfig';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
@@ -25,9 +26,9 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-const WORD_API = 'http://192.168.1.22:5001/api/dictionary/word-of-the-day';
-const PROFILE_API = 'http://192.168.1.22:5001/api/v1/users/profile';
-const STREAK_API = 'http://192.168.1.22:5001/api/v1/users/streak';
+const WORD_API = endpoints.WORD_OF_DAY;
+const PROFILE_API = endpoints.USER_PROFILE;
+const STREAK_API = endpoints.USER_STREAK;
 
 export default function Home({ onNavigate, activeTab }) {
   const router = useRouter();
@@ -72,6 +73,19 @@ export default function Home({ onNavigate, activeTab }) {
     setRefreshing(false);
   }, []);
 
+  const parseJsonResponse = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${body}`);
+    }
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
+    const body = await response.text();
+    throw new Error(`Expected JSON response but got ${contentType}: ${body}`);
+  };
+
   const fetchStreak = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -80,7 +94,7 @@ export default function Home({ onNavigate, activeTab }) {
       const response = await fetch(STREAK_API, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success) setStreakData(result.data);
     } catch (error) {
       console.error("Home Fetch Streak Error:", error);
@@ -120,7 +134,7 @@ export default function Home({ onNavigate, activeTab }) {
         }
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success) {
         const user = result.data;
         setUserName(user.first_name || 'User');
@@ -163,7 +177,7 @@ export default function Home({ onNavigate, activeTab }) {
         }
       });
 
-      const result = await response.json();
+      const result = await parseJsonResponse(response);
       if (result.success && result.data) {
         const raw = result.data;
         const translations = raw.translations || [];

@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { endpoints } from '../../shared/config/apiConfig';
 import { styles } from '../../shared/styles/AuthTransitionStyles';
 
 // FIXED IMPORTS: 
@@ -77,6 +78,25 @@ export default function AuthTransition() {
     router.replace('/(tabs)/Home');
   };
 
+  const parseJsonResponse = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${text}`);
+    }
+
+    if (contentType.includes('application/json')) {
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        throw new Error(`Invalid JSON response: ${text}`);
+      }
+    }
+
+    throw new Error(`Expected JSON response but got ${contentType}: ${text}`);
+  };
+
   const handleContinueAsGuest = async () => {
     setIsGuestLoading(true);
 
@@ -134,16 +154,17 @@ export default function AuthTransition() {
       // =========================
 
       const response = await fetch(
-        'http://192.168.1.53:5001/api/v1/users/guest-login',
+        endpoints.GUEST_LOGIN,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         }
       );
 
-      const json = await response.json();
+      const json = await parseJsonResponse(response);
 
       if (json.success && json.data?.session) {
 
@@ -189,11 +210,11 @@ export default function AuthTransition() {
 
     } catch (error) {
 
-      console.error(error);
+      console.error("Guest Mode Error:", error);
 
       Alert.alert(
         "Guest Mode Error",
-        "Unable to initialize guest session."
+        error.message || "Unable to initialize guest session."
       );
 
     } finally {

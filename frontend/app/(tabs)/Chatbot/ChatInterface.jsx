@@ -14,11 +14,12 @@ import {
 
 import { styles } from '../../../shared/styles/ChatInterfaceStyles';
 import ChatBubble from './ChatBubble';
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 
 // ==========================
 // GROQ CONFIG
 // ==========================
-const GROQ_API_KEY = 'API KEY DIto'; // ⚠️ Move to backend/.env later
+const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY; // ✅ Use env variable for API key
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
@@ -214,4 +215,4 @@ export default function Learn() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+} 

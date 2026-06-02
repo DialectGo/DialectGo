@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   Image, 
-  ScrollView, 
   StatusBar, 
   Text, 
   TouchableOpacity, 
@@ -14,9 +13,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../shared/lib/supabase';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import BottomNav from '../../../shared/components/BottomNav';
-import FeatureGateModal from '../../../shared/components/FeatureGateModal'; // Imported Gate
+import FeatureGateModal from '../../../shared/components/FeatureGateModal'; 
+import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ Imported RefreshContainer
 import { styles } from '../../../shared/styles/ProfileStyles';
 import NetInfo from '@react-native-community/netinfo';
+import { endpoints } from '../../../shared/config/apiConfig';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
@@ -26,16 +27,14 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
 ];
 
-const PROFILE_API = 'http://192.168.1.30:5001/api/v1/users/profile';
-const STREAK_API = 'http://192.168.1.30:5001/api/v1/users/streak';
-
 export default function Profile({ onNavigate }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ Added state for pull-to-refresh handling
   const [isGuest, setIsGuest] = useState(false);
-  const [gateVisible, setGateVisible] = useState(false); // Modal visibility control
+  const [gateVisible, setGateVisible] = useState(false); 
   const [isConnected, setIsConnected] = useState(true);
-  const hasInitialized = React.useRef(false);
+  const hasInitialized = useRef(false);
 
   // Profile States
   const [firstName, setFirstName] = useState('');
@@ -46,12 +45,11 @@ export default function Profile({ onNavigate }) {
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       const connected = state.isConnected ?? false;
-
       setIsConnected(connected);
 
-      // 🚨 OFFLINE: instant guest mode (NO loading screen)
       if (!connected) {
-        setLoading(false); // IMPORTANT FIX
+        setLoading(false); 
+        setRefreshing(false);
         setIsGuest(true);
         setFirstName('Guest');
         setLastName('User');
@@ -60,7 +58,6 @@ export default function Profile({ onNavigate }) {
         return;
       }
 
-      // ONLINE: only run once OR when returning from offline
       if (!hasInitialized.current) {
         hasInitialized.current = true;
         loadProfileData();
@@ -70,24 +67,23 @@ export default function Profile({ onNavigate }) {
     return () => unsubscribe();
   }, []);
 
-  const loadProfileData = async () => {
-    if (!isConnected) return; 
-    if (!hasInitialized.current) {
+  // ✅ Modified to cleanly support both standard initial loads and pull-to-refresh instances
+  const loadProfileData = async (isManualRefresh = false) => {
+    if (!isConnected) {
+      setRefreshing(false);
+      return; 
+    }
+    
+    if (!hasInitialized.current && !isManualRefresh) {
       setLoading(true);
     }
 
     try {
       const role = await AsyncStorage.getItem('@user_role');
       const guestMode = await AsyncStorage.getItem('@guest_mode');
-
       const { data: { session } } = await supabase.auth.getSession();
 
-      const isGuest =
-        role === 'guest' ||
-        guestMode !== null ||
-        !session ||
-        !isConnected;
-
+      const isGuest = role === 'guest' || guestMode !== null || !session || !isConnected;
       setIsGuest(isGuest);
 
       if (isGuest) {
@@ -98,7 +94,6 @@ export default function Profile({ onNavigate }) {
         return;
       }
 
-      // ONLY fetch online data if fully authenticated + online
       await Promise.all([
         fetchUserProfile(),
         fetchStreak()
@@ -106,13 +101,19 @@ export default function Profile({ onNavigate }) {
 
     } catch (error) {
       console.log('Profile load error:', error);
-
       setIsGuest(true);
       setFirstName('Guest');
       setLastName('User');
     } finally {
       setLoading(false);
+      setRefreshing(false); // ✅ Safely terminates the pull-to-refresh load loop indicator
     }
+  };
+
+  // ✅ Created handler explicitly for the RefreshContainer's onRefresh trigger
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadProfileData(true);
   };
 
   const fetchUserProfile = async () => {
@@ -120,7 +121,7 @@ export default function Profile({ onNavigate }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch(PROFILE_API, {
+      const response = await fetch(endpoints.USER_PROFILE, {
         method: 'GET',
         headers: { 
           'Authorization': `Bearer ${session.access_token}`,
@@ -149,7 +150,7 @@ export default function Profile({ onNavigate }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch(STREAK_API, {
+      const response = await fetch(endpoints.USER_STREAK, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const result = await response.json();
@@ -159,19 +160,16 @@ export default function Profile({ onNavigate }) {
     }
   };
 
-  // Safe layout intercept handling method
   const handleProtectedAction = (targetPath) => {
     if (isGuest || !isConnected) {
       setGateVisible(true);
       return;
     }
-
     router.push(targetPath);
   };
 
   const handleLogout = async () => {
-    // Clear locally stored authentication state flags cleanly on exit
-    await AsyncStorage.multiRemove(['@user_token', '@user_role', '@user_metadata']);
+    await AsyncStorage.multiRemove(['@user_token', '@user_role', '@user_metadata', '@guest_mode']);
     if (onNavigate) {
       onNavigate('auth');
     } else {
@@ -193,7 +191,13 @@ export default function Profile({ onNavigate }) {
 
       <ProfileTopBar title="Profile" />
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
+      {/* ✅ SWAPPED: ScrollView has been replaced by the custom RefreshContainer */}
+      <RefreshContainer
+        style={styles.scrollBody}
+        contentContainerStyle={{ paddingBottom: 110 }} // Keeps your layout footer buffer intact
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+      >
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
             <Image source={userAvatar} style={styles.avatarImg} />
@@ -205,7 +209,6 @@ export default function Profile({ onNavigate }) {
         </View>
 
         <View style={styles.settingsContainer}>
-          {/* Gated Feature */}
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/AccountInformation')}>
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/profileIcon.png')} style={styles.menuIcon} />
@@ -214,7 +217,6 @@ export default function Profile({ onNavigate }) {
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
-          {/* Gated Feature */}
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/fireIcon.png')} style={styles.menuIcon} />
@@ -245,12 +247,9 @@ export default function Profile({ onNavigate }) {
               <Text style={styles.logoutText}>{isGuest ? 'Exit Guest Mode' : 'Log out'}</Text>
             </View>
           </TouchableOpacity>
-          
-          <View style={{ height: 50 }} />
         </View>
-      </ScrollView>
+      </RefreshContainer>
 
-      {/* Global Gating Component Anchor */}
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
 
       <BottomNav activeTab="Profile" />

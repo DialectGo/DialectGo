@@ -1,6 +1,5 @@
 // src/pages/TranslationManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Line } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 

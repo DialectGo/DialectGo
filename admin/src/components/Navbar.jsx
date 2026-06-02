@@ -1,22 +1,16 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { authFetch } from '../utils/authFetch';
 import '../assets/css/sidebar.css';
 import { authService } from '../services/authService';
 
 const Navbar = ({ title }) => {
+
   const now = new Date();
   const hours = now.getHours();
 
-  // FIX: Added missing state initializations
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const [pendingVerifications, setPendingVerifications] = useState([]);
-  const [securityAlerts, setSecurityAlerts] = useState([]);
   const [showHub, setShowHub] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
   const formattedDate = now.toLocaleDateString('en-US', dateOptions);
@@ -29,7 +23,6 @@ const Navbar = ({ title }) => {
 
   const fetchNotifications = async () => {
     setLoading(true);
-    setIsRefreshing(true);
     try {
       const token = authService.getToken(); // ← correct key: 'admin_token'
 
@@ -42,26 +35,26 @@ const Navbar = ({ title }) => {
       });
 
       if (!res.ok) {
+        // Don't clear token here — just skip updating notifications
         console.warn('Notification fetch failed:', res.status);
         return;
       }
 
       const payload = await res.json();
+
       if (payload.success) {
         const unresolved = payload.data.anomalies.filter(
           (item) => !item.is_resolved
         );
         setNotifications(unresolved);
       }
+
     } catch (err) {
       console.error('Notification fetch error:', err);
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
     }
   };
-
-  const notificationCount = pendingVerifications.length + securityAlerts.length;
 
   let greeting = 'Good Evening!';
   if (hours < 12) greeting = 'Good Morning!';
@@ -139,10 +132,9 @@ const Navbar = ({ title }) => {
                 <h4 style={{ margin: 0, fontWeight: 800 }}>Security Threat Center</h4>
                 <button
                   onClick={fetchNotifications}
-                  disabled={isRefreshing}
-                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: isRefreshing ? '#94a3b8' : 'inherit' }}
+                  style={{ border: 'none', background: 'none', cursor: 'pointer' }}
                 >
-                  {isRefreshing ? 'Syncing...' : '🔄 Refresh'}
+                  {loading ? 'Syncing...' : '🔄'}
                 </button>
               </div>
 
@@ -185,4 +177,4 @@ const Navbar = ({ title }) => {
   );
 };
 
-export default Navbar;
+  export default Navbar;

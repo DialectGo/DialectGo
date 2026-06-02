@@ -1,7 +1,5 @@
 // src/pages/Incidents.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { authFetch } from '../utils/authFetch';
 import '../assets/css/user-management.css';
 
 const Incidents = () => {
@@ -33,7 +31,14 @@ const Incidents = () => {
         return;
       }
 
-      const res = await authFetch('/api/dashboard/security');
+      const res = await fetch('/api/dashboard/security', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       const payload = await res.json();
       if (payload.success) {
         setAnomalies(payload.data.anomalies);
@@ -59,12 +64,6 @@ const Incidents = () => {
           'Content-Type': 'application/json' 
         }
       });
-
-      if (res.status === 401) {
-        await supabase.auth.signOut();
-        window.location.href = '/login';
-        return;
-      }
       
       const payload = await res.json();
       if (payload.success) {

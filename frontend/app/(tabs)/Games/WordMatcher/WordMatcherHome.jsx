@@ -16,7 +16,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './WordMatcherStyles';
 import { supabase } from '../../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.53:5001/api';
+import { API_BASE_URL } from '../../../../shared/config/apiConfig';
+const API_URL = `${API_BASE_URL}/api`;
 
 export default function WordMatcherHome({ route }) {
   const router = useRouter();
@@ -87,7 +88,7 @@ export default function WordMatcherHome({ route }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ game_id: 1 }) 
+        body: JSON.stringify({ game_id: 2 }) 
       });
       
       const responseText = await response.text();

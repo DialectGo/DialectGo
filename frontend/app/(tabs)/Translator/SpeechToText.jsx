@@ -18,7 +18,8 @@ import ContributionModal from '../../../shared/components/ContributionModal';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
-const API_BASE = 'http://192.168.1.30:5001/api';
+import { API_API_BASE } from '../../../shared/config/apiConfig';
+const API_BASE = API_API_BASE;
 const ENDPOINTS = {
   AUDIO: `${API_BASE}/translate/audio`,
   FEEDBACK: `${API_BASE}/feedback`,

@@ -15,8 +15,9 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { styles } from '../../shared/styles/LoginStyles';
 import { useRouter } from 'expo-router'; 
+import { endpoints } from '../../shared/config/apiConfig';
 
-const API_URL = 'http://192.168.1.52:5001/api/v1/users/register'; 
+const API_URL = endpoints.USER_REGISTER;
 
 export default function SignUp({ onSwitch, onSuccess }) {
   const router = useRouter(); 

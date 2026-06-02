@@ -1,6 +1,5 @@
 // src/pages/DictionaryManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import '../assets/css/user-management.css';
 
 const DictionaryManagement = () => {
@@ -37,15 +36,8 @@ const DictionaryManagement = () => {
         try {
             const token = localStorage.getItem('admin_token');
             const res = await fetch('/api/dataset/dictionary', {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (res.status === 401) {
-              await supabase.auth.signOut();
-              window.location.href = '/login';
-              return;
-            }
-
             const payload = await res.json();
             if (payload.success) {
                 setDataset(payload.data);
@@ -113,7 +105,7 @@ const DictionaryManagement = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     targetTable: 'dictionary_entries',
@@ -123,12 +115,6 @@ const DictionaryManagement = () => {
                     rationale
                 })
             });
-
-            if (res.status === 401) {
-              await supabase.auth.signOut();
-              window.location.href = '/login';
-              return;
-            }
 
             const payload = await res.json();
             alert(payload.message);
