@@ -66,6 +66,7 @@ const Navbar = ({ title }) => {
       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
     >
       <div className="navbar-left">
+        {/* FIX: Removed duplicate h1 tag */}
         <h1 className="nav-page-title">{title}</h1>
       </div>
 

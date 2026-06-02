@@ -99,6 +99,8 @@ export default function Learn() {
     });
 
     try {
+      console.log('3️⃣ Fetching Gemini...');
+
       const response = await fetch(GEMINI_URL, {
         method: 'POST',
         headers: {
@@ -263,3 +265,132 @@ export default function Learn() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+
+  header: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFCB45',
+    height: 60,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#333333',
+    letterSpacing: 0.3,
+  },
+
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#FFCB45', // yellow fills the safe area top on splash
+  },
+  splashBody: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  mascot: {
+    width: 200,
+    height: 200,
+    marginBottom: 8,
+  },
+  splashTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFCB45',
+    textAlign: 'center',
+    lineHeight: 36,
+  },
+  splashSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  startButton: {
+    backgroundColor: '#FFCB45',
+    borderRadius: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 64,
+    marginTop: 20,
+    elevation: 4,
+    shadowColor: '#FFCB45',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  startButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#333333',
+  },
+
+  suggestionsBody: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+  },
+  suggestionsWelcome: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#FFCB45',
+    textAlign: 'center',
+    lineHeight: 34,
+  },
+  welcomeSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  suggestionButtonsContainer: {
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  suggestionButton: {
+    backgroundColor: '#FFCB45',
+    borderRadius: 25,
+    paddingVertical: 14,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  suggestionButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333333',
+  },
+
+  listContent: {
+    paddingHorizontal: 15,
+    paddingVertical: 20,
+    paddingBottom: 100,
+  },
+  typingContainer: {
+    paddingHorizontal: 15,
+  },
+});

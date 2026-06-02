@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router'; // 👈 1. IMPORT ROUTER FROM EXPO-ROUTER
 import { supabase } from '../../shared/lib/supabase';
 import { endpoints } from '../../shared/config/apiConfig';
 import BottomNav from '../../shared/components/BottomNav';
@@ -127,7 +128,7 @@ export default function Home({ onNavigate, activeTab }) {
 
       const response = await fetch(PROFILE_API, {
         method: 'GET',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
         }
@@ -153,7 +154,7 @@ export default function Home({ onNavigate, activeTab }) {
       if (!session) return;
 
       const userId = session.user.id;
-      const storageKey = `word_of_the_day_${userId}`; 
+      const storageKey = `word_of_the_day_${userId}`;
       const now = Date.now();
 
       // Skip cache verification check if the user physically triggers a pull refresh action
@@ -205,8 +206,8 @@ export default function Home({ onNavigate, activeTab }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
       <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
-      <TopBar onLogout={() => {}} onProfile={() => {}} />
-      
+      <TopBar onLogout={() => { }} onProfile={() => { }} />
+
       <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}
         <RefreshContainer
@@ -284,12 +285,12 @@ export default function Home({ onNavigate, activeTab }) {
             </View>
           </View>
 
-           {/* ADVENTURE / PROMO SECTION */}
+          {/* ADVENTURE / PROMO SECTION */}
           <View style={styles.promoCardWrapper}>
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee1]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee2]} resizeMode="contain" />
             <Image source={require('../../assets/logo/bee.png')} style={[styles.flyingBee, styles.bee3]} resizeMode="contain" />
-            
+
             <View style={styles.promoCard}>
               <View style={styles.promoTextContainer}>
                 <Text style={styles.promoLabel}>Learn more about</Text>
@@ -301,6 +302,7 @@ export default function Home({ onNavigate, activeTab }) {
                 >
                   <Text style={styles.exploreBtnText}>Explore Now</Text>
                 </TouchableOpacity>
+
               </View>
               <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
             </View>
