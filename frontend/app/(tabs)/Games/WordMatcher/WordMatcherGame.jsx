@@ -6,7 +6,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { styles } from './WordMatcherStyles';
 import { supabase } from '../../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.53:5001/api';
+import { API_BASE_URL } from '../../../../shared/config/apiConfig';
+const API_URL = `${API_BASE_URL}/api`;
+const HEART_XP_COST = 50; 
+const MAX_HEARTS = 8;
+const REGEN_RATE_MS = 60 * 60 * 1000; // 1 Hour in milliseconds
 
 export default function WordMatcherGame() {
   const router = useRouter(); 
@@ -15,6 +19,7 @@ export default function WordMatcherGame() {
   const [level, setLevel] = useState(parseInt(params.initialLevel) || 1);
   const [globalHearts, setGlobalHearts] = useState(8); 
   const [currentScore, setCurrentScore] = useState(0); 
+  const [totalXpPool, setTotalXpPool] = useState(0); 
   const [loading, setLoading] = useState(true);
   
   const [totalQuestionsInLevel, setTotalQuestionsInLevel] = useState(4);
@@ -29,15 +34,17 @@ export default function WordMatcherGame() {
   const [isPaused, setIsPaused] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [resultType, setResultType] = useState(null); 
+  const [buyingHearts, setBuyingHearts] = useState(false);
+  const [lastHeartConsumedAt, setLastHeartConsumedAt] = useState(null); // ✅ Track timestamp for tracking calculations
 
   const progressPercent = (currentScore / totalQuestionsInLevel) * 100;
   const gameDifficulty = params.difficulty || 'easy';
   const displayLanguagePool = params.targetLanguage || 'english';
 
+  // ✅ Loads centralized heart metrics and server calculation timestamps safely
   const fetchGameChallenges = useCallback(async () => {
     try {
       setLoading(true);
-      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         Alert.alert("Authentication Required", "Please re-login to download game assets.");
@@ -45,11 +52,24 @@ export default function WordMatcherGame() {
         return;
       }
 
-      // Appended targetLanguage preference to endpoint path query string
-      const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${displayLanguagePool}`;
-      const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      // Load unified tracking values directly from the backend validation controller
+      const progressRes = await fetch(`${API_URL}/progress/me`, { 
+        headers: { 'Authorization': `Bearer ${session.access_token}` } 
       });
+      const progressResult = await progressRes.json();
+      
+      if (progressResult.success && progressResult.data) {
+        const backendHearts = progressResult.data.current_hearts ?? MAX_HEARTS;
+        setGlobalHearts(backendHearts);
+        setTotalXpPool(progressResult.data.total_xp || 0);
+        setLastHeartConsumedAt(progressResult.data.last_heart_consumed_at);
+        
+        // Sync local cache instantly
+        await AsyncStorage.setItem('@central_hearts', backendHearts.toString());
+      }
+
+      const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${displayLanguagePool}`;
+      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${session.access_token}` } });
       const result = await response.json();
       
       if (result.success && result.data && result.data.length > 0) {
@@ -68,10 +88,73 @@ export default function WordMatcherGame() {
     }
   }, [level, gameDifficulty, displayLanguagePool]);
 
+  // ✅ Foreground heart calculation interval loop
+  useEffect(() => {
+    if (globalHearts >= MAX_HEARTS || !lastHeartConsumedAt) return;
+
+    const interval = setInterval(async () => {
+      const elapsed = new Date().getTime() - new Date(lastHeartConsumedAt).getTime();
+      
+      if (elapsed >= REGEN_RATE_MS) {
+        const heartsToIncrease = Math.floor(elapsed / REGEN_RATE_MS);
+        const updatedHeartsCount = Math.min(MAX_HEARTS, globalHearts + heartsToIncrease);
+        
+        setGlobalHearts(updatedHeartsCount);
+        await AsyncStorage.setItem('@central_hearts', updatedHeartsCount.toString());
+        
+        if (updatedHeartsCount === MAX_HEARTS) {
+          setLastHeartConsumedAt(null);
+        } else {
+          // Push anchor forward relative to recovered amounts
+          setLastHeartConsumedAt(new Date(new Date(lastHeartConsumedAt).getTime() + (heartsToIncrease * REGEN_RATE_MS)).toISOString());
+        }
+      }
+    }, 30000); // Evaluates context pools every 30 seconds smoothly
+
+    return () => clearInterval(interval);
+  }, [globalHearts, lastHeartConsumedAt]);
+
+  // ✅ Core transactional utility to purchase hearts using XP points
+  const handlePurchaseHearts = async () => {
+    if (totalXpPool < HEART_XP_COST) {
+      Alert.alert("Insufficient XP", `Kailangan mo ng hindi bababa sa ${HEART_XP_COST} XP para makabili ng bagong Hearts.`);
+      return;
+    }
+
+    try {
+      setBuyingHearts(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${API_URL}/progress/buy-hearts`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ xp_cost: HEART_XP_COST })
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setGlobalHearts(MAX_HEARTS);
+        await AsyncStorage.setItem('@central_hearts', MAX_HEARTS.toString());
+        setTotalXpPool(prev => prev - HEART_XP_COST);
+        setLastHeartConsumedAt(null);
+        setResultType(null);
+        setShowResultModal(false);
+        Alert.alert("Refill Successful", "Ang iyong mga puso ay ganap nang na-refill! ❤️");
+      }
+    } catch (error) {
+      console.error("Deduction validation lifecycle failure:", error);
+      Alert.alert("Transaction Failed", "Pakisubukang muli mamaya.");
+    } finally {
+      setBuyingHearts(false);
+    }
+  };
+
   const setupLevelData = (bank) => {
     const numQuestions = Math.min(3 + level, bank.length);
     setTotalQuestionsInLevel(numQuestions);
-    
     const shuffled = [...bank].sort(() => 0.5 - Math.random()).slice(0, numQuestions);
     setCurrentScore(0);
     if (shuffled.length > 0) {
@@ -81,10 +164,8 @@ export default function WordMatcherGame() {
 
   const generateQuestion = (nextQ, remainingList, fullBank) => {
     if (!nextQ) return; 
-
     setSelectedChoice(null);
     setIsCorrect(null);
-    
     const distractors = fullBank
       .filter(item => item.id !== nextQ.id) 
       .sort(() => 0.5 - Math.random())
@@ -100,20 +181,19 @@ export default function WordMatcherGame() {
     fetchGameChallenges();
   }, [fetchGameChallenges]);
 
-  const handleLevelComplete = async () => {
+  const handleLevelComplete = async (finalLevelScore) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
       const savedLevels = await AsyncStorage.getItem(`completed_levels_${gameDifficulty}`);
       let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
-      
       if (!levelsArray.includes(level)) {
         levelsArray.push(level);
         await AsyncStorage.setItem(`completed_levels_${gameDifficulty}`, JSON.stringify(levelsArray));
       }
 
-      const accuracy = (currentScore / totalQuestionsInLevel) * 100;
+      const accuracy = (finalLevelScore / totalQuestionsInLevel) * 100;
       await fetch(`${API_URL}/sessions/${params.sessionId}/complete`, {
         method: 'POST',
         headers: {
@@ -127,13 +207,18 @@ export default function WordMatcherGame() {
       });
 
       const xpGained = gameDifficulty === 'hard' ? 30 : gameDifficulty === 'medium' ? 20 : 10;
+      const pointsCalculated = finalLevelScore * (gameDifficulty === 'hard' ? 15 : gameDifficulty === 'medium' ? 10 : 5);
+
       await fetch(`${API_URL}/progress/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ xp_gained: xpGained })
+        body: JSON.stringify({ 
+          xp_gained: xpGained,
+          score_gained: pointsCalculated 
+        })
       });
 
     } catch (e) {
@@ -154,7 +239,7 @@ export default function WordMatcherGame() {
         setCurrentScore(nextScore);
 
         if (nextScore >= totalQuestionsInLevel) {
-          await handleLevelComplete(); 
+          await handleLevelComplete(nextScore); 
           setResultType('win');
           setShowResultModal(true);
         } else if (availableQuestions.length > 0) {
@@ -163,6 +248,27 @@ export default function WordMatcherGame() {
       } else {
         const newHearts = Math.max(0, globalHearts - 1);
         setGlobalHearts(newHearts);
+        await AsyncStorage.setItem('@central_hearts', newHearts.toString()); 
+        
+        // ✅ Synchronize explicit life deductions to database endpoints
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const syncHeartRes = await fetch(`${API_URL}/progress/lose-heart`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ current_hearts: globalHearts })
+          });
+          const syncResult = await syncHeartRes.json();
+          if (syncResult.success) {
+            setLastHeartConsumedAt(syncResult.data.last_heart_consumed_at);
+          }
+        } catch (err) {
+          console.error("Failed to sync structural heart loss timestamp:", err);
+        }
+
         if (newHearts <= 0) {
           setResultType('lose');
           setShowResultModal(true);
@@ -266,7 +372,7 @@ export default function WordMatcherGame() {
         </View>
       </Modal>
 
-      {/* RESULT MODAL */}
+      {/* RESULT / LOSS STORE MODAL */}
       <Modal transparent visible={showResultModal} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -284,7 +390,24 @@ export default function WordMatcherGame() {
                 <Text style={styles.buttonText}>NEXT LEVEL</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={{ textAlign: 'center', marginBottom: 20 }}>Babalik ang iyong hearts mamaya.</Text>
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', marginBottom: 15, paddingHorizontal: 10 }}>
+                  Naubusan ka ng buhay! Maaari kang bumili ng buong refill gamit ang iyong XP.
+                </Text>
+                
+                <TouchableOpacity 
+                  style={[styles.mainButton, { backgroundColor: '#FF9800', marginBottom: 10 }]} 
+                  onPress={handlePurchaseHearts}
+                  disabled={buyingHearts}
+                >
+                  {buyingHearts ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>BUY REFILL ({HEART_XP_COST} XP)</Text>
+                  )}
+                </TouchableOpacity>
+                <Text style={{ fontSize: 11, color: '#777', marginBottom: 15 }}>Current Balance: {totalXpPool} XP</Text>
+              </View>
             )}
 
             <TouchableOpacity style={styles.secondaryButton} onPress={handleQuit}>

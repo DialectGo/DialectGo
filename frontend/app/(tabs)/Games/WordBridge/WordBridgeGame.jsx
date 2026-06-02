@@ -15,7 +15,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../WordBridge/WordBridgeStyles';
 import { supabase } from '../../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.53:5001/api';
+import { API_API_BASE } from '../../../../shared/config/apiConfig';
+const API_URL = API_API_BASE;
+const HEART_XP_COST = 50; 
+const MAX_HEARTS = 8;
+const REGEN_RATE_MS = 60 * 60 * 1000; // 1 Hour in milliseconds
 
 export default function WordBridgeGame() {
   const router = useRouter(); 
@@ -23,16 +27,17 @@ export default function WordBridgeGame() {
   
   // Game Configuration Parameters
   const [level, setLevel] = useState(parseInt(params.initialLevel) || 1);
-  const gameMode = params.gameMode || 'Cebuano - English'; // 'Cebuano - Tagalog' or 'Cebuano - English'
+  const gameMode = params.gameMode || 'Cebuano - English'; 
   const sessionId = params.sessionId;
 
-  const gameDifficulty = 'hard'; // Hardcoded fallback configuration for WordBridge 
+  const gameDifficulty = 'hard'; 
   const displayLanguagePool = params.targetLanguage || (gameMode.toLowerCase().includes('tagalog') ? 'tagalog' : 'english');
 
   // Game Engine State
   const [loading, setLoading] = useState(true);
   const [globalHearts, setGlobalHearts] = useState(8); 
   const [currentScore, setCurrentScore] = useState(0); 
+  const [totalXpPool, setTotalXpPool] = useState(0); 
   const [totalQuestionsInLevel, setTotalQuestionsInLevel] = useState(4);
   
   const [challengeBank, setChallengeBank] = useState([]);
@@ -48,13 +53,13 @@ export default function WordBridgeGame() {
   // Modals & Popups
   const [isPaused, setIsPaused] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
-  const [resultType, setResultType] = useState(null); // 'win' or 'lose'
+  const [resultType, setResultType] = useState(null); 
+  const [buyingHearts, setBuyingHearts] = useState(false); 
+  const [lastHeartConsumedAt, setLastHeartConsumedAt] = useState(null); // ✅ Added real-time timestamp tracking
 
   const progressPercent = (currentScore / totalQuestionsInLevel) * 100;
-  
-  // Map game modes to standard backend query keys
-  const targetLangParam = gameMode.toLowerCase().includes('tagalog') ? 'tagalog' : 'english';
 
+  // ✅ Loads centralized tracking states and server timestamps safely
   const fetchGameChallenges = useCallback(async () => {
     try {
       setLoading(true);
@@ -65,7 +70,22 @@ export default function WordBridgeGame() {
         return;
       }
 
-      // Send the requested parameter preference
+      // Fetch unified tracking data straight from backend calculations engine
+      const progressRes = await fetch(`${API_URL}/progress/me`, { 
+        headers: { 'Authorization': `Bearer ${session.access_token}` } 
+      });
+      const progressResult = await progressRes.json();
+      
+      if (progressResult.success && progressResult.data) {
+        const backendHearts = progressResult.data.current_hearts ?? MAX_HEARTS;
+        setGlobalHearts(backendHearts);
+        setTotalXpPool(progressResult.data.total_xp || 0);
+        setLastHeartConsumedAt(progressResult.data.last_heart_consumed_at);
+        
+        // Match cache to client tracking immediately
+        await AsyncStorage.setItem('@central_hearts', backendHearts.toString());
+      }
+
       const requestedLang = params.targetLanguage || (gameMode.toLowerCase().includes('tagalog') ? 'tagalog' : 'english');
       const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${requestedLang}`;
       
@@ -75,7 +95,6 @@ export default function WordBridgeGame() {
       const result = await response.json();
       
       if (result.success && result.data && result.data.length > 0) {
-        // ✅ DETECT FALLBACK: Check if the text actually contains English tokens
         const sampleText = result.data[0].translation_term.toLowerCase();
         const containsEnglish = /\b(the|is|child|runs|very|his|her|with|good|dog|cat|house)\b/.test(sampleText);
         
@@ -100,6 +119,69 @@ export default function WordBridgeGame() {
     }
   }, [level, gameDifficulty, gameMode, params.targetLanguage]);
 
+  // ✅ Foreground background recovery processing hook
+  useEffect(() => {
+    if (globalHearts >= MAX_HEARTS || !lastHeartConsumedAt) return;
+
+    const interval = setInterval(async () => {
+      const elapsed = new Date().getTime() - new Date(lastHeartConsumedAt).getTime();
+      
+      if (elapsed >= REGEN_RATE_MS) {
+        const heartsToIncrease = Math.floor(elapsed / REGEN_RATE_MS);
+        const updatedHeartsCount = Math.min(MAX_HEARTS, globalHearts + heartsToIncrease);
+        
+        setGlobalHearts(updatedHeartsCount);
+        await AsyncStorage.setItem('@central_hearts', updatedHeartsCount.toString());
+        
+        if (updatedHeartsCount === MAX_HEARTS) {
+          setLastHeartConsumedAt(null);
+        } else {
+          setLastHeartConsumedAt(new Date(new Date(lastHeartConsumedAt).getTime() + (heartsToIncrease * REGEN_RATE_MS)).toISOString());
+        }
+      }
+    }, 30000); // Check updates every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [globalHearts, lastHeartConsumedAt]);
+
+  // ✅ Core transactional method to buy hearts using accumulated XP points
+  const handlePurchaseHearts = async () => {
+    if (totalXpPool < HEART_XP_COST) {
+      Alert.alert("Insufficient XP", `Kailangan mo ng hindi bababa sa ${HEART_XP_COST} XP para makabili ng bagong Hearts.`);
+      return;
+    }
+
+    try {
+      setBuyingHearts(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${API_URL}/progress/buy-hearts`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ xp_cost: HEART_XP_COST })
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setGlobalHearts(MAX_HEARTS);
+        await AsyncStorage.setItem('@central_hearts', MAX_HEARTS.toString());
+        setTotalXpPool(prev => prev - HEART_XP_COST);
+        setLastHeartConsumedAt(null);
+        setResultType(null);
+        setShowResultModal(false);
+        Alert.alert("Refill Successful", "Ang iyong mga puso ay ganap nang na-refill! ❤️");
+      }
+    } catch (error) {
+      console.error("Heart store backend interaction failed:", error);
+      Alert.alert("Transaction Failed", "Pakisubukang muli mamaya.");
+    } finally {
+      setBuyingHearts(false);
+    }
+  };
+
   const setupLevelData = (bank) => {
     const numQuestions = Math.min(3 + level, bank.length);
     setTotalQuestionsInLevel(numQuestions);
@@ -118,10 +200,7 @@ export default function WordBridgeGame() {
     setAvailableQuestions(remainingList);
     setConstructedTokens([]);
 
-    // Split target sentence into tokens for scrambling
     const rawTokens = nextQ.translation_term.split(/\s+/);
-    
-    // Shuffle words to build scrambled options
     const shuffledTokens = rawTokens
       .map((word, index) => ({ id: index, word }))
       .sort(() => 0.5 - Math.random());
@@ -137,11 +216,9 @@ export default function WordBridgeGame() {
     if (showResultModal || isPaused) return;
 
     if (source === 'scrambled') {
-      // Add to constructed layout, drop from options pool
       setScrambledTokens(prev => prev.filter(t => t.id !== token.id));
       setConstructedTokens(prev => [...prev, token]);
     } else {
-      // Remove from constructed layout, return to options pool
       setConstructedTokens(prev => prev.filter(t => t.id !== token.id));
       setScrambledTokens(prev => [...prev, token].sort(() => 0.5 - Math.random()));
     }
@@ -158,38 +235,50 @@ export default function WordBridgeGame() {
         setCurrentScore(nextScore);
 
         if (nextScore >= totalQuestionsInLevel) {
-        // Now this await will work perfectly!
-        await handleLevelComplete(); 
-        
-        setResultType('win');
-        setShowResultModal(true);
+          await handleLevelComplete(nextScore); 
+          setResultType('win');
+          setShowResultModal(true);
         } else if (availableQuestions.length > 0) {
-        generateQuestion(availableQuestions[0], availableQuestions.slice(1));
+          generateQuestion(availableQuestions[0], availableQuestions.slice(1));
         }
     } else {
-        // Deduct a heart if assembly validation checks fail
         const newHearts = Math.max(0, globalHearts - 1);
         setGlobalHearts(newHearts);
+        await AsyncStorage.setItem('@central_hearts', newHearts.toString()); 
         
+        // ✅ Synchronize manual logic heart loss events right to remote tables
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const syncHeartRes = await fetch(`${API_URL}/progress/lose-heart`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ current_hearts: globalHearts })
+          });
+          const syncResult = await syncHeartRes.json();
+          if (syncResult.success) {
+            setLastHeartConsumedAt(syncResult.data.last_heart_consumed_at);
+          }
+        } catch (err) {
+          console.error("Failed to sync structural heart loss timestamp:", err);
+        }
+
         if (newHearts <= 0) {
-        setResultType('lose');
-        setShowResultModal(true);
+          setResultType('lose');
+          setShowResultModal(true);
         } else {
-        Alert.alert("Bridge Collapsed!", "The words are out of order. Check your syntax and try again!");
+          Alert.alert("Bridge Collapsed!", "The words are out of order. Check your syntax and try again!");
         }
     }
-    };
+  };
 
-  const handleLevelComplete = async () => {
+  const handleLevelComplete = async (finalLevelScore) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // DEFINE THIS HERE: Fallback or set to hard to match your fetch query string
-      const gameDifficulty = 'hard';
-      const displayLanguagePool = params.targetLanguage || 'english';
-
-      // 1. Update AsyncStorage for immediate UI feedback (Matches WordMatcher flow)
       const savedLevels = await AsyncStorage.getItem(`completed_levels_${gameDifficulty}`);
       let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
       
@@ -198,8 +287,7 @@ export default function WordBridgeGame() {
         await AsyncStorage.setItem(`completed_levels_${gameDifficulty}`, JSON.stringify(levelsArray));
       }
 
-      // 2. Calculate accuracy and close the active game session
-      const accuracy = (currentScore / totalQuestionsInLevel) * 100;
+      const accuracy = (finalLevelScore / totalQuestionsInLevel) * 100;
       await fetch(`${API_URL}/sessions/${params.sessionId}/complete`, {
         method: 'POST',
         headers: {
@@ -212,15 +300,19 @@ export default function WordBridgeGame() {
         })
       });
 
-      // 3. Award XP to the user progress table
-      const xpGained = 30; // Hard mode awards 30 XP
+      const xpGained = 30; 
+      const pointsCalculated = finalLevelScore * 15; 
+
       await fetch(`${API_URL}/progress/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ xp_gained: xpGained })
+        body: JSON.stringify({ 
+          xp_gained: xpGained,
+          score_gained: pointsCalculated 
+        })
       });
 
     } catch (e) {
@@ -338,39 +430,56 @@ export default function WordBridgeGame() {
         </View>
       </Modal>
 
-      {/* RESULT MODAL */}
-        <Modal transparent visible={showResultModal} animationType="slide">
-            <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <Ionicons 
-                name={resultType === 'win' ? "trophy" : "heart-dislike"} 
-                size={80} 
-                color={resultType === 'win' ? "#FFD54F" : "#D32F2F"} 
-                />
-                <Text style={styles.modalTitle}>
-                {resultType === 'win' ? "LEVEL COMPLETE!" : "NO MORE HEARTS"}
+      {/* --- RESULT / LOSS STORE MODAL --- */}
+      <Modal transparent visible={showResultModal} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Ionicons 
+              name={resultType === 'win' ? "trophy" : "heart-dislike"} 
+              size={80} 
+              color={resultType === 'win' ? "#FFD54F" : "#D32F2F"} 
+            />
+            <Text style={styles.modalTitle}>
+              {resultType === 'win' ? "LEVEL COMPLETE!" : "NO MORE HEARTS"}
+            </Text>
+            
+            {resultType === 'win' ? (
+              <TouchableOpacity 
+                style={styles.mainButton} 
+                onPress={() => {
+                  setShowResultModal(false);
+                  setLevel(prev => prev + 1); 
+                }}
+              >
+                <Text style={styles.buttonText}>NEXT LEVEL</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: '100%', alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', marginBottom: 15, paddingHorizontal: 10 }}>
+                  Naubusan ka ng buhay! Maaari kang bumili ng buong refill gamit ang iyong XP.
                 </Text>
                 
-                {resultType === 'win' ? (
                 <TouchableOpacity 
-                    style={styles.mainButton} 
-                    onPress={() => {
-                    setShowResultModal(false);
-                    setLevel(prev => prev + 1); // Increments level and triggers useEffect challenge download
-                    }}
+                  style={[styles.mainButton, { backgroundColor: '#FF9800', marginBottom: 10 }]} 
+                  onPress={handlePurchaseHearts}
+                  disabled={buyingHearts}
                 >
-                    <Text style={styles.buttonText}>NEXT LEVEL</Text>
+                  {buyingHearts ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>BUY REFILL ({HEART_XP_COST} XP)</Text>
+                  )}
                 </TouchableOpacity>
-                ) : (
-                <Text style={{ textAlign: 'center', marginBottom: 20 }}>Babalik ang iyong hearts mamaya.</Text>
-                )}
+                <Text style={{ fontSize: 11, color: '#777', marginBottom: 15 }}>Current Balance: {totalXpPool} XP</Text>
+              </View>
+            )}
 
-                <TouchableOpacity style={styles.secondaryButton} onPress={handleQuit}>
-                <Text style={styles.secondaryButtonText}>EXIT TO MENU</Text>
-                </TouchableOpacity>
-            </View>
-            </View>
-        </Modal>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleQuit}>
+              <Text style={styles.secondaryButtonText}>EXIT TO MENU</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

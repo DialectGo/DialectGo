@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-  FlatList,
   Image,
   SafeAreaView,
   StyleSheet,
@@ -13,57 +12,64 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
+import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import { endpoints } from '../../../shared/config/apiConfig';
 
-const API_BASE = 'http://192.168.1.53:5001/api/dictionary';
+const API_BASE = endpoints.DICTIONARY_BASE;
 
 export default function SaveWords() {
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
   const [selectedIds, setSelectedIds] = useState(new Set()); // Track selections
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    fetchBookmarks();
+    fetchBookmarks(true); // Show the initial center spinner on mount
   }, []);
 
-  const fetchBookmarks = async () => {
-      setLoading(true);
-      try {
-        // 1. Get the current session from Supabase
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // console.error("No active session found");
-          // Alert.alert("Authentication Required", "Please log in to view saved words.");
-          setLoading(false);
-          return;
-        }
-  
-        // 2. Fetch from your backend API
-        const response = await fetch(`${API_BASE}/saved`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-  
-        const result = await response.json();
-  
-        if (result.success && result.data && result.data.data) {
-          // Based on your backend structure, the word data is likely nested in 'entry'
-          setBookmarks(result.data.data);
-        } 
-        else {
-          setBookmarks([]);
-        }
-      } catch (error) {
-        console.error("Error loading bookmarks from API:", error);
-      } finally {
+  const fetchBookmarks = async (showInitialSpinner = false) => {
+    if (showInitialSpinner) setLoading(true);
+    try {
+      // 1. Get the current session from Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
         setLoading(false);
+        return;
       }
-    };
+
+      // 2. Fetch from your backend API
+      const response = await fetch(`${API_BASE}/saved`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data && result.data.data) {
+        setBookmarks(result.data.data);
+      } else {
+        setBookmarks([]);
+      }
+    } catch (error) {
+      console.error("Error loading bookmarks from API:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ PULL-TO-REFRESH LIFECYCLE CALLBACK HANDLER
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setSelectedIds(new Set()); // Safely reset user selections on reload to avoid array sync issues
+    await fetchBookmarks(false); // Let the RefreshControl container handle the spinning indicator UI
+    setRefreshing(false);
+  }, []);
 
   // Toggle single selection
   const toggleSelect = (id) => {
@@ -123,10 +129,8 @@ export default function SaveWords() {
     }
   };
 
-  const renderItem = ({ item }) => {
-   const entry = item.entry || {};
-    
-    // Extract translations for display
+  const renderItem = (item, index) => {
+    const entry = item.entry || {};
     const translations = entry.translations || [];
     const isSelected = selectedIds.has(item.id);
     const trans1 = translations[0]?.target_entry?.word_term || '';
@@ -135,9 +139,8 @@ export default function SaveWords() {
     const usage2 = translations[1]?.target_entry?.example_usage || '';
     const translationDisplay = [trans1, trans2].filter(Boolean).join(' / ') || 'No translation';
 
-
     return (
-      <View style={styles.cardContainer}>
+      <View key={item.id?.toString() || index.toString()} style={styles.cardContainer}>
         {/* Custom Checkbox */}
         <TouchableOpacity 
           style={styles.checkboxContainer} 
@@ -163,7 +166,7 @@ export default function SaveWords() {
                 exampleUsage: entry.example_usage,
                 translation1: trans1,
                 translation2: trans2,
-                usage1: usage1, // Matched
+                usage1: usage1,
                 usage2: usage2 
               }
             });
@@ -184,24 +187,40 @@ export default function SaveWords() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}><Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} /></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
+        </TouchableOpacity>
         <Text style={styles.title}>Saved Words</Text>
         <View style={{ width: 40 }} />
       </View>
 
+      {/* CORE DISPLAY CONTENT INGESTED BY REFRESHCONTAINER */}
       {loading ? (
-        <ActivityIndicator size="large" color="#FFD54F" style={{ marginTop: 50 }} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#FFD54F" />
+        </View>
       ) : (
-        <>
-          <FlatList
-            data={bookmarks}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderItem}
+        <View style={{ flex: 1 }}>
+          <RefreshContainer
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
             contentContainerStyle={styles.listContainer}
-          />
+          >
+            {bookmarks.length > 0 ? (
+              // ✅ MAP CONVERSION PREVENTS NESTED FLATLIST CONFLICTS
+              <View style={{ paddingBottom: 40 }}>
+                {bookmarks.map((item, index) => renderItem(item, index))}
+              </View>
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No saved words found.</Text>
+              </View>
+            )}
+          </RefreshContainer>
 
-          {/* FOOTER NAVIGATION */}
+          {/* ABSOLUTE STATIONARY FOOTER TOOLBAR */}
           {bookmarks.length > 0 && (
             <View style={styles.footerNav}>
               <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
@@ -224,7 +243,7 @@ export default function SaveWords() {
               </TouchableOpacity>
             </View>
           )}
-        </>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -235,7 +254,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, alignItems: 'center' },
   backImg: { width: 24, height: 24, tintColor: '#421C00' },
   title: { fontSize: 22, fontWeight: 'bold', color: '#FFB800' },
-  listContainer: { paddingHorizontal: 20, paddingBottom: 100 },
+  listContainer: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 120, // Bottom spacing provides clearing space above absolute footer bar coords
+    flexGrow: 1 
+  },
   cardContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   checkboxContainer: { paddingRight: 10 },
   checkbox: { width: 22, height: 22, borderWidth: 2, borderColor: '#FFB800', borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
@@ -247,6 +270,8 @@ const styles = StyleSheet.create({
   rightSection: { alignItems: 'flex-end' },
   posTag: { fontSize: 9, color: '#FFB800' },
   starIcon: { width: 16, height: 16, tintColor: '#FFD54F', marginTop: 5 },
+  emptyStateContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 80 },
+  emptyStateText: { color: '#8E8E8E', fontSize: 15, textAlign: 'center' },
   footerNav: {
     position: 'absolute',
     bottom: 0,
@@ -258,7 +283,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0'
+    borderTopColor: '#F0F0F0',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   selectAllContainer: { flexDirection: 'row', alignItems: 'center' },
   selectAllText: { marginLeft: 10, fontSize: 16, color: '#421C00', fontWeight: '600' },

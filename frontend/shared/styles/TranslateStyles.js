@@ -14,6 +14,9 @@ export const styles = StyleSheet.create({
   
   // HEADER SECTION
   headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
     marginTop: 10,
   },

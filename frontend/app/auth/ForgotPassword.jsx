@@ -7,6 +7,7 @@ import AuthLayout from './AuthLayout';
 import AuthInput from '../../shared/components/AuthInput';
 import CustomButton from '../../shared/components/CustomButton';
 import { useLocalSearchParams } from 'expo-router';
+import { PASSWORD_RESET_REDIRECT_URL } from '../../shared/config/apiConfig';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -16,39 +17,38 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
 
   const handleSendCode = async () => {
-  if (!email) {
-    Alert.alert("Error", "Please enter your email address");
-    return;
-  }
-  
-  setLoading(true);
-
-  try {
-    // FIX: Remove '.api' from the call
-    const { data, error: sbError } = await supabase.auth.resetPasswordForEmail(
-      email.trim(), 
-      {
-        // Ensure this URL is added to your Supabase Redirect URLs in the dashboard
-        redirectTo: 'http://dialectgo-colab.ngrok-free.dev/auth/ChangePassword',
-      }
-    );
-
-    if (sbError) {
-      Alert.alert("Error", sbError.message);
-    } else {
-      // Successfully sent!
-      router.push({
-        pathname: '/auth/VerifyEmail',
-        params: { email: email.trim() }
-      });
+    if (!email) {
+      Alert.alert("Error", "Please enter your email address");
+      return;
     }
-  } catch (err) {
-    console.error("Forgot Password Error:", err);
-    Alert.alert("Error", "An unexpected error occurred.");
-  } finally {
-    setLoading(false);
-  }
-};
+    
+    setLoading(true);
+
+    try {
+      // FIX: Remove '.api' from the call
+      const { data, error: sbError } = await supabase.auth.resetPasswordForEmail(
+        email.trim(), 
+        {
+          // Ensure this URL is added to your Supabase Redirect URLs in the dashboard
+          redirectTo: PASSWORD_RESET_REDIRECT_URL,
+        }
+      );
+
+      if (sbError) {
+        Alert.alert("Error", sbError.message);
+      } else {
+        router.push({
+          pathname: '/auth/VerifyEmail',
+          params: { email: email.trim() }
+        });
+      }
+    } catch (err) {
+      console.error("Forgot Password Error:", err);
+      Alert.alert("Error", "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthLayout

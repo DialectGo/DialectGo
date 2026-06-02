@@ -18,7 +18,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../WordBridge/WordBridgeStyles';
 import { supabase } from '../../../../shared/lib/supabase';
 
-const API_URL = 'http://192.168.1.53:5001/api';
+import { API_API_BASE } from '../../../../shared/config/apiConfig';
+const API_URL = API_API_BASE;
 
 export default function WordBridgeHome() {
   const router = useRouter();
