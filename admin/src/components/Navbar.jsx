@@ -9,13 +9,15 @@ const Navbar = ({ title }) => {
   const now = new Date();
   const hours = now.getHours();
 
+  // FIX: Added missing state initializations
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [pendingVerifications, setPendingVerifications] = useState([]);
   const [securityAlerts, setSecurityAlerts] = useState([]);
   const [showHub, setShowHub] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
-  const formattedDate = now.toLocaleDateString('en-US', dateOptions);
   const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
   const formattedDate = now.toLocaleDateString('en-US', dateOptions);
 
@@ -27,6 +29,7 @@ const Navbar = ({ title }) => {
 
   const fetchNotifications = async () => {
     setLoading(true);
+    setIsRefreshing(true);
     try {
       const token = authService.getToken(); // ← correct key: 'admin_token'
 
@@ -39,7 +42,6 @@ const Navbar = ({ title }) => {
       });
 
       if (!res.ok) {
-        // Don't clear token here — just skip updating notifications
         console.warn('Notification fetch failed:', res.status);
         return;
       }
@@ -55,14 +57,13 @@ const Navbar = ({ title }) => {
       console.error('Notification fetch error:', err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   const notificationCount = pendingVerifications.length + securityAlerts.length;
 
   let greeting = 'Good Evening!';
-  if (hours < 12) greeting = 'Good Morning!';
-  else if (hours < 18) greeting = 'Good Afternoon!';
   if (hours < 12) greeting = 'Good Morning!';
   else if (hours < 18) greeting = 'Good Afternoon!';
 
@@ -72,7 +73,7 @@ const Navbar = ({ title }) => {
       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
     >
       <div className="navbar-left">
-        <h1 className="nav-page-title">{title}</h1>
+        {/* FIX: Removed duplicate h1 tag */}
         <h1 className="nav-page-title">{title}</h1>
       </div>
 
@@ -138,7 +139,8 @@ const Navbar = ({ title }) => {
                 <h4 style={{ margin: 0, fontWeight: 800 }}>Security Threat Center</h4>
                 <button
                   onClick={fetchNotifications}
-                  style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                  disabled={isRefreshing}
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: isRefreshing ? '#94a3b8' : 'inherit' }}
                 >
                   {isRefreshing ? 'Syncing...' : '🔄 Refresh'}
                 </button>
