@@ -38,16 +38,22 @@ const getGradioClient = async () => {
 };
 
 const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
-    const client = await getGradioClient();
-    const result = await client.predict('/translate', {
-        text: String(text || '').trim(),
-        audio_path: null,
-        source_lang_name: normalizeLanguageName(sourceLang),
-        target_lang_name: normalizeLanguageName(targetLang),
-    });
+    try {
+        const client = await getGradioClient();
+        const result = await client.predict('/translate', {
+            text: String(text || '').trim(),
+            audio_path: null,
+            source_lang_name: normalizeLanguageName(sourceLang),
+            target_lang_name: normalizeLanguageName(targetLang),
+        });
 
-    const output = Array.isArray(result?.data) ? result.data[0] : result?.data;
-    return typeof output === 'string' ? output : '';
+        if (Array.isArray(result?.data)) {
+            return typeof result.data[1] === 'string' ? result.data[1].trim() : '';
+        }
+        return '';
+    } catch (e) {
+        throw e;
+    }
 };
 
 export const performTranslation = async (text, sourceLang, targetLang) => {
@@ -102,12 +108,14 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
             target_lang_name: normalizeLanguageName(targetLang),
         });
 
-        const output = Array.isArray(result?.data) ? result.data[0] : result?.data;
+        if (Array.isArray(result?.data) && result.data.length >= 2) {
+            const transcript = result.data[0];
+            const translation = result.data[1];
 
-        if (typeof output === 'string' && output.trim()) {
             return {
-                translation: output,
-                transcript: output,
+                status: "success",
+                transcript: typeof transcript === 'string' ? transcript.trim() : '',
+                translation: typeof translation === 'string' ? translation.trim() : '',
             };
         }
     } catch (error) {
@@ -127,7 +135,6 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
     });
 
     console.log('DEBUG: Flask response structure:', response.data);
-
     return response.data;
 };
 
