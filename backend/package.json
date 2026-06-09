@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/garu10/DialectGo#readme",
   "dependencies": {
-    "@gradio/client": "^1.15.0",
     "@supabase/supabase-js": "^2.100.0",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
@@ -38,6 +37,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@gradio/client": "^2.2.1",
     "nodemon": "^3.1.14"
   }
 }
