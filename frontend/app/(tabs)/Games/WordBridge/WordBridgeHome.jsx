@@ -49,17 +49,15 @@ export default function WordBridgeHome() {
       if (!session) return;
 
       // FIXED: Points to the unified profile progression route path
-      const response = await fetch(`${API_URL}/progress/me`, {
+      const response = await fetch(`${API_URL}/progress/me?game_id=2&difficulty=hard`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const result = await response.json();
-      
+
       if (result.success && result.data) {
-        // WordBridge defaults to hard mode structures natively
-        const saved = await AsyncStorage.getItem(`completed_levels_hard`);
-        if (saved !== null) {
-          setCompletedLevels(JSON.parse(saved));
-        }
+        const key = `wordbridge_completed_levels_${session.user.id}_hard`;
+        const saved = await AsyncStorage.getItem(key);
+        setCompletedLevels(saved ? JSON.parse(saved) : (Array.isArray(result.data.completed_levels) ? result.data.completed_levels : []));
       }
     } catch (error) {
       console.error("Failed syncing WordBridge progression index logs:", error);
@@ -101,7 +99,7 @@ export default function WordBridgeHome() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ game_id: 1 }) // Points to WordBridge tracking target node
+        body: JSON.stringify({ game_id: 2 })
       });
       
       const resData = await response.json();

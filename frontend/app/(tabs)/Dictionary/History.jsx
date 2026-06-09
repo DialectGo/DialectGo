@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
 import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import { endpoints } from '../../../shared/config/apiConfig';
 
 // Use centralized API endpoints
@@ -173,14 +174,7 @@ export default function History() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-           <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Recent History</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ProfileTopBar title="Recent History" />
 
       {/* LIST / LOADING SECTION WRAPPED IN THE REFRESH CONTAINER */}
       {loading ? (

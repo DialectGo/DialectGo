@@ -16,9 +16,9 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
 import { supabase } from '../../../shared/lib/supabase';
 
-import { API_API_BASE } from '../../../shared/config/apiConfig';
-const API_URL = `${API_API_BASE}/translate`;
-const FEEDBACK_URL = `${API_API_BASE}/feedback`;
+import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${TRANSLATION_API_BASE}/translate`;
+const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 

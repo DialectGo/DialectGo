@@ -18,12 +18,11 @@ import ContributionModal from '../../../shared/components/ContributionModal';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
-import { API_API_BASE } from '../../../shared/config/apiConfig';
-const API_BASE = API_API_BASE;
+import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
 const ENDPOINTS = {
-  AUDIO: `${API_BASE}/translate/audio`,
-  FEEDBACK: `${API_BASE}/feedback`,
-  CONTRIBUTE: `${API_BASE}/translate/contribute`,
+  AUDIO: `${TRANSLATION_API_BASE}/translate/audio`,
+  FEEDBACK: `${TRANSLATION_API_BASE}/feedback`,
+  CONTRIBUTE: `${TRANSLATION_API_BASE}/translate/contribute`,
 };
 
 const LANGUAGE_MAP = [

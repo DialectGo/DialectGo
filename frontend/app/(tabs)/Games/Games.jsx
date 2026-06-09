@@ -27,28 +27,33 @@ export default function Games({ activeTab, onNavigate }) {
       async function loadUserStats() {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
+          if (!session) {
+            setXp(0);
+            setHighScore(0);
+            setHearts(8);
+            setLoadingStats(false);
+            return;
+          }
 
-          // Fetch user progress metrics
-          const res = await fetch(`${API_URL}/progress/me`, {
+          const res = await fetch(`${API_URL}/progress/me?game_id=0&difficulty=global`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
           const result = await res.json();
-          if (result.success && result.data) {
-            setXp(result.data.total_xp || 0);
-            setHighScore(result.data.high_score || 0);
-          }
 
-          // Fetch locally stored shared hearts
-          const localHearts = await AsyncStorage.getItem('@central_hearts');
-          if (localHearts !== null) {
-            setHearts(parseInt(localHearts));
+          if (result.success && result.data) {
+            setXp(Number(result.data.total_xp || 0));
+            setHighScore(Number(result.data.high_score || 0));
+            setHearts(Number(result.data.current_hearts || 8));
           } else {
-            await AsyncStorage.setItem('@central_hearts', '8');
+            setXp(0);
+            setHighScore(0);
             setHearts(8);
           }
         } catch (err) {
           console.error("Error loading centralized game stats:", err);
+          setXp(0);
+          setHighScore(0);
+          setHearts(8);
         } finally {
           setLoadingStats(false);
         }
@@ -85,7 +90,7 @@ export default function Games({ activeTab, onNavigate }) {
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
-      {/* ✅ STATS BAR HEADER: Displays current Central High Score, Hearts, and XP metrics */}
+      {/* ✅ FIXED STATS BAR HEADER: Removed the extra hardcoded marginTop gaps */}
       <View style={{
         flexDirection: 'row', 
         backgroundColor: '#FFFDE7', 
@@ -94,7 +99,7 @@ export default function Games({ activeTab, onNavigate }) {
         justifyContent: 'space-between',
         borderBottomWidth: 1,
         borderColor: '#FFD54F',
-        marginTop: Platform.OS === 'ios' ? 45 : 25
+        marginTop: 0 // Cleaned up layout to sit flush below TopBar
       }}>
         <Text style={{ fontSize: 13, fontWeight: '900', color: '#421C00' }}>🏆 HIGH SCORE: {highScore}</Text>
         <Text style={{ fontSize: 13, fontWeight: '900', color: '#F44336' }}>❤️ LIVES: {hearts}/8</Text>

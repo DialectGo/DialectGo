@@ -1,0 +1,17 @@
+{
+  "app_info": {
+    "name": "DialectGo",
+    "purpose": "A mobile application for trilingual translation (English, Tagalog, and Cebuano) utilizing Machine Learning."
+  },
+  "app_features": {
+    "dictionary": "To use the Dictionary, tap the book icon on the bottom navigation bar. Type any word in English, Tagalog, or Cebuano to see its translation and listen to the audio guide.",
+    "games": "Yes, we have games! DialectGo currently includes 'Flashcard Match' and 'Word Scramble' to help you practice vocabulary. You can access them from the Dashboard."
+  },
+  "user_account": {
+    "change_name": "Go to the Profile tab, tap 'Edit Profile', enter your new name, and click 'Save Changes'."
+  },
+  "translation_capabilities": {
+    "supported_languages": ["English", "Tagalog", "Cebuano"],
+    "limitations": "DialectGo is specialized for conversational phrasing. If you need full paragraph translations, use the main 'Translate' tab on the home screen."
+  }
+}

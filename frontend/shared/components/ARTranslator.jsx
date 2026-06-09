@@ -14,12 +14,11 @@ import LanguageSelector from '../../shared/components/LanguageSelector';
 import ContributionModal from '../../shared/components/ContributionModal';
 import translateIcon from '../../assets/icons/translateIcon.png';
 
-import { API_API_BASE } from '../../shared/config/apiConfig';
-const API_BASE = API_API_BASE;
+import { TRANSLATION_API_BASE } from '../../shared/config/apiConfig';
 const ENDPOINTS = {
-  TRANSLATE: `${API_BASE}/translate/image`,
-  FEEDBACK: `${API_BASE}/feedback`,
-  CONTRIBUTE: `${API_BASE}/translate/contribute`,
+  TRANSLATE: `${TRANSLATION_API_BASE}/translate/image`,
+  FEEDBACK: `${TRANSLATION_API_BASE}/feedback`,
+  CONTRIBUTE: `${TRANSLATION_API_BASE}/translate/contribute`,
 };
 
 const LANGUAGE_MAP = [

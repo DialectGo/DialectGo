@@ -16,7 +16,7 @@ const router = express.Router();
 // Protected routes
 router.get('/me', verifyToken, getOwnProgress);
 router.get('/session/:session_id', verifyToken, validateSessionIdParam, getProgressBySession);
-router.patch('/buy-hearts', verifyToken, buyHearts); // ✅ Added dedicated shop endpoint handler
+router.patch('/buy-hearts', verifyToken, buyHearts); 
 router.patch('/lose-heart', verifyToken, loseHeart);
 router.get('/leaderboard/top', verifyToken, getLeaderboard);
 router.get('/:user_id', verifyToken, validateUserIdParam, getUserProgress);

@@ -29,9 +29,9 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 const { width } = Dimensions.get('window');
 
 // API Endpoints
-import { API_API_BASE } from '../../../shared/config/apiConfig';
-const API_URL = `${API_API_BASE}/translate`;
-const FEEDBACK_URL = `${API_API_BASE}/feedback`;
+import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+const API_URL = `${TRANSLATION_API_BASE}/translate`;
+const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 
 const LANGUAGES = [
   { name: 'English', id: 1 },

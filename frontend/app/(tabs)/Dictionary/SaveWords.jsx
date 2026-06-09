@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
 import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import { endpoints } from '../../../shared/config/apiConfig';
 
 const API_BASE = endpoints.DICTIONARY_BASE;
@@ -187,14 +188,7 @@ export default function SaveWords() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImg} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Saved Words</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ProfileTopBar title="Saved Words" />
 
       {/* CORE DISPLAY CONTENT INGESTED BY REFRESHCONTAINER */}
       {loading ? (

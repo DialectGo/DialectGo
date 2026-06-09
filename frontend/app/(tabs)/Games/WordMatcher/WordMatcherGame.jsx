@@ -8,7 +8,8 @@ import { supabase } from '../../../../shared/lib/supabase';
 
 import { API_BASE_URL } from '../../../../shared/config/apiConfig';
 const API_URL = `${API_BASE_URL}/api`;
-const HEART_XP_COST = 50; 
+const WORD_MATCHER_GAME_ID = 1;
+const HEART_XP_COST = 50;
 const MAX_HEARTS = 8;
 const REGEN_RATE_MS = 60 * 60 * 1000; // 1 Hour in milliseconds
 
@@ -41,6 +42,8 @@ export default function WordMatcherGame() {
   const gameDifficulty = params.difficulty || 'easy';
   const displayLanguagePool = params.targetLanguage || 'english';
 
+  const getUserCacheKey = (suffix, userId = 'guest') => `wordmatcher_${suffix}_${userId}_${gameDifficulty}`;
+
   // ✅ Loads centralized heart metrics and server calculation timestamps safely
   const fetchGameChallenges = useCallback(async () => {
     try {
@@ -52,9 +55,8 @@ export default function WordMatcherGame() {
         return;
       }
 
-      // Load unified tracking values directly from the backend validation controller
-      const progressRes = await fetch(`${API_URL}/progress/me`, { 
-        headers: { 'Authorization': `Bearer ${session.access_token}` } 
+      const progressRes = await fetch(`${API_URL}/progress/me?game_id=${WORD_MATCHER_GAME_ID}&difficulty=${gameDifficulty}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const progressResult = await progressRes.json();
       
@@ -64,8 +66,7 @@ export default function WordMatcherGame() {
         setTotalXpPool(progressResult.data.total_xp || 0);
         setLastHeartConsumedAt(progressResult.data.last_heart_consumed_at);
         
-        // Sync local cache instantly
-        await AsyncStorage.setItem('@central_hearts', backendHearts.toString());
+        await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), backendHearts.toString());
       }
 
       const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${displayLanguagePool}`;
@@ -100,7 +101,8 @@ export default function WordMatcherGame() {
         const updatedHeartsCount = Math.min(MAX_HEARTS, globalHearts + heartsToIncrease);
         
         setGlobalHearts(updatedHeartsCount);
-        await AsyncStorage.setItem('@central_hearts', updatedHeartsCount.toString());
+        const userId = await supabase.auth.getUser().then(({ data }) => data.user?.id || 'guest');
+        await AsyncStorage.setItem(getUserCacheKey('hearts', userId), updatedHeartsCount.toString());
         
         if (updatedHeartsCount === MAX_HEARTS) {
           setLastHeartConsumedAt(null);
@@ -131,13 +133,17 @@ export default function WordMatcherGame() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ xp_cost: HEART_XP_COST })
+        body: JSON.stringify({
+          game_id: WORD_MATCHER_GAME_ID,
+          difficulty: gameDifficulty,
+          xp_cost: HEART_XP_COST,
+        })
       });
       const result = await response.json();
 
       if (result.success) {
         setGlobalHearts(MAX_HEARTS);
-        await AsyncStorage.setItem('@central_hearts', MAX_HEARTS.toString());
+        await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), MAX_HEARTS.toString());
         setTotalXpPool(prev => prev - HEART_XP_COST);
         setLastHeartConsumedAt(null);
         setResultType(null);
@@ -186,11 +192,13 @@ export default function WordMatcherGame() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const savedLevels = await AsyncStorage.getItem(`completed_levels_${gameDifficulty}`);
+      const userId = session.user.id;
+      const completedLevelsKey = `wordmatcher_completed_levels_${userId}_${gameDifficulty}`;
+      const savedLevels = await AsyncStorage.getItem(completedLevelsKey);
       let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
       if (!levelsArray.includes(level)) {
         levelsArray.push(level);
-        await AsyncStorage.setItem(`completed_levels_${gameDifficulty}`, JSON.stringify(levelsArray));
+        await AsyncStorage.setItem(completedLevelsKey, JSON.stringify(levelsArray));
       }
 
       const accuracy = (finalLevelScore / totalQuestionsInLevel) * 100;
@@ -202,24 +210,32 @@ export default function WordMatcherGame() {
         },
         body: JSON.stringify({
           accuracy_score: accuracy,
-          session_data: { level, difficulty: gameDifficulty }
+          session_data: { game_id: WORD_MATCHER_GAME_ID, level, difficulty: gameDifficulty }
         })
       });
 
       const xpGained = gameDifficulty === 'hard' ? 30 : gameDifficulty === 'medium' ? 20 : 10;
       const pointsCalculated = finalLevelScore * (gameDifficulty === 'hard' ? 15 : gameDifficulty === 'medium' ? 10 : 5);
 
-      await fetch(`${API_URL}/progress/update`, {
+      const progressRes = await fetch(`${API_URL}/progress/update`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
+          game_id: WORD_MATCHER_GAME_ID,
+          difficulty: gameDifficulty,
           xp_gained: xpGained,
-          score_gained: pointsCalculated 
+          score_gained: pointsCalculated,
+          level_completed: level
         })
       });
+
+      const progressJson = await progressRes.json().catch(() => null);
+      if (!progressRes.ok) {
+        console.warn('Progress update failed:', progressJson);
+      }
 
     } catch (e) {
       console.error("Error synchronizing level stats to DB:", e);
@@ -248,18 +264,25 @@ export default function WordMatcherGame() {
       } else {
         const newHearts = Math.max(0, globalHearts - 1);
         setGlobalHearts(newHearts);
-        await AsyncStorage.setItem('@central_hearts', newHearts.toString()); 
-        
-        // ✅ Synchronize explicit life deductions to database endpoints
+
         try {
           const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user?.id) throw new Error('No active session');
+
+          await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), newHearts.toString());
+
+          // ✅ Synchronize explicit life deductions to database endpoints
           const syncHeartRes = await fetch(`${API_URL}/progress/lose-heart`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${session.access_token}`
             },
-            body: JSON.stringify({ current_hearts: globalHearts })
+            body: JSON.stringify({
+              game_id: WORD_MATCHER_GAME_ID,
+              difficulty: gameDifficulty,
+              current_hearts: newHearts,
+            })
           });
           const syncResult = await syncHeartRes.json();
           if (syncResult.success) {

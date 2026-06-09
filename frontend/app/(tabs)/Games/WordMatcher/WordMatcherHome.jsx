@@ -18,6 +18,7 @@ import { supabase } from '../../../../shared/lib/supabase';
 
 import { API_BASE_URL } from '../../../../shared/config/apiConfig';
 const API_URL = `${API_BASE_URL}/api`;
+const WORD_MATCHER_GAME_ID = 1;
 
 export default function WordMatcherHome({ route }) {
   const router = useRouter();
@@ -38,15 +39,14 @@ export default function WordMatcherHome({ route }) {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
 
-          const response = await fetch(`${API_URL}/progress/me`, {
+          const response = await fetch(`${API_URL}/progress/me?game_id=${WORD_MATCHER_GAME_ID}&difficulty=${selectedDifficulty}`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
           const result = await response.json();
           if (result.success && result.data) {
-            const saved = await AsyncStorage.getItem(`completed_levels_${selectedDifficulty}`);
-            if (saved !== null) {
-              setCompletedLevels(JSON.parse(saved));
-            }
+            const key = `wordmatcher_completed_levels_${session.user.id}_${selectedDifficulty}`;
+            const saved = await AsyncStorage.getItem(key);
+            setCompletedLevels(saved ? JSON.parse(saved) : (Array.isArray(result.data.completed_levels) ? result.data.completed_levels : []));
           }
         } catch (e) {
           console.error("Failed to load progress from server", e);
@@ -88,7 +88,7 @@ export default function WordMatcherHome({ route }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ game_id: 2 }) 
+        body: JSON.stringify({ game_id: WORD_MATCHER_GAME_ID }) 
       });
       
       const responseText = await response.text();

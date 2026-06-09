@@ -8,6 +8,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../../../shared/lib/supabase';
 import BottomNav from '../../../shared/components/BottomNav';
 import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal';
 import { endpoints } from '../../../shared/config/apiConfig';
@@ -180,22 +181,7 @@ export default function ResultDictionary() {
       )}
 
       {/* HEADER SECTION */}
-      <View style={[styles.topHeader, { 
-        flexDirection: 'row', 
-        justifyContent: 'flex-start',
-        alignItems: 'center', 
-        paddingHorizontal: 20,
-        gap: 15
-      }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtnNoBg}>
-          <Image source={require('../../../assets/icons/back_arrow.png')} style={styles.backImgLarge} />
-        </TouchableOpacity>
-        
-        <View style={{ alignItems: 'flex-start' }}>
-          <Text style={styles.brandYellow}>DialectGo</Text>
-          <Text style={styles.brandBlack}>Dictionary</Text>
-        </View>
-      </View>
+      <ProfileTopBar title="Dictionary" />
 
       {/* ✅ REPLACED SCROLLVIEW WITH REFRESHCONTAINER */}
       <RefreshContainer 

@@ -17,6 +17,7 @@ import { supabase } from '../../../../shared/lib/supabase';
 
 import { API_API_BASE } from '../../../../shared/config/apiConfig';
 const API_URL = API_API_BASE;
+const WORD_BRIDGE_GAME_ID = 2;
 const HEART_XP_COST = 50; 
 const MAX_HEARTS = 8;
 const REGEN_RATE_MS = 60 * 60 * 1000; // 1 Hour in milliseconds
@@ -30,7 +31,6 @@ export default function WordBridgeGame() {
   const gameMode = params.gameMode || 'Cebuano - English'; 
   const sessionId = params.sessionId;
 
-  const gameDifficulty = 'hard'; 
   const displayLanguagePool = params.targetLanguage || (gameMode.toLowerCase().includes('tagalog') ? 'tagalog' : 'english');
 
   // Game Engine State
@@ -58,6 +58,9 @@ export default function WordBridgeGame() {
   const [lastHeartConsumedAt, setLastHeartConsumedAt] = useState(null); // ✅ Added real-time timestamp tracking
 
   const progressPercent = (currentScore / totalQuestionsInLevel) * 100;
+  const gameDifficulty = params.difficulty || 'hard';
+
+  const getUserCacheKey = (suffix, userId = 'guest') => `wordbridge_${suffix}_${userId}_${gameDifficulty}`;
 
   // ✅ Loads centralized tracking states and server timestamps safely
   const fetchGameChallenges = useCallback(async () => {
@@ -71,8 +74,8 @@ export default function WordBridgeGame() {
       }
 
       // Fetch unified tracking data straight from backend calculations engine
-      const progressRes = await fetch(`${API_URL}/progress/me`, { 
-        headers: { 'Authorization': `Bearer ${session.access_token}` } 
+      const progressRes = await fetch(`${API_URL}/progress/me?game_id=${WORD_BRIDGE_GAME_ID}&difficulty=${gameDifficulty}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       const progressResult = await progressRes.json();
       
@@ -83,11 +86,11 @@ export default function WordBridgeGame() {
         setLastHeartConsumedAt(progressResult.data.last_heart_consumed_at);
         
         // Match cache to client tracking immediately
-        await AsyncStorage.setItem('@central_hearts', backendHearts.toString());
+        await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), backendHearts.toString());
       }
 
       const requestedLang = params.targetLanguage || (gameMode.toLowerCase().includes('tagalog') ? 'tagalog' : 'english');
-      const url = `${API_URL}/games/1/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${requestedLang}`;
+      const url = `${API_URL}/games/${WORD_BRIDGE_GAME_ID}/challenges?difficulty=${gameDifficulty}&level=${level}&targetLanguage=${requestedLang}`;
       
       const response = await fetch(url, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -125,21 +128,22 @@ export default function WordBridgeGame() {
 
     const interval = setInterval(async () => {
       const elapsed = new Date().getTime() - new Date(lastHeartConsumedAt).getTime();
-      
+
       if (elapsed >= REGEN_RATE_MS) {
         const heartsToIncrease = Math.floor(elapsed / REGEN_RATE_MS);
         const updatedHeartsCount = Math.min(MAX_HEARTS, globalHearts + heartsToIncrease);
-        
+
         setGlobalHearts(updatedHeartsCount);
-        await AsyncStorage.setItem('@central_hearts', updatedHeartsCount.toString());
-        
+        const userId = await supabase.auth.getUser().then(({ data }) => data.user?.id || 'guest');
+        await AsyncStorage.setItem(getUserCacheKey('hearts', userId), updatedHeartsCount.toString());
+
         if (updatedHeartsCount === MAX_HEARTS) {
           setLastHeartConsumedAt(null);
         } else {
           setLastHeartConsumedAt(new Date(new Date(lastHeartConsumedAt).getTime() + (heartsToIncrease * REGEN_RATE_MS)).toISOString());
         }
       }
-    }, 30000); // Check updates every 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [globalHearts, lastHeartConsumedAt]);
@@ -161,13 +165,17 @@ export default function WordBridgeGame() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ xp_cost: HEART_XP_COST })
+        body: JSON.stringify({
+          game_id: WORD_BRIDGE_GAME_ID,
+          difficulty: gameDifficulty,
+          xp_cost: HEART_XP_COST,
+        })
       });
       const result = await response.json();
 
       if (result.success) {
         setGlobalHearts(MAX_HEARTS);
-        await AsyncStorage.setItem('@central_hearts', MAX_HEARTS.toString());
+        await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), MAX_HEARTS.toString());
         setTotalXpPool(prev => prev - HEART_XP_COST);
         setLastHeartConsumedAt(null);
         setResultType(null);
@@ -244,18 +252,25 @@ export default function WordBridgeGame() {
     } else {
         const newHearts = Math.max(0, globalHearts - 1);
         setGlobalHearts(newHearts);
-        await AsyncStorage.setItem('@central_hearts', newHearts.toString()); 
-        
-        // ✅ Synchronize manual logic heart loss events right to remote tables
+
         try {
           const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.user?.id) throw new Error('No active session');
+
+          await AsyncStorage.setItem(getUserCacheKey('hearts', session.user.id), newHearts.toString());
+
+          // ✅ Synchronize manual logic heart loss events right to remote tables
           const syncHeartRes = await fetch(`${API_URL}/progress/lose-heart`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${session.access_token}`
             },
-            body: JSON.stringify({ current_hearts: globalHearts })
+            body: JSON.stringify({
+              game_id: WORD_BRIDGE_GAME_ID,
+              difficulty: gameDifficulty,
+              current_hearts: newHearts,
+            })
           });
           const syncResult = await syncHeartRes.json();
           if (syncResult.success) {
@@ -279,12 +294,13 @@ export default function WordBridgeGame() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const savedLevels = await AsyncStorage.getItem(`completed_levels_${gameDifficulty}`);
+      const completedLevelsKey = `wordbridge_completed_levels_${session.user.id}_${gameDifficulty}`;
+      const savedLevels = await AsyncStorage.getItem(completedLevelsKey);
       let levelsArray = savedLevels ? JSON.parse(savedLevels) : [];
-      
+
       if (!levelsArray.includes(level)) {
         levelsArray.push(level);
-        await AsyncStorage.setItem(`completed_levels_${gameDifficulty}`, JSON.stringify(levelsArray));
+        await AsyncStorage.setItem(completedLevelsKey, JSON.stringify(levelsArray));
       }
 
       const accuracy = (finalLevelScore / totalQuestionsInLevel) * 100;
@@ -296,7 +312,7 @@ export default function WordBridgeGame() {
         },
         body: JSON.stringify({
           accuracy_score: accuracy,
-          session_data: { level, difficulty: gameDifficulty }
+          session_data: { game_id: WORD_BRIDGE_GAME_ID, level, difficulty: gameDifficulty }
         })
       });
 
@@ -309,9 +325,12 @@ export default function WordBridgeGame() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
+          game_id: WORD_BRIDGE_GAME_ID,
+          difficulty: gameDifficulty,
           xp_gained: xpGained,
-          score_gained: pointsCalculated 
+          score_gained: pointsCalculated,
+          level_completed: level
         })
       });
 

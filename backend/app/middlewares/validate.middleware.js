@@ -75,8 +75,12 @@ export const validateSessionComplete = createValidationMiddleware(
 
 export const validateProgressUpdate = createValidationMiddleware(
     Joi.object({
+        game_id: Joi.number().integer().positive().optional(),
+        difficulty: Joi.string().trim().max(20).optional(),
         xp_gained: Joi.number().min(0).required(),
-    })
+        score_gained: Joi.number().min(0).optional(),
+        level_completed: Joi.number().integer().min(0).optional(),
+    }).unknown(true)
 );
 
 export const validateUserIdParam = createValidationMiddleware(
