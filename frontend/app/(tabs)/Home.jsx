@@ -9,14 +9,13 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router'; // 👈 1. IMPORT ROUTER FROM EXPO-ROUTER
 import { supabase } from '../../shared/lib/supabase';
 import { endpoints } from '../../shared/config/apiConfig';
 import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
 import { styles } from '../../shared/styles/HomeStyles';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
@@ -39,6 +38,29 @@ export default function Home({ onNavigate, activeTab }) {
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
+
+  const getValidSession = async () => {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData?.session?.access_token) {
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData?.session?.access_token) {
+        throw new Error('Authentication expired. Please log in again.');
+      }
+      return refreshData.session;
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(sessionData.session.access_token);
+    if (userError || !userData?.user) {
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData?.session?.access_token) {
+        throw new Error('Authentication expired. Please log in again.');
+      }
+      return refreshData.session;
+    }
+
+    return sessionData.session;
+  };
 
   const getCebuanoGreeting = () => {
     const currentHour = new Date().getHours();
@@ -88,8 +110,7 @@ export default function Home({ onNavigate, activeTab }) {
 
   const fetchStreak = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const session = await getValidSession();
 
       const response = await fetch(STREAK_API, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -123,8 +144,7 @@ export default function Home({ onNavigate, activeTab }) {
 
   const fetchUserProfile = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const session = await getValidSession();
 
       const response = await fetch(PROFILE_API, {
         method: 'GET',
@@ -150,8 +170,7 @@ export default function Home({ onNavigate, activeTab }) {
 
   const fetchDailyWord = async (forceRefresh = false) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const session = await getValidSession();
 
       const userId = session.user.id;
       const storageKey = `word_of_the_day_${userId}`;
