@@ -1,17 +1,155 @@
 {
   "app_info": {
     "name": "DialectGo",
-    "purpose": "A mobile application for trilingual translation (English, Tagalog, and Cebuano) utilizing Machine Learning."
+    "description": "DialectGo is a specialized mobile translation platform primarily focused on bridging Cebuano, Tagalog, and English using Machine Learning to deliver accurate and context-aware communication.",
+    "purpose": "DialectGo aims to eliminate regional communication barriers within the Philippines—particularly for Cebuano, Tagalog, and English speakers—by offering accessible translation and interactive language learning tools.",
+    "background": {
+      "problem_statement": "Despite the prominence of major regional languages in the Philippines, standard translation applications often lack context-aware precision for low-resource regional pairings, leading to communication gaps among diverse language speakers.",
+      "solution": "DialectGo provides an accessible, mobile solution that combines machine learning translation models to bridge linguistic gaps."
+    },
+    "vision": "To become a premier localized communication platform that fosters inclusivity and breaks down linguistic barriers across diverse regions, creating a more unified and collaborative society.",
+    "mission": "To deliver highly accessible, accurate, and multi-modal language translation and learning tools that empower individuals, professionals, and everyday citizens to communicate effectively without regional language restrictions.",
+    "target_audience": "DialectGo is built for everyone, including students, educators, professionals, tourists, government officials, healthcare providers, and everyday citizens who need to communicate across Cebuano, Tagalog, and English"
   },
   "app_features": {
-    "dictionary": "To use the Dictionary, tap the book icon on the bottom navigation bar. Type any word in English, Tagalog, or Cebuano to see its translation and listen to the audio guide.",
-    "games": "Yes, we have games! DialectGo currently includes 'Flashcard Match' and 'Word Scramble' to help you practice vocabulary. You can access them from the Dashboard."
-  },
-  "user_account": {
-    "change_name": "Go to the Profile tab, tap 'Edit Profile', enter your new name, and click 'Save Changes'."
-  },
-  "translation_capabilities": {
-    "supported_languages": ["English", "Tagalog", "Cebuano"],
-    "limitations": "DialectGo is specialized for conversational phrasing. If you need full paragraph translations, use the main 'Translate' tab on the home screen."
+    "translation_modules": {
+      "text_to_text": {
+        "input_format": "text",
+        "output_format": "text",
+        "usage_instructions": {
+          "step_1": "Select your source and target languages.",
+          "step_2": "Type your text into the input field.",
+          "step_3": "The system will immediately display the translated text output."
+        }
+      },
+      "speech_to_text": {
+        "input_format": "speech",
+        "output_format": "text",
+        "usage_instructions": {
+          "step_1": "Ensure microphone permissions are enabled on your device.",
+          "step_2": "Select your translation languages.",
+          "step_3": "Tap the microphone icon and speak clearly into your device.",
+          "step_4": "The app will capture your voice, transcribe it, and provide the translation as text output."
+        }
+      },
+      "optical_character_recognition": {
+        "input_format": "scanned image",
+        "output_format": "text",
+        "usage_instructions": {
+          "step_1": "Ensure camera permissions are enabled on your device.",
+          "step_2": "Tap the camera icon to take a picture of physical text.",
+          "step_3": "The system will automatically extract, transcribe, and display it into clear text output."
+        }
+      },
+      "suggestion_word": {
+        "no_word_found": "If you try to translate a word and there are no results, you can use our 'Suggest Translation' feature to submit the missing word and its translation.",
+        "workflow": {
+          "step_1": "All translation suggestions are sent directly to our admin portal for evaluation.",
+          "step_2": "The admin reviews and either approves or rejects your input.",
+          "step_3": "You will receive an automated email notification regarding the decision.",
+          "approval_template": "If approved, it will look like this: 'Your suggested translation has been approved and will be used to train new datasets. Thank you for your cooperation!'"
+        }
+      }
+    },
+    "dictionary_module": {
+      "instruction": "To use the Dictionary, just tap the book icon on the bottom navigation bar.",
+      "description": "It serves as a handy lookup tool where you can type any word in English, Tagalog, or Cebuano to instantly see its translation and linguistic details.",
+      "metadata_displayed": "Whenever you look up a word, the app will show you its Meaning, Translation, Part of Speech, Text Pronunciation, and clear Examples of how it is used in a sentence",
+      "save_word": "Yes, you can absolutely save words! DialectGo has a 'Save Words' feature that lets you bookmark your favorite entries so you can easily look them up again later.",
+      "search_history": "You don't have to worry about forgetting past searches. Thanks to automatic history tracking, every word you search is automatically saved directly to your history log so you can review it anytime you want."
+    },
+    "gamification_module": {
+      "description": "Yes, we have games! DialectGo includes interactive, multi-level games designed to help you practice your vocabulary and sentence-building skills. Currently, you can play 'Word Match' and 'Word Bridge,' both of which feature multiple levels that unlock progressively as you get better",
+      "game_rules": {
+        "word_match": {
+          "mechanic": "Word Match is a multiple-choice vocabulary game.",
+          "how_to_play": "The game will present you with a specific word along with several choices, and your goal is to correctly match that word with its accurate translation.",
+          "progression": "As you win, you will progressively unlock new and more challenging levels."
+        },
+        "word_bridge": {
+          "mechanic": "Word Bridge is a contextual sentence-building game.",
+          "how_to_play": "You will see a full sentence displayed along with separate, scrambled words. To play, you just need to arrange those separate words into the correct sequence to properly translate the given sentence.",
+          "progression": "It features multiple levels that unlock progressively as you move forward."
+        }
+      }
+    },
+    "user_account": {
+      "change_firstname": {
+        "step_1": "Go to the Profile tab.",
+        "step_2": "Tap 'Account Information'.",
+        "step_3": "Enter your new first name.",
+        "step_4": "Click 'Save Changes'."
+      },
+      "change_lastname": {
+        "step_1": "Go to the Profile tab.",
+        "step_2": "Tap 'Account Information'.",
+        "step_3": "Enter your new last name.",
+        "step_4": "Click 'Save Changes'."
+      },
+      "change_birthdate": {
+        "step_1": "Go to the Profile tab.",
+        "step_2": "Tap 'Account Information'.",
+        "step_3": "Enter your birthdate.",
+        "step_4": "Click 'Save Changes'."
+      },
+      "change_avatar": {
+        "step_1": "Go to the Profile tab.",
+        "step_2": "Tap 'Account Information'.",
+        "step_3": "Tap the 'Edit' icon.",
+        "step_4": "Choose your preferred avatar.",
+        "step_5": "Click 'Save Changes'."
+      },
+      "login_requirements": {
+        "step_1": "Open the login screen.",
+        "step_2": "Provide your registered Email.",
+        "step_3": "Provide your Password."
+      },
+      "signup_requirements": {
+        "step_1": "Open the sign-up screen.",
+        "step_2": "Enter your Email, Password, and Confirm Password.",
+        "step_3": "Enter your Date of Birth.",
+        "step_4": "Enter your First Name and Last Name."
+      },
+      "forgot_password": {
+        "step_1": "Go to the login screen and select 'Forgot Password'.",
+        "step_2": "Enter your registered Email.",
+        "step_3": "Input the 6-digit code you receive.",
+        "step_4": "Enter your new password.",
+        "step_5": "Confirm your new password to complete the process."
+      }
+    },
+    "translation_capabilities": {
+      "supported_languages": [
+        "English",
+        "Tagalog",
+        "Cebuano"
+      ],
+      "translation_modes": {
+        "text_to_text": {
+          "step_1": "Go to the 'Translation' tab in the navigation bar.",
+          "step_2": "Select the 'Text-to-Text' mode.",
+          "step_3": "Choose your source language and the language you want to translate to.",
+          "step_4": "Type or paste your text into the box.",
+          "step_5": "The app will automatically translate it for you."
+        },
+        "speech_to_text": {
+          "step_1": "Go to the 'Translation' tab in the navigation bar.",
+          "step_2": "Select the 'Speech-to-Text' mode.",
+          "step_3": "Tap the microphone icon and start speaking.",
+          "step_4": "The app will turn your voice into text and translate it automatically."
+        },
+        "ocr": {
+          "step_1": "Go to the 'Translation' tab in the navigation bar.",
+          "step_2": "Select the 'OCR' mode.",
+          "step_3": "Point your camera at the text or image.",
+          "step_4": "The app will read the text from the image and translate it for you."
+        }
+      },
+      "limitations": {
+        "slang_and_informal": "The app is currently optimized for standard language and may not accurately translate slang or informal speech.",
+        "code_switching": "The system may have difficulty translating sentences that mix two or more languages (code-switching) at the same time.",
+        "general_note": "For the best results, try to use clear and complete sentences."
+      }
+    }
   }
 }
