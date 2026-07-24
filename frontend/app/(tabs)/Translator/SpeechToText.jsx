@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Shared Utilities & Components
 import { supabase } from '../../../shared/lib/supabase';
@@ -49,8 +50,8 @@ export default function SpeechToText() {
   const [recording, setRecording] = useState(null);
   const [currentTranslationId, setCurrentTranslationId] = useState(null);
 
-  // Speech Mode State (Speech-to-Text vs Speech-to-Speech)
-  const [speechMode, setSpeechMode] = useState('speech-to-text'); // 'speech-to-text' | 'speech-to-speech'
+  // Speech Mode State
+  const [speechMode, setSpeechMode] = useState('speech-to-text');
   const [audioBase64, setAudioBase64] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const soundRef = useRef(null);
@@ -76,7 +77,7 @@ export default function SpeechToText() {
     }
   }, [isListening]);
 
-  // Cleanup any loaded sound when the screen unmounts
+  // Cleanup sound when screen unmounts
   useEffect(() => {
     return () => {
       soundRef.current?.unloadAsync().catch(() => { });
@@ -129,29 +130,25 @@ export default function SpeechToText() {
         });
       }
 
-      Alert.alert("Salamat!", "Thank you for improving DialectoGo.");
+      Alert.alert("Salamat!", "Thank you for improving DialectGo.");
       setIsDetailedModalVisible(false);
       setFeedbackComment('');
       setSuggestedTranslation('');
     } catch (err) { Alert.alert("Error", "Submission failed."); }
   };
 
-  // --- AUDIO PLAYBACK (Speech-to-Speech) ---
+  // --- AUDIO PLAYBACK ---
 
   /**
-   * Plays base64-encoded MP3 audio returned by the backend TTS pipeline.
-   * Unloads any previously playing sound first to avoid overlapping playback
-   * or leaking native audio resources.
+   * Writes base64 string to a temp MP3 file in cache and plays via Expo AV.
    */
   const playTranslatedAudio = async (rawBase64) => {
-    let base64Mp3 = rawBase64;
-
-    // Handle case where base64 might be wrapped inside an object
+    let base64String = rawBase64;
     if (typeof rawBase64 === 'object' && rawBase64 !== null) {
-      base64Mp3 = rawBase64.data || rawBase64.base64 || null;
+      base64String = rawBase64.audioBase64 || rawBase64.data || rawBase64.base64 || null;
     }
 
-    if (!base64Mp3 || typeof base64Mp3 !== 'string') {
+    if (!base64String || typeof base64String !== 'string') {
       Alert.alert('Audio unavailable', 'No audio was returned for this translation.');
       return;
     }
@@ -162,15 +159,36 @@ export default function SpeechToText() {
         soundRef.current = null;
       }
 
+      // 1. Force audio playback configuration for physical devices
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+      });
+
       setIsPlayingAudio(true);
 
-      // Clean string to remove line breaks or extra quotes
-      const cleanBase64 = base64Mp3.trim().replace(/(\r\n|\n|\r)/gm, "");
+      // 2. Clean Base64 String (Removes data URI headers if your backend sends them)
+      const cleanBase64 = base64String
+        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
+        .replace(/(\r\n|\n|\r)/gm, '');
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: `data:audio/mp3;base64,${cleanBase64}` },
-        { shouldPlay: true }
+      const fileUri = `${FileSystem.cacheDirectory}translated_speech.mp3`;
+
+      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // 3. Create sound object and set volume explicitly
+      const { sound, status } = await Audio.Sound.createAsync(
+        { uri: fileUri },
+        { shouldPlay: true, volume: 1.0 }
       );
+      console.log('[Audio Debug] load status:', JSON.stringify(status));
+
       soundRef.current = sound;
 
       sound.setOnPlaybackStatusUpdate((status) => {
@@ -179,12 +197,11 @@ export default function SpeechToText() {
         }
       });
     } catch (err) {
-      console.error('Audio playback error:', err);
+      console.error('[Audio Playback Error]:', err);
       setIsPlayingAudio(false);
       Alert.alert('Playback Error', 'Could not play the translated audio.');
     }
   };
-
   // --- RECORDING LOGIC ---
 
   const startRecording = async () => {
@@ -235,16 +252,16 @@ export default function SpeechToText() {
         setTranslatedText(data.translation);
         setTranscript(data.transcript || "Speech captured");
         setAudioBase64(data.audioBase64 || null);
+        console.log('[Frontend Debug] audioBase64 length:', data.audioBase64?.length);
 
-        // FIX: Check for historyId specifically for Audio results
         const recordId = data.historyId || data.historyRecord?.id || data.id;
         setCurrentTranslationId(recordId);
 
         animateUI();
         setShowResult(true);
 
-        // Auto-play only when the user is in Speech-to-Speech mode
-        if (speechMode === 'speech-to-speech') {
+        // Auto-play translated speech whenever valid audio is returned
+        if (data.audioBase64) {
           await playTranslatedAudio(data.audioBase64);
         }
       } else {

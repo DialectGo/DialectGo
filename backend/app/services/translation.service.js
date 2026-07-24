@@ -4,10 +4,9 @@ import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
+import { GoogleAuth } from 'google-auth-library';
 import { preprocessText } from './preprocessor.service.js';
-import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 
-const ttsClient = new TextToSpeechClient();
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
 const HF_TOKEN = process.env.HF_TOKEN;
@@ -40,50 +39,98 @@ const getGradioClient = async () => {
     return gradioClient;
 };
 
+// ---- Google Auth (Vertex AI) setup ----
+const auth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+});
+
+let cachedAuthClient = null;
+
 /**
- * Converts translated text into base64 encoded MP3 audio using Google Cloud TTS.
+ * Lazily creates and caches an authenticated Google Auth client.
+ * Reuses the client across calls so tokens are refreshed automatically
+ * by the library instead of re-authenticating on every request.
+ */
+const getAuthClient = async () => {
+    if (cachedAuthClient) return cachedAuthClient;
+    cachedAuthClient = await auth.getClient();
+    return cachedAuthClient;
+};
+
+/**
+ * Converts translated text into base64 audio using Google Cloud
+ * Text-to-Speech (Gemini 2.5 Flash TTS, served via Vertex AI).
+ *
+ * Requires:
+ *  - Vertex AI API enabled on the GCP project
+ *  - The service account has roles/aiplatform.user
+ *  - GOOGLE_APPLICATION_CREDENTIALS points to that service account's JSON key file
  */
 const generateTTSAudio = async (text, targetLang) => {
     if (!text || !text.trim()) {
-        console.log('[Google TTS Debug]: Text was empty or missing.');
+        console.log('[TTS Debug] Skipped — empty text passed to generateTTSAudio');
         return null;
     }
 
-    const voiceMap = {
-        'cebuano': { languageCode: 'ceb-PH', ssmlGender: 'FEMALE' },
-        'ceb': { languageCode: 'ceb-PH', ssmlGender: 'FEMALE' },
-        'tagalog': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
-        'fil': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
-        'tl': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
-        'english': { languageCode: 'en-US', ssmlGender: 'FEMALE' },
-        'en': { languageCode: 'en-US', ssmlGender: 'FEMALE' }
+    const normLang = String(targetLang || '').trim().toLowerCase();
+
+    const languageCodeMap = {
+        cebuano: 'ceb-PH',
+        ceb: 'ceb-PH',
+        tagalog: 'fil-PH',
+        fil: 'fil-PH',
+        tl: 'fil-PH',
+        tag: 'fil-PH',
+        english: 'en-US',
+        en: 'en-US',
     };
 
-    const normLang = String(targetLang || '').trim().toLowerCase();
-    const voiceConfig = voiceMap[normLang] || { languageCode: 'en-US', ssmlGender: 'FEMALE' };
+    const languageCode = languageCodeMap[normLang] || 'en-US';
+    const url = 'https://texttospeech.googleapis.com/v1beta1/text:synthesize';
 
-    console.log('[Google TTS Debug] Requesting TTS for:', { text, normLang, voiceConfig });
+    const payload = {
+        audioConfig: {
+            audioEncoding: 'MP3',
+            pitch: 0,
+            speakingRate: 1,
+        },
+        input: {
+            prompt: 'Read aloud clearly in a natural and friendly tone.',
+            text: String(text).trim(),
+        },
+        voice: {
+            languageCode,
+            modelName: 'gemini-2.5-flash-tts',
+            name: 'Achernar',
+        },
+    };
+
+    console.log('[TTS Debug] Calling TTS with payload:', JSON.stringify(payload));
 
     try {
-        const request = {
-            input: { text: String(text).trim() },
-            voice: voiceConfig,
-            audioConfig: { audioEncoding: 'MP3' },
-        };
+        const client = await getAuthClient();
+        const accessToken = await client.getAccessToken();
 
-        const [response] = await ttsClient.synthesizeSpeech(request);
-
-        if (response && response.audioContent) {
-            const base64Str = Buffer.from(response.audioContent).toString('base64');
-            console.log('[Google TTS Debug] Successfully generated base64 audio. Length:', base64Str.length);
-            return base64Str;
+        if (!accessToken?.token) {
+            console.error('[TTS Debug] Failed to obtain access token from service account');
+            return null;
         }
 
-        console.log('[Google TTS Debug]: response.audioContent was empty.');
-        return null;
+        console.log('[TTS Debug] Access token obtained, length:', accessToken.token.length);
+
+        const response = await axios.post(url, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken.token}`,
+            },
+        });
+
+        console.log('[TTS Debug] TTS API response status:', response.status);
+        console.log('[TTS Debug] audioContent present:', !!response.data?.audioContent);
+
+        return response.data?.audioContent ?? null;
     } catch (error) {
-        // THIS WILL SHOW US THE EXACT ERROR IN YOUR BACKEND TERMINAL
-        console.error('[Google TTS Error Details]:', error);
+        console.error('[Gemini TTS Error]:', error.response?.data || error.message || error);
         return null;
     }
 };
@@ -160,16 +207,28 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
             target_lang_name: normalizeLanguageName(targetLang),
         });
 
+        console.log('[TTS Debug] Gradio result.data:', JSON.stringify(result?.data));
+
         if (Array.isArray(result?.data) && result.data.length >= 2) {
             const transcript = result.data[0];
             const translation = result.data[1];
+
+            console.log('[TTS Debug] transcript:', transcript);
+            console.log('[TTS Debug] translation:', translation);
+
             const audioBase64 = await generateTTSAudio(translation, targetLang);
+
+            console.log('[TTS Debug] Final audioBase64 present:', !!audioBase64, 'length:', audioBase64?.length ?? 0);
 
             return { status: 'success', transcript, translation, audioBase64 };
         }
+
+        console.log('[TTS Debug] Gradio result.data did not match expected shape — falling through to Flask');
     } catch (error) {
         console.warn('Hugging Face audio translation failed, falling back to Flask backend:', error.message || error);
     }
+
+    console.log('[TTS Debug] Using Flask fallback path for speech-to-text');
 
     const form = new FormDataLib();
     form.append('audio', fs.createReadStream(audioPath));
@@ -183,7 +242,12 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
     // Normalize Flask's shape to match the HF path exactly
     const transcript = response.data.transcript ?? response.data.transcription ?? '';
     const translation = response.data.translation ?? '';
+
+    console.log('[TTS Debug] Flask translation:', translation);
+
     const audioBase64 = await generateTTSAudio(translation, targetLang);
+
+    console.log('[TTS Debug] Final audioBase64 present (Flask path):', !!audioBase64, 'length:', audioBase64?.length ?? 0);
 
     return { status: 'success', transcript, translation, audioBase64 };
 };

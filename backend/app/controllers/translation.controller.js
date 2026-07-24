@@ -8,7 +8,7 @@ export const translateImage = async (req, res, next) => {
     try {
         const { image, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
-        
+
         // Run through the pre-processing pipeline before translation
         const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang);
 
@@ -89,6 +89,7 @@ export const translateAudio = async (req, res, next) => {
             success: true,
             translation: finalTranslation,
             transcript: result.transcript,
+            audioBase64: result.audioBase64,   // <-- add this line
             historyId: savedRecordId,
             preprocessing: preprocessingMeta
         });
@@ -119,9 +120,9 @@ export const translateText = async (req, res, next) => {
         });
 
         if (error) throw error;
-        res.status(200).json({ 
-            success: true, 
-            translatedText: result.translatedText, 
+        res.status(200).json({
+            success: true,
+            translatedText: result.translatedText,
             historyRecord: data?.[0],
             preprocessing: result.preprocessing
         });
