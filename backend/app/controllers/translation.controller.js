@@ -6,11 +6,11 @@ import * as TranslationService from '../services/translation.service.js';
 
 export const translateImage = async (req, res, next) => {
     try {
-        const { image, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
+        const { image, sourceLang, targetLang, source_language_id, target_language_id, targetDialect } = req.body;
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
-        
+
         // Run through the pre-processing pipeline before translation
-        const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang);
+        const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect || null);
 
         let savedRecord = null;
         if (req.user?.id) {
@@ -30,7 +30,8 @@ export const translateImage = async (req, res, next) => {
             translatedText: result.translatedText,
             sourceText: text,
             historyRecord: savedRecord,
-            preprocessing: result.preprocessing
+            preprocessing: result.preprocessing,
+            dialectization: result.dialectization
         });
     } catch (err) { next(err); }
 };
@@ -39,7 +40,7 @@ export const translateAudio = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ message: "No audio file" });
 
-        const { targetLang, sourceLang, source_language_id, target_language_id } = req.body;
+        const { targetLang, sourceLang, source_language_id, target_language_id, targetDialect } = req.body;
 
         const result = await TranslationService.performSpeechToText(
             req.file.path,
@@ -54,7 +55,7 @@ export const translateAudio = async (req, res, next) => {
         if (result.transcript && result.transcript.trim().length > 0) {
             try {
                 const preprocessed = await TranslationService.performPreprocessedTranslation(
-                    result.transcript, sourceLang, targetLang
+                    result.transcript, sourceLang, targetLang, targetDialect || null
                 );
                 finalTranslation = preprocessed.translatedText;
                 preprocessingMeta = preprocessed.preprocessing;
@@ -100,13 +101,13 @@ export const translateAudio = async (req, res, next) => {
 
 export const translateText = async (req, res, next) => {
     try {
-        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
+        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id, targetDialect } = req.body;
 
         // Ensure sourceText is a clean string
         if (!sourceText) return res.status(400).json({ message: "No text provided" });
 
         // Run through the pre-processing pipeline before translation
-        const result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang);
+        const result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null);
 
         // Log the result here to verify if it's "clean" before saving to Supabase
         console.log("Raw AI Output:", result.translatedText);
@@ -119,11 +120,12 @@ export const translateText = async (req, res, next) => {
         });
 
         if (error) throw error;
-        res.status(200).json({ 
-            success: true, 
-            translatedText: result.translatedText, 
+        res.status(200).json({
+            success: true,
+            translatedText: result.translatedText,
             historyRecord: data?.[0],
-            preprocessing: result.preprocessing
+            preprocessing: result.preprocessing,
+            dialectization: result.dialectization
         });
     } catch (err) { next(err); }
 };

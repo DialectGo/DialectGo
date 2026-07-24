@@ -5,6 +5,7 @@ import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
 import { preprocessText } from './preprocessor.service.js';
+import { dialectize } from './reverseCanonicalizer.service.js';
 
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
@@ -143,37 +144,63 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
  * Pre-processed translation — runs the full preprocessing pipeline
  * (tokenize → corpus lookup → sentiment → canonicalize) before
  * sending the standardized text to the NLLB translation service.
+ * 
+ * When a targetDialect is provided, also runs the reverse
+ * canonicalization pipeline on the NLLB output to convert
+ * standard words into dialect-specific equivalents.
  *
  * @param {string} text - Raw user input text
  * @param {string} sourceLang - Source language code
  * @param {string} targetLang - Target language code
- * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing}>}
+ * @param {string|null} targetDialect - Optional dialect variant (e.g., 'Boholano', 'Batangeño')
+ * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing, dialectization}>}
  */
-export const performPreprocessedTranslation = async (text, sourceLang, targetLang) => {
-    // Step 1: Run the pre-processing pipeline
+export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
+    // Step 1: Run the input pre-processing pipeline
     const preprocessResult = await preprocessText(text, sourceLang);
 
     // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
     const textForTranslation = preprocessResult.canonicalizedText;
-    const translatedText = await performTranslation(textForTranslation, sourceLang, targetLang);
+    const nllbOutput = await performTranslation(textForTranslation, sourceLang, targetLang);
+
+    // Step 3: If a dialect is selected, run reverse canonicalization on the output
+    let finalText = nllbOutput;
+    let dialectMeta = null;
+
+    if (targetDialect) {
+        const dialectResult = await dialectize(nllbOutput, targetDialect);
+        if (dialectResult.wasModified) {
+            finalText = dialectResult.dialectText;
+        }
+        dialectMeta = {
+            wasModified: dialectResult.wasModified,
+            replacements: dialectResult.replacements,
+            targetDialect,
+            metadata: dialectResult.metadata
+        };
+    }
 
     console.log('[PreprocessedTranslation] Pipeline summary:', {
         wasModified: preprocessResult.wasModified,
         replacements: preprocessResult.replacements.length,
         sentimentScore: preprocessResult.sentimentAnalysis?.overallScore ?? 'N/A',
-        pipelineMs: preprocessResult.metadata.pipelineMs
+        pipelineMs: preprocessResult.metadata.pipelineMs,
+        dialectized: dialectMeta?.wasModified ?? false,
+        targetDialect: targetDialect || 'Standard'
     });
 
     return {
         originalText: preprocessResult.originalText,
         canonicalizedText: preprocessResult.canonicalizedText,
-        translatedText,
+        translatedText: finalText,
+        nllbRawOutput: targetDialect ? nllbOutput : undefined,
         preprocessing: {
             wasModified: preprocessResult.wasModified,
             replacements: preprocessResult.replacements,
             sentimentAnalysis: preprocessResult.sentimentAnalysis,
             metadata: preprocessResult.metadata
-        }
+        },
+        dialectization: dialectMeta
     };
 };
 

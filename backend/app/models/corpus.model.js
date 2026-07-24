@@ -73,6 +73,37 @@ export const CorpusModel = {
     },
 
     /**
+     * Reverse lookup: fetch dialect translations for standardized terms.
+     * Used by the reverse canonicalization pipeline to convert
+     * NLLB standardized output into regional dialect words.
+     * 
+     * Queries WHERE standard_term IN (normalizedTerms) AND region = targetDialect.
+     * 
+     * @param {string[]} normalizedTerms - Lowercased standard terms to look up
+     * @param {string} targetDialect - The target dialect/region (e.g., 'Boholano', 'Batangeño')
+     * @returns {Promise<{data: object[], error: object|null}>}
+     */
+    reverseLookup: async (normalizedTerms, targetDialect) => {
+        if (!normalizedTerms || normalizedTerms.length === 0 || !targetDialect) {
+            return { data: [], error: null };
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('dialect_corpus')
+            .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status')
+            .in('standard_term', normalizedTerms)
+            .eq('region', targetDialect)
+            .eq('status', 'validated');
+
+        if (error) {
+            console.error('[CorpusModel.reverseLookup] Supabase error:', error.message);
+            return { data: [], error };
+        }
+
+        return { data: data || [], error: null };
+    },
+
+    /**
      * Fetch a single corpus entry by exact term and sentiment score.
      * Used for targeted lookups after disambiguation.
      * 

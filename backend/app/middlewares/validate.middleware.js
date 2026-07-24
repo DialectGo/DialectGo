@@ -1,19 +1,19 @@
 import Joi from 'joi';
 
 export const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, {
-    abortEarly: false,
-    stripUnknown: true
-  });
-
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.details.map(err => err.message).join(', ')
+    const { error } = schema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true
     });
-  }
 
-  next();
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.details.map(err => err.message).join(', ')
+        });
+    }
+
+    next();
 };
 
 const createValidationMiddleware = (schema) => (req, res, next) => {
@@ -46,6 +46,7 @@ export const validateTranslateText = createValidationMiddleware(
         targetLang: Joi.alternatives().try(Joi.string().trim(), Joi.number().integer()).required(),
         source_language_id: Joi.number().integer().optional().allow(null),
         target_language_id: Joi.number().integer().optional().allow(null),
+        targetDialect: Joi.string().trim().optional().allow(null, ''),
     })
 );
 
@@ -56,6 +57,7 @@ export const validateTranslateImage = createValidationMiddleware(
         sourceLang: Joi.alternatives().try(Joi.string().trim(), Joi.number().integer()).required(),
         source_language_id: Joi.number().integer().optional().allow(null),
         target_language_id: Joi.number().integer().optional().allow(null),
+        targetDialect: Joi.string().trim().optional().allow(null, ''),
     })
 );
 

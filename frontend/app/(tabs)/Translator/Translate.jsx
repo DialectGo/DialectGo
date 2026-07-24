@@ -39,6 +39,12 @@ const LANGUAGES = [
   { name: 'Cebuano', id: 3 },
 ];
 
+// Dialect variant options per target language
+const DIALECT_OPTIONS = {
+  Cebuano: [{ label: 'Standard', value: null }, { label: 'Boholano', value: 'Boholano' }],
+  Tagalog: [{ label: 'Standard', value: null }, { label: 'Batangeño', value: 'Batangeño' }],
+};
+
 export default function TranslateScreen({ activeTab, onNavigate }) {
   const router = useRouter();
   
@@ -52,6 +58,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   // Language & Text State
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Cebuano');
+  const [targetDialect, setTargetDialect] = useState(null);
   const [inputText, setInputText] = useState('');
   const [translation, setTranslation] = useState('');
   const [currentTranslationId, setCurrentTranslationId] = useState(null);
@@ -154,6 +161,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           sourceText: text,
           sourceLang, 
           targetLang,
+          targetDialect,
           source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id, 
           target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
         }),
@@ -191,6 +199,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     } else {
       if (langObj.name === sourceLang) setSourceLang(targetLang);
       setTargetLang(langObj.name);
+      // Reset dialect when target language changes
+      setTargetDialect(null);
     }
     setModalVisible(false);
   };
@@ -214,11 +224,67 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             sourceLang={sourceLang} targetLang={targetLang}
             onSwap={() => {
               const temp = sourceLang; setSourceLang(targetLang); setTargetLang(temp);
+              setTargetDialect(null);
             }} 
             onSelectSource={() => { setSelectingFor('source'); setModalVisible(true); }}
             onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
             translateIcon={translateIcon}
           />
+
+          {/* DIALECT VARIANT SELECTOR */}
+          {DIALECT_OPTIONS[targetLang] && (
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 20,
+              marginBottom: 12,
+              gap: 12,
+            }}>
+              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600', marginRight: 4 }}>Output:</Text>
+              {DIALECT_OPTIONS[targetLang].map((option) => (
+                <TouchableOpacity
+                  key={option.label}
+                  onPress={() => setTargetDialect(option.value)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
+                    borderWidth: 1.5,
+                    borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
+                  }}
+                >
+                  <View style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: targetDialect === option.value ? '#1F2937' : '#9CA3AF',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: 6,
+                  }}>
+                    {targetDialect === option.value && (
+                      <View style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#1F2937',
+                      }} />
+                    )}
+                  </View>
+                  <Text style={{
+                    fontSize: 13,
+                    fontWeight: targetDialect === option.value ? '700' : '500',
+                    color: targetDialect === option.value ? '#1F2937' : '#6B7280',
+                  }}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
