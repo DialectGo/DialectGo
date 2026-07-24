@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/garu10/DialectGo#readme",
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.1",
     "@supabase/supabase-js": "^2.100.0",
     "@xenova/transformers": "^2.17.2",
     "axios": "^1.16.1",
@@ -31,6 +32,8 @@
     "express-fileupload": "^1.5.2",
     "express-rate-limit": "^8.4.1",
     "form-data": "^4.0.5",
+    "google-auth-library": "^10.9.1",
+    "google-tts-api": "^2.0.2",
     "helmet": "^8.1.0",
     "https-proxy-agent": "^9.1.0",
     "joi": "^18.0.2",

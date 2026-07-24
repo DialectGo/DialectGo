@@ -4,6 +4,7 @@ import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
+import { GoogleAuth } from 'google-auth-library';
 import { preprocessText } from './preprocessor.service.js';
 import { dialectize } from './reverseCanonicalizer.service.js';
 
@@ -39,6 +40,102 @@ const getGradioClient = async () => {
     return gradioClient;
 };
 
+// ---- Google Auth (Vertex AI) setup ----
+const auth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+});
+
+let cachedAuthClient = null;
+
+/**
+ * Lazily creates and caches an authenticated Google Auth client.
+ * Reuses the client across calls so tokens are refreshed automatically
+ * by the library instead of re-authenticating on every request.
+ */
+const getAuthClient = async () => {
+    if (cachedAuthClient) return cachedAuthClient;
+    cachedAuthClient = await auth.getClient();
+    return cachedAuthClient;
+};
+
+/**
+ * Converts translated text into base64 audio using Google Cloud
+ * Text-to-Speech (Gemini 2.5 Flash TTS, served via Vertex AI).
+ *
+ * Requires:
+ *  - Vertex AI API enabled on the GCP project
+ *  - The service account has roles/aiplatform.user
+ *  - GOOGLE_APPLICATION_CREDENTIALS points to that service account's JSON key file
+ */
+const generateTTSAudio = async (text, targetLang) => {
+    if (!text || !text.trim()) {
+        console.log('[TTS Debug] Skipped — empty text passed to generateTTSAudio');
+        return null;
+    }
+
+    const normLang = String(targetLang || '').trim().toLowerCase();
+
+    const languageCodeMap = {
+        cebuano: 'ceb-PH',
+        ceb: 'ceb-PH',
+        tagalog: 'fil-PH',
+        fil: 'fil-PH',
+        tl: 'fil-PH',
+        tag: 'fil-PH',
+        english: 'en-US',
+        en: 'en-US',
+    };
+
+    const languageCode = languageCodeMap[normLang] || 'en-US';
+    const url = 'https://texttospeech.googleapis.com/v1beta1/text:synthesize';
+
+    const payload = {
+        audioConfig: {
+            audioEncoding: 'MP3',
+            pitch: 0,
+            speakingRate: 1,
+        },
+        input: {
+            prompt: 'Read aloud clearly in a natural and friendly tone.',
+            text: String(text).trim(),
+        },
+        voice: {
+            languageCode,
+            modelName: 'gemini-2.5-flash-tts',
+            name: 'Achernar',
+        },
+    };
+
+    console.log('[TTS Debug] Calling TTS with payload:', JSON.stringify(payload));
+
+    try {
+        const client = await getAuthClient();
+        const accessToken = await client.getAccessToken();
+
+        if (!accessToken?.token) {
+            console.error('[TTS Debug] Failed to obtain access token from service account');
+            return null;
+        }
+
+        console.log('[TTS Debug] Access token obtained, length:', accessToken.token.length);
+
+        const response = await axios.post(url, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken.token}`,
+            },
+        });
+
+        console.log('[TTS Debug] TTS API response status:', response.status);
+        console.log('[TTS Debug] audioContent present:', !!response.data?.audioContent);
+
+        return response.data?.audioContent ?? null;
+    } catch (error) {
+        console.error('[Gemini TTS Error]:', error.response?.data || error.message || error);
+        return null;
+    }
+};
+
 const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
     try {
         const client = await getGradioClient();
@@ -68,6 +165,7 @@ export const performTranslation = async (text, sourceLang, targetLang) => {
     } catch (error) {
         console.warn('Hugging Face translation failed, falling back to Flask backend:', error.message || error);
     }
+    console.log('[DEBUG] Falling back to Flask — no TTS will be attempted');
 
     const payload = {
         input: text,
@@ -110,19 +208,28 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
             target_lang_name: normalizeLanguageName(targetLang),
         });
 
+        console.log('[TTS Debug] Gradio result.data:', JSON.stringify(result?.data));
+
         if (Array.isArray(result?.data) && result.data.length >= 2) {
             const transcript = result.data[0];
             const translation = result.data[1];
 
-            return {
-                status: "success",
-                transcript: typeof transcript === 'string' ? transcript.trim() : '',
-                translation: typeof translation === 'string' ? translation.trim() : '',
-            };
+            console.log('[TTS Debug] transcript:', transcript);
+            console.log('[TTS Debug] translation:', translation);
+
+            const audioBase64 = await generateTTSAudio(translation, targetLang);
+
+            console.log('[TTS Debug] Final audioBase64 present:', !!audioBase64, 'length:', audioBase64?.length ?? 0);
+
+            return { status: 'success', transcript, translation, audioBase64 };
         }
+
+        console.log('[TTS Debug] Gradio result.data did not match expected shape — falling through to Flask');
     } catch (error) {
         console.warn('Hugging Face audio translation failed, falling back to Flask backend:', error.message || error);
     }
+
+    console.log('[TTS Debug] Using Flask fallback path for speech-to-text');
 
     const form = new FormDataLib();
     form.append('audio', fs.createReadStream(audioPath));
@@ -130,14 +237,20 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
     form.append('source_lang', sourceLang);
 
     const response = await axios.post(`${COLAB_URL}/translate`, form, {
-        headers: {
-            ...form.getHeaders(),
-            'ngrok-skip-browser-warning': 'true'
-        },
+        headers: { ...form.getHeaders(), 'ngrok-skip-browser-warning': 'true' },
     });
 
-    console.log('DEBUG: Flask response structure:', response.data);
-    return response.data;
+    // Normalize Flask's shape to match the HF path exactly
+    const transcript = response.data.transcript ?? response.data.transcription ?? '';
+    const translation = response.data.translation ?? '';
+
+    console.log('[TTS Debug] Flask translation:', translation);
+
+    const audioBase64 = await generateTTSAudio(translation, targetLang);
+
+    console.log('[TTS Debug] Final audioBase64 present (Flask path):', !!audioBase64, 'length:', audioBase64?.length ?? 0);
+
+    return { status: 'success', transcript, translation, audioBase64 };
 };
 
 /**
@@ -158,8 +271,6 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
 export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
     // Step 1: Run the input pre-processing pipeline
     const preprocessResult = await preprocessText(text, sourceLang);
-
-    // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
     const textForTranslation = preprocessResult.canonicalizedText;
     const nllbOutput = await performTranslation(textForTranslation, sourceLang, targetLang);
 

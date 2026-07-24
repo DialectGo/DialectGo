@@ -90,6 +90,7 @@ export const translateAudio = async (req, res, next) => {
             success: true,
             translation: finalTranslation,
             transcript: result.transcript,
+            audioBase64: result.audioBase64,   // <-- add this line
             historyId: savedRecordId,
             preprocessing: preprocessingMeta
         });
