@@ -4,6 +4,7 @@ import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
+import { preprocessText } from './preprocessor.service.js';
 
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
@@ -136,6 +137,44 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
 
     console.log('DEBUG: Flask response structure:', response.data);
     return response.data;
+};
+
+/**
+ * Pre-processed translation — runs the full preprocessing pipeline
+ * (tokenize → corpus lookup → sentiment → canonicalize) before
+ * sending the standardized text to the NLLB translation service.
+ *
+ * @param {string} text - Raw user input text
+ * @param {string} sourceLang - Source language code
+ * @param {string} targetLang - Target language code
+ * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing}>}
+ */
+export const performPreprocessedTranslation = async (text, sourceLang, targetLang) => {
+    // Step 1: Run the pre-processing pipeline
+    const preprocessResult = await preprocessText(text, sourceLang);
+
+    // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
+    const textForTranslation = preprocessResult.canonicalizedText;
+    const translatedText = await performTranslation(textForTranslation, sourceLang, targetLang);
+
+    console.log('[PreprocessedTranslation] Pipeline summary:', {
+        wasModified: preprocessResult.wasModified,
+        replacements: preprocessResult.replacements.length,
+        sentimentScore: preprocessResult.sentimentAnalysis?.overallScore ?? 'N/A',
+        pipelineMs: preprocessResult.metadata.pipelineMs
+    });
+
+    return {
+        originalText: preprocessResult.originalText,
+        canonicalizedText: preprocessResult.canonicalizedText,
+        translatedText,
+        preprocessing: {
+            wasModified: preprocessResult.wasModified,
+            replacements: preprocessResult.replacements,
+            sentimentAnalysis: preprocessResult.sentimentAnalysis,
+            metadata: preprocessResult.metadata
+        }
+    };
 };
 
 export const saveHistory = async (userId, data) => await TranslationModel.saveHistory(userId, data);

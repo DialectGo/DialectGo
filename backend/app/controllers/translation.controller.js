@@ -8,26 +8,29 @@ export const translateImage = async (req, res, next) => {
     try {
         const { image, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
-        const translatedText = await TranslationService.performTranslation(text, sourceLang, targetLang);
+        
+        // Run through the pre-processing pipeline before translation
+        const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang);
 
         let savedRecord = null;
         if (req.user?.id) {
             // Save to history and capture the returned data
             const { data, error } = await TranslationService.saveHistory(req.user.id, {
-                sourceText: text, 
-                translatedText, 
-                sourceLanguageId: source_language_id, 
+                sourceText: text,
+                translatedText: result.translatedText,
+                sourceLanguageId: source_language_id,
                 targetLanguageId: target_language_id
             });
             if (!error) savedRecord = data?.[0];
         }
-        
+
         // Ensure you send 'sourceText' and 'historyRecord' back
-        res.status(200).json({ 
-            success: true, 
-            translatedText, 
-            sourceText: text, 
-            historyRecord: savedRecord 
+        res.status(200).json({
+            success: true,
+            translatedText: result.translatedText,
+            sourceText: text,
+            historyRecord: savedRecord,
+            preprocessing: result.preprocessing
         });
     } catch (err) { next(err); }
 };
@@ -35,28 +38,45 @@ export const translateImage = async (req, res, next) => {
 export const translateAudio = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ message: "No audio file" });
-        
+
         const { targetLang, sourceLang, source_language_id, target_language_id } = req.body;
 
         const result = await TranslationService.performSpeechToText(
-            req.file.path, 
-            targetLang, 
+            req.file.path,
+            targetLang,
             sourceLang
         );
+
+        // Run the transcript through the pre-processing pipeline for a better translation
+        let finalTranslation = result.translation;
+        let preprocessingMeta = null;
+
+        if (result.transcript && result.transcript.trim().length > 0) {
+            try {
+                const preprocessed = await TranslationService.performPreprocessedTranslation(
+                    result.transcript, sourceLang, targetLang
+                );
+                finalTranslation = preprocessed.translatedText;
+                preprocessingMeta = preprocessed.preprocessing;
+            } catch (preprocessErr) {
+                console.warn('[translateAudio] Preprocessing failed, using original translation:', preprocessErr.message);
+                // Fall through with the original translation from STT
+            }
+        }
 
         let savedRecordId = null; // Use a dedicated variable for the ID
 
         if (req.user?.id) {
             const historyPayload = {
-                sourceText: result.transcript, 
-                translatedText: result.translation, 
-                sourceLanguageId: source_language_id || 1, 
+                sourceText: result.transcript,
+                translatedText: finalTranslation,
+                sourceLanguageId: source_language_id || 1,
                 targetLanguageId: target_language_id || 2
             };
 
             // FIX: Destructure 'data' from the service call
             const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload);
-            
+
             if (error) {
                 console.error("Supabase Save Error:", error.message);
             } else if (data && data.length > 0) {
@@ -65,36 +85,46 @@ export const translateAudio = async (req, res, next) => {
         }
 
         // Return the gathered ID to the mobile app
-        res.status(200).json({ 
-            success: true, 
-            translation: result.translation, 
+        res.status(200).json({
+            success: true,
+            translation: finalTranslation,
             transcript: result.transcript,
-            historyId: savedRecordId // This will no longer be undefined!
+            historyId: savedRecordId,
+            preprocessing: preprocessingMeta
         });
-    } catch (err) { 
+    } catch (err) {
         console.error("Translate Audio Controller Error:", err);
-        next(err); 
+        next(err);
     }
 };
 
 export const translateText = async (req, res, next) => {
     try {
         const { sourceText, sourceLang, targetLang, source_language_id, target_language_id } = req.body;
-        
+
         // Ensure sourceText is a clean string
         if (!sourceText) return res.status(400).json({ message: "No text provided" });
 
-        const translatedText = await TranslationService.performTranslation(sourceText, sourceLang, targetLang);
-        
+        // Run through the pre-processing pipeline before translation
+        const result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang);
+
         // Log the result here to verify if it's "clean" before saving to Supabase
-        console.log("Raw AI Output:", translatedText); 
+        console.log("Raw AI Output:", result.translatedText);
+        if (result.preprocessing?.wasModified) {
+            console.log("Pre-processed Input:", result.canonicalizedText);
+        }
 
         const { data, error } = await TranslationService.saveHistory(req.user.id, {
-            sourceText, translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
+            sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
         });
-        
+
         if (error) throw error;
-        res.status(200).json({ success: true, translatedText, historyRecord: data?.[0] });
+        res.status(200).json({ 
+            success: true, 
+            translatedText: result.translatedText, 
+            historyRecord: data?.[0],
+            preprocessing: result.preprocessing
+        });
     } catch (err) { next(err); }
 };
 
@@ -147,9 +177,9 @@ export const submitFeedback = async (req, res) => {
         const dbRating = (rating >= 5) ? 1 : 0;
 
         const { data, error } = await TranslationModel.addFeedback(
-            req.user.id, 
-            Number(translationId), 
-            dbRating, 
+            req.user.id,
+            Number(translationId),
+            dbRating,
             comment
         );
 
@@ -254,7 +284,7 @@ export const adminGetAllRecommendations = async (req, res, next) => {
 export const adminGetTranslationAnalytics = async (req, res, next) => {
     try {
         const { supabaseAdmin } = await import('../config/db.js');
-        
+
         // Fetch trailing 7 days timeline rows
         const trailingWindow = new Date();
         trailingWindow.setDate(trailingWindow.getDate() - 7);

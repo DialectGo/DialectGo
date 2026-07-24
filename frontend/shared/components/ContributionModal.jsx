@@ -38,7 +38,7 @@ const ContributionModal = ({
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Improve DialectoGo</Text>
+            <Text style={styles.sheetTitle}>Suggest a regional version</Text>
             
             <Text style={styles.inputLabel}>OPTIONAL COMMENT</Text>
             <TextInput
