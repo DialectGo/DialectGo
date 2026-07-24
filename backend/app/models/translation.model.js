@@ -39,7 +39,7 @@ export const TranslationModel = {
     addFeedback: async (userId, translationId, rating, comment) => {
         return await supabase
             .from('user_feedback')
-            .upsert({ 
+            .upsert({
                 translation_id: translationId, // The Primary Key
                 user_id: userId,
                 rating: rating,
@@ -64,14 +64,14 @@ export const TranslationModel = {
 
     getUserTranslations: async (filters = {}) => {
         let query = supabase.from('user_recommended_translations').select('*');
-        
+
         if (filters.status) {
             query = query.eq('status', filters.status);
         }
         if (filters.userId) {
             query = query.eq('user_id', filters.userId);
         }
-        
+
         return await query.order('created_at', { ascending: false });
     }
 

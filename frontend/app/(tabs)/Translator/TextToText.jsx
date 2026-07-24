@@ -22,6 +22,12 @@ const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;
 const HEIGHT_RESULT_SHOWN = 300;
 
+// Dialect variant options per target language
+const DIALECT_OPTIONS = {
+  Cebuano: [{ label: 'Standard', value: null }, { label: 'Boholano', value: 'Boholano' }],
+  Tagalog: [{ label: 'Standard', value: null }, { label: 'Batangeño', value: 'Batangeño' }],
+};
+
 function TranslationResult({
   showResult,
   translatedText,
@@ -60,6 +66,7 @@ export default function TextToText() {
 
   const [sourceLang, setSourceLang] = useState('Tagalog');
   const [targetLang, setTargetLang] = useState('Cebuano');
+  const [targetDialect, setTargetDialect] = useState(null);
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -97,6 +104,7 @@ export default function TextToText() {
                 sourceText: inputText, 
                 sourceLang: sourceLang,
                 targetLang: targetLang,
+                targetDialect,
                 source_language_id: 2,
                 target_language_id: 3
             }),
@@ -186,8 +194,64 @@ export default function TextToText() {
         onSwap={() => {
           setSourceLang(targetLang);
           setTargetLang(sourceLang);
+          setTargetDialect(null);
         }}
       />
+
+      {/* DIALECT VARIANT SELECTOR */}
+      {DIALECT_OPTIONS[targetLang] && (
+        <View style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          marginBottom: 8,
+          gap: 12,
+        }}>
+          <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600', marginRight: 4 }}>Output:</Text>
+          {DIALECT_OPTIONS[targetLang].map((option) => (
+            <TouchableOpacity
+              key={option.label}
+              onPress={() => setTargetDialect(option.value)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 6,
+                paddingHorizontal: 14,
+                borderRadius: 20,
+                backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
+                borderWidth: 1.5,
+                borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
+              }}
+            >
+              <View style={{
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: targetDialect === option.value ? '#1F2937' : '#9CA3AF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 6,
+              }}>
+                {targetDialect === option.value && (
+                  <View style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: '#1F2937',
+                  }} />
+                )}
+              </View>
+              <Text style={{
+                fontSize: 13,
+                fontWeight: targetDialect === option.value ? '700' : '500',
+                color: targetDialect === option.value ? '#1F2937' : '#6B7280',
+              }}>{option.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
