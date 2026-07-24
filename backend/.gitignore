@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Google Cloud Key
+gcp-key.json
+config/gcp-key.json

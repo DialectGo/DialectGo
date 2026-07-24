@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, StyleSheet, TouchableOpacity, Text, ScrollView, 
+import {
+  View, StyleSheet, TouchableOpacity, Text, ScrollView,
   LayoutAnimation, Alert, Animated, StatusBar, ActivityIndicator, Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +33,7 @@ const LANGUAGE_MAP = [
 
 export default function SpeechToText() {
   const router = useRouter();
-  
+
   // Language & UI State
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Cebuano');
@@ -49,8 +49,14 @@ export default function SpeechToText() {
   const [recording, setRecording] = useState(null);
   const [currentTranslationId, setCurrentTranslationId] = useState(null);
 
+  // Speech Mode State (Speech-to-Text vs Speech-to-Speech)
+  const [speechMode, setSpeechMode] = useState('speech-to-text'); // 'speech-to-text' | 'speech-to-speech'
+  const [audioBase64, setAudioBase64] = useState(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const soundRef = useRef(null);
+
   // Feedback State
-  const [feedback, setFeedback] = useState(null); 
+  const [feedback, setFeedback] = useState(null);
   const [isDetailedModalVisible, setIsDetailedModalVisible] = useState(false);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [suggestedTranslation, setSuggestedTranslation] = useState('');
@@ -69,6 +75,13 @@ export default function SpeechToText() {
       pulseAnim.setValue(1);
     }
   }, [isListening]);
+
+  // Cleanup any loaded sound when the screen unmounts
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync().catch(() => { });
+    };
+  }, []);
 
   const animateUI = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -123,69 +136,127 @@ export default function SpeechToText() {
     } catch (err) { Alert.alert("Error", "Submission failed."); }
   };
 
+  // --- AUDIO PLAYBACK (Speech-to-Speech) ---
+
+  /**
+   * Plays base64-encoded MP3 audio returned by the backend TTS pipeline.
+   * Unloads any previously playing sound first to avoid overlapping playback
+   * or leaking native audio resources.
+   */
+  const playTranslatedAudio = async (rawBase64) => {
+    let base64Mp3 = rawBase64;
+
+    // Handle case where base64 might be wrapped inside an object
+    if (typeof rawBase64 === 'object' && rawBase64 !== null) {
+      base64Mp3 = rawBase64.data || rawBase64.base64 || null;
+    }
+
+    if (!base64Mp3 || typeof base64Mp3 !== 'string') {
+      Alert.alert('Audio unavailable', 'No audio was returned for this translation.');
+      return;
+    }
+
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync().catch(() => { });
+        soundRef.current = null;
+      }
+
+      setIsPlayingAudio(true);
+
+      // Clean string to remove line breaks or extra quotes
+      const cleanBase64 = base64Mp3.trim().replace(/(\r\n|\n|\r)/gm, "");
+
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: `data:audio/mp3;base64,${cleanBase64}` },
+        { shouldPlay: true }
+      );
+      soundRef.current = sound;
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlayingAudio(false);
+        }
+      });
+    } catch (err) {
+      console.error('Audio playback error:', err);
+      setIsPlayingAudio(false);
+      Alert.alert('Playback Error', 'Could not play the translated audio.');
+    }
+  };
+
   // --- RECORDING LOGIC ---
 
   const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== 'granted') return Alert.alert('Mic Access Required');
-      
+
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       animateUI();
       setIsListening(true);
       setShowResult(false);
       setFeedback(null);
+      setAudioBase64(null);
       setTranscript('Speak now...');
-      
+
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setRecording(recording);
     } catch (err) { setIsListening(false); }
   };
 
-  // SpeechToText.jsx
-const stopRecording = async () => {
-  if (!recording) return;
-  animateUI();
-  setIsListening(false);
-  setIsLoading(true);
+  const stopRecording = async () => {
+    if (!recording) return;
+    animateUI();
+    setIsListening(false);
+    setIsLoading(true);
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
 
-    const formData = new FormData();
-    formData.append('audio', { uri, type: 'audio/m4a', name: 'speech.m4a' });
-    formData.append('targetLang', targetLang);
-    formData.append('sourceLang', sourceLang);
-    formData.append('source_language_id', LANGUAGE_MAP.find(l => l.name === sourceLang)?.id);
-    formData.append('target_language_id', LANGUAGE_MAP.find(l => l.name === targetLang)?.id);
+      const formData = new FormData();
+      formData.append('audio', { uri, type: 'audio/m4a', name: 'speech.m4a' });
+      formData.append('targetLang', targetLang);
+      formData.append('sourceLang', sourceLang);
+      formData.append('source_language_id', LANGUAGE_MAP.find(l => l.name === sourceLang)?.id);
+      formData.append('target_language_id', LANGUAGE_MAP.find(l => l.name === targetLang)?.id);
 
-    const response = await fetch(ENDPOINTS.AUDIO, {
-      method: 'POST',
-      body: formData,
-      headers: { 'Authorization': `Bearer ${session.access_token}` },
-    });
+      const response = await fetch(ENDPOINTS.AUDIO, {
+        method: 'POST',
+        body: formData,
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
 
-    const data = await response.json();
-    if (response.ok && data.translation) {
-      setTranslatedText(data.translation);
-      setTranscript(data.transcript || "Speech captured");
-      
-      // FIX: Check for historyId specifically for Audio results
-      const recordId = data.historyId || data.historyRecord?.id || data.id;
-      setCurrentTranslationId(recordId);
-      
-      animateUI();
-      setShowResult(true);
+      const data = await response.json();
+
+      if (response.ok && data.translation) {
+        setTranslatedText(data.translation);
+        setTranscript(data.transcript || "Speech captured");
+        setAudioBase64(data.audioBase64 || null);
+
+        // FIX: Check for historyId specifically for Audio results
+        const recordId = data.historyId || data.historyRecord?.id || data.id;
+        setCurrentTranslationId(recordId);
+
+        animateUI();
+        setShowResult(true);
+
+        // Auto-play only when the user is in Speech-to-Speech mode
+        if (speechMode === 'speech-to-speech') {
+          await playTranslatedAudio(data.audioBase64);
+        }
+      } else {
+        Alert.alert("Error", data.message || "Translation failed. Please try again.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Audio processing failed.");
+    } finally {
+      setIsLoading(false);
+      setRecording(null);
     }
-  } catch (error) { 
-    Alert.alert("Error", "Audio processing failed."); 
-  } finally { 
-    setIsLoading(false); 
-    setRecording(null); 
-  }
-};
+  };
 
   return (
     <View style={styles.mainWrapper}>
@@ -207,7 +278,7 @@ const stopRecording = async () => {
           <View style={{ width: 45 }} />
         </View>
 
-        <LanguageSelector 
+        <LanguageSelector
           sourceLang={sourceLang} targetLang={targetLang}
           translateIcon={translateIcon} onSwap={() => {
             const temp = sourceLang; setSourceLang(targetLang); setTargetLang(temp);
@@ -215,6 +286,26 @@ const stopRecording = async () => {
           onSelectSource={() => { setSelectingFor('source'); setModalVisible(true); }}
           onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
         />
+
+        {/* SPEECH MODE TOGGLE */}
+        <View style={styles.modeToggleContainer}>
+          <TouchableOpacity
+            style={[styles.modeToggleOption, speechMode === 'speech-to-text' && styles.modeToggleActive]}
+            onPress={() => setSpeechMode('speech-to-text')}
+          >
+            <Text style={[styles.modeToggleText, speechMode === 'speech-to-text' && styles.modeToggleTextActive]}>
+              Speech to Text
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeToggleOption, speechMode === 'speech-to-speech' && styles.modeToggleActive]}
+            onPress={() => setSpeechMode('speech-to-speech')}
+          >
+            <Text style={[styles.modeToggleText, speechMode === 'speech-to-speech' && styles.modeToggleTextActive]}>
+              Speech to Speech
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.pulseWrapper}>
           <Animated.View style={[styles.pulseOuter, { transform: [{ scale: pulseAnim }] }, isListening && styles.pulseActive]}>
@@ -237,6 +328,18 @@ const stopRecording = async () => {
         {showResult && (
           <View style={styles.resultWrapper}>
             <ResultCard translatedText={translatedText} targetLang={targetLang} onClose={() => setShowResult(false)} pronounceIcon={pronounceIcon} />
+
+            {speechMode === 'speech-to-speech' && audioBase64 && (
+              <TouchableOpacity
+                style={styles.replayButton}
+                onPress={() => playTranslatedAudio(audioBase64)}
+                disabled={isPlayingAudio}
+              >
+                <Ionicons name={isPlayingAudio ? "volume-high" : "play"} size={18} color="#FBBF24" />
+                <Text style={styles.replayButtonText}>{isPlayingAudio ? 'Playing...' : 'Replay Audio'}</Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.feedbackContainer}>
               <View style={styles.feedbackIcons}>
                 <TouchableOpacity onPress={() => handleQuickRating(5)} style={styles.miniFeedbackBtn}>
@@ -255,7 +358,7 @@ const stopRecording = async () => {
       </ScrollView>
 
       {/* REUSABLE CONTRIBUTION MODAL */}
-      <ContributionModal 
+      <ContributionModal
         visible={isDetailedModalVisible}
         onClose={() => setIsDetailedModalVisible(false)}
         onSubmit={handleDetailedSubmit}
@@ -307,6 +410,30 @@ const styles = StyleSheet.create({
   statusBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FBBF24', marginRight: 4 },
   statusText: { fontSize: 10, color: '#9CA3AF', fontWeight: '800', textTransform: 'uppercase' },
+  modeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 10,
+  },
+  modeToggleOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modeToggleActive: {
+    backgroundColor: '#FBBF24',
+  },
+  modeToggleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9CA3AF',
+  },
+  modeToggleTextActive: {
+    color: '#FFFFFF',
+  },
   pulseWrapper: { alignItems: 'center', marginVertical: 30 },
   pulseOuter: { width: 200, height: 200, borderRadius: 100, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
   pulseActive: { backgroundColor: '#FDE68A', elevation: 15 },
@@ -317,6 +444,22 @@ const styles = StyleSheet.create({
   transcriptLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '900', letterSpacing: 1, marginBottom: 8 },
   transcriptText: { fontSize: 22, fontWeight: '700', color: '#374151', textAlign: 'center', fontStyle: 'italic' },
   resultWrapper: { marginTop: 10 },
+  replayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+  },
+  replayButtonText: {
+    color: '#B45309',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   feedbackContainer: { marginTop: 15, alignItems: 'center' },
   feedbackIcons: { flexDirection: 'row', justifyContent: 'center', gap: 20 },
   miniFeedbackBtn: { padding: 8, borderRadius: 12, backgroundColor: '#F9FAFB' },

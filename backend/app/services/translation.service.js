@@ -5,7 +5,9 @@ import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
 import { preprocessText } from './preprocessor.service.js';
+import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 
+const ttsClient = new TextToSpeechClient();
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
 const HF_TOKEN = process.env.HF_TOKEN;
@@ -38,6 +40,54 @@ const getGradioClient = async () => {
     return gradioClient;
 };
 
+/**
+ * Converts translated text into base64 encoded MP3 audio using Google Cloud TTS.
+ */
+const generateTTSAudio = async (text, targetLang) => {
+    if (!text || !text.trim()) {
+        console.log('[Google TTS Debug]: Text was empty or missing.');
+        return null;
+    }
+
+    const voiceMap = {
+        'cebuano': { languageCode: 'ceb-PH', ssmlGender: 'FEMALE' },
+        'ceb': { languageCode: 'ceb-PH', ssmlGender: 'FEMALE' },
+        'tagalog': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
+        'fil': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
+        'tl': { languageCode: 'fil-PH', ssmlGender: 'FEMALE' },
+        'english': { languageCode: 'en-US', ssmlGender: 'FEMALE' },
+        'en': { languageCode: 'en-US', ssmlGender: 'FEMALE' }
+    };
+
+    const normLang = String(targetLang || '').trim().toLowerCase();
+    const voiceConfig = voiceMap[normLang] || { languageCode: 'en-US', ssmlGender: 'FEMALE' };
+
+    console.log('[Google TTS Debug] Requesting TTS for:', { text, normLang, voiceConfig });
+
+    try {
+        const request = {
+            input: { text: String(text).trim() },
+            voice: voiceConfig,
+            audioConfig: { audioEncoding: 'MP3' },
+        };
+
+        const [response] = await ttsClient.synthesizeSpeech(request);
+
+        if (response && response.audioContent) {
+            const base64Str = Buffer.from(response.audioContent).toString('base64');
+            console.log('[Google TTS Debug] Successfully generated base64 audio. Length:', base64Str.length);
+            return base64Str;
+        }
+
+        console.log('[Google TTS Debug]: response.audioContent was empty.');
+        return null;
+    } catch (error) {
+        // THIS WILL SHOW US THE EXACT ERROR IN YOUR BACKEND TERMINAL
+        console.error('[Google TTS Error Details]:', error);
+        return null;
+    }
+};
+
 const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
     try {
         const client = await getGradioClient();
@@ -67,6 +117,7 @@ export const performTranslation = async (text, sourceLang, targetLang) => {
     } catch (error) {
         console.warn('Hugging Face translation failed, falling back to Flask backend:', error.message || error);
     }
+    console.log('[DEBUG] Falling back to Flask — no TTS will be attempted');
 
     const payload = {
         input: text,
@@ -112,12 +163,9 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
         if (Array.isArray(result?.data) && result.data.length >= 2) {
             const transcript = result.data[0];
             const translation = result.data[1];
+            const audioBase64 = await generateTTSAudio(translation, targetLang);
 
-            return {
-                status: "success",
-                transcript: typeof transcript === 'string' ? transcript.trim() : '',
-                translation: typeof translation === 'string' ? translation.trim() : '',
-            };
+            return { status: 'success', transcript, translation, audioBase64 };
         }
     } catch (error) {
         console.warn('Hugging Face audio translation failed, falling back to Flask backend:', error.message || error);
@@ -129,31 +177,19 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
     form.append('source_lang', sourceLang);
 
     const response = await axios.post(`${COLAB_URL}/translate`, form, {
-        headers: {
-            ...form.getHeaders(),
-            'ngrok-skip-browser-warning': 'true'
-        },
+        headers: { ...form.getHeaders(), 'ngrok-skip-browser-warning': 'true' },
     });
 
-    console.log('DEBUG: Flask response structure:', response.data);
-    return response.data;
+    // Normalize Flask's shape to match the HF path exactly
+    const transcript = response.data.transcript ?? response.data.transcription ?? '';
+    const translation = response.data.translation ?? '';
+    const audioBase64 = await generateTTSAudio(translation, targetLang);
+
+    return { status: 'success', transcript, translation, audioBase64 };
 };
 
-/**
- * Pre-processed translation — runs the full preprocessing pipeline
- * (tokenize → corpus lookup → sentiment → canonicalize) before
- * sending the standardized text to the NLLB translation service.
- *
- * @param {string} text - Raw user input text
- * @param {string} sourceLang - Source language code
- * @param {string} targetLang - Target language code
- * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing}>}
- */
 export const performPreprocessedTranslation = async (text, sourceLang, targetLang) => {
-    // Step 1: Run the pre-processing pipeline
     const preprocessResult = await preprocessText(text, sourceLang);
-
-    // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
     const textForTranslation = preprocessResult.canonicalizedText;
     const translatedText = await performTranslation(textForTranslation, sourceLang, targetLang);
 
