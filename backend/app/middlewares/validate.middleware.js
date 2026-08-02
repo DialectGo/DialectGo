@@ -47,6 +47,7 @@ export const validateTranslateText = createValidationMiddleware(
         source_language_id: Joi.number().integer().optional().allow(null),
         target_language_id: Joi.number().integer().optional().allow(null),
         targetDialect: Joi.string().trim().optional().allow(null, ''),
+        withBreakdown: Joi.boolean().optional().default(false),
     })
 );
 
@@ -105,5 +106,18 @@ export const validateUserTranslationSubmit = createValidationMiddleware(
         targetLang: Joi.alternatives().try(Joi.string().trim(), Joi.number().integer()).required(),
         source_language_id: Joi.number().integer().optional().allow(null),
         target_language_id: Joi.number().integer().optional().allow(null),
+    })
+);
+
+export const validateCustomizeRequest = createValidationMiddleware(
+    Joi.object({
+        sourceText: Joi.string().trim().required(),
+        translatedText: Joi.string().trim().required(),
+        sourceLang: Joi.string().trim().required(),
+        targetLang: Joi.string().trim().required(),
+        tone: Joi.string().trim().optional().allow(null, ''),
+        audience: Joi.string().trim().optional().allow(null, ''),
+        context: Joi.string().trim().optional().allow(null, ''),
+        style: Joi.string().trim().optional().allow(null, ''),
     })
 );

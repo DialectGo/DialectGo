@@ -20,6 +20,8 @@ import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
 import LanguageSelector from '../../../shared/components/LanguageSelector';
 import ContributionModal from '../../../shared/components/ContributionModal'; // Added Shared Component
+import BreakdownPanel from '../../../shared/components/BreakdownPanel';
+import CustomizeModal from '../../../shared/components/CustomizeModal';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
@@ -47,7 +49,7 @@ const DIALECT_OPTIONS = {
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
   const router = useRouter();
-  
+
   // UI State
   const [modalVisible, setModalVisible] = useState(false);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
@@ -64,75 +66,81 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [currentTranslationId, setCurrentTranslationId] = useState(null);
 
   // Feedback/Contribution State
-  const [feedback, setFeedback] = useState(null); 
+  const [feedback, setFeedback] = useState(null);
   const [comment, setComment] = useState('');
   const [suggestionText, setSuggestionText] = useState('');
+
+  // LLM Meta-Layer State
+  const [breakdownData, setBreakdownData] = useState(null);
+  const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [isCustomizeLoading, setIsCustomizeLoading] = useState(false);
 
   // --- API HANDLERS ---
 
   const handleQuickRating = async (ratingValue) => {
     if (!currentTranslationId) return Alert.alert("Wait", "Translate something first.");
-    
+
     setFeedback(ratingValue === 5 ? 'like' : 'unlike');
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        await fetch(FEEDBACK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
-                translationId: currentTranslationId,
-                rating: ratingValue,
-            })
-        });
-        setFeedbackModalVisible(true); // Open modal for further input
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(FEEDBACK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          translationId: currentTranslationId,
+          rating: ratingValue,
+        })
+      });
+      setFeedbackModalVisible(true); // Open modal for further input
     } catch (err) {
-        console.error("Feedback error", err);
+      console.error("Feedback error", err);
     }
   };
 
   const handleDetailedSubmit = async () => {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` };
-        
-        // 1. Submit Feedback Comment
-        if (comment.trim()) {
-          await fetch(FEEDBACK_URL, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                  translationId: currentTranslationId,
-                  rating: feedback === 'like' ? 5 : 1,
-                  comment: comment
-              })
-          });
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` };
 
-        // 2. Submit Suggested Translation
-        if (suggestionText.trim()) {
-            await fetch(`${API_URL}/contribute`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    sourceText: inputText,
-                    userTranslation: suggestionText,
-                    sourceLang,
-                    targetLang,
-                    source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
-                    target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
-                })
-            });
-        }
+      // 1. Submit Feedback Comment
+      if (comment.trim()) {
+        await fetch(FEEDBACK_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            translationId: currentTranslationId,
+            rating: feedback === 'like' ? 5 : 1,
+            comment: comment
+          })
+        });
+      }
 
-        Alert.alert("Salamat!", "Nakatulong ka sa pag-improve ng DialectoGo.");
-        setFeedbackModalVisible(false);
-        setComment('');
-        setSuggestionText('');
+      // 2. Submit Suggested Translation
+      if (suggestionText.trim()) {
+        await fetch(`${API_URL}/contribute`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            sourceText: inputText,
+            userTranslation: suggestionText,
+            sourceLang,
+            targetLang,
+            source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
+            target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
+          })
+        });
+      }
+
+      Alert.alert("Salamat!", "Nakatulong ka sa pag-improve ng DialectoGo.");
+      setFeedbackModalVisible(false);
+      setComment('');
+      setSuggestionText('');
     } catch (err) {
-        Alert.alert("Error", "Hindi maipadala ang feedback.");
+      Alert.alert("Error", "Hindi maipadala ang feedback.");
     }
   };
 
@@ -140,12 +148,14 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     if (!text.trim()) {
       setTranslation('');
       setError(false);
+      setBreakdownData(null);
       return;
     }
 
     setIsLoading(true);
     setFeedback(null);
     setError(false);
+    setBreakdownData(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -159,10 +169,10 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         },
         body: JSON.stringify({
           sourceText: text,
-          sourceLang, 
+          sourceLang,
           targetLang,
           targetDialect,
-          source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id, 
+          source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
           target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
         }),
       });
@@ -173,6 +183,9 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setTranslation(data.translatedText?.trim() || "");
         setCurrentTranslationId(data.historyRecord?.id || data.historyId);
+        if (data.breakdown) {
+          setBreakdownData(data.breakdown);
+        }
       } else {
         setError(true);
       }
@@ -183,11 +196,88 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     }
   };
 
+  const handleShowBreakdown = async () => {
+    if (breakdownData) return; // Already loaded
+
+    setIsBreakdownLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          sourceText: inputText,
+          sourceLang,
+          targetLang,
+          targetDialect,
+          source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
+          target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
+          withBreakdown: true // Trigger the Meta-Layer
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.breakdown) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setBreakdownData(data.breakdown);
+      }
+    } catch (err) {
+      console.error("Failed to fetch breakdown", err);
+    } finally {
+      setIsBreakdownLoading(false);
+    }
+  };
+
+  const handleCustomizeSubmit = async (params) => {
+    setIsCustomizeLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`${API_URL}/customize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          sourceText: inputText,
+          translatedText: translation,
+          sourceLang,
+          targetLang,
+          ...params
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setTranslation(data.customizedText?.trim());
+        setShowCustomize(false);
+        // We could also set breakdownData here to reflect the new text, but we'd need a new breakdown.
+        // For now, we clear the old breakdown.
+        setBreakdownData(null);
+      } else {
+        Alert.alert("Error", data.message || "Failed to customize translation.");
+      }
+    } catch (err) {
+      console.error("Customize error", err);
+      Alert.alert("Error", "Could not reach customization service.");
+    } finally {
+      setIsCustomizeLoading(false);
+    }
+  };
+
   // Debounce Effect
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (inputText) handleTranslate(inputText);
-    }, 1000); 
+    }, 1000);
     return () => clearTimeout(delayDebounceFn);
   }, [inputText, targetLang, sourceLang]);
 
@@ -208,24 +298,24 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <TopBar onMenuPress={() => {}} />
+      <TopBar onMenuPress={() => { }} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={styles.content}>
           <View style={styles.headerRow}>
-              <Text style={styles.headerTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
-              <TouchableOpacity onPress={() => router.push('/History/History')} style={{ padding: 8 }}>
-                <Ionicons name="time-outline" size={26} color="#FBBF24" />
-              </TouchableOpacity>
+            <Text style={styles.headerTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
+            <TouchableOpacity onPress={() => router.push('/History/History')} style={{ padding: 8 }}>
+              <Ionicons name="time-outline" size={26} color="#FBBF24" />
+            </TouchableOpacity>
           </View>
           <Text style={styles.subHeader}>TEXT MODE</Text>
 
-          <LanguageSelector 
+          <LanguageSelector
             sourceLang={sourceLang} targetLang={targetLang}
             onSwap={() => {
               const temp = sourceLang; setSourceLang(targetLang); setTargetLang(temp);
               setTargetDialect(null);
-            }} 
+            }}
             onSelectSource={() => { setSelectingFor('source'); setModalVisible(true); }}
             onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
             translateIcon={translateIcon}
@@ -289,10 +379,10 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
             <View style={styles.cardHeader}>
-               <Text style={styles.inputLabel}>{sourceLang.toUpperCase()}</Text>
-               <TouchableOpacity onPress={() => setInputText('')}>
-                 <Ionicons name="close-circle" size={20} color="#D1D5DB" />
-               </TouchableOpacity>
+              <Text style={styles.inputLabel}>{sourceLang.toUpperCase()}</Text>
+              <TouchableOpacity onPress={() => setInputText('')}>
+                <Ionicons name="close-circle" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
             </View>
             <TextInput
               style={styles.mainInput}
@@ -326,9 +416,71 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
                   <ActivityIndicator size="small" color="#FBBF24" />
                 </View>
               ) : (
-                <Text style={styles.resultText}>{translation || "Waiting..."}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resultText}>{translation || "Waiting..."}</Text>
+                  {/* Meta-Layer Action Row */}
+                  {translation ? (
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#FEF3C7',
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          borderRadius: 16,
+                          gap: 4,
+                          borderWidth: 1,
+                          borderColor: '#FDE68A',
+                        }}
+                        onPress={handleShowBreakdown}
+                        disabled={isBreakdownLoading}
+                      >
+                        {isBreakdownLoading ? (
+                          <ActivityIndicator size="small" color="#D97706" />
+                        ) : (
+                          <Ionicons name="analytics-outline" size={16} color="#D97706" />
+                        )}
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
+                          {isBreakdownLoading ? 'Analyzing...' : 'Breakdown'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor: '#F5F3FF',
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          borderRadius: 16,
+                          gap: 4,
+                          borderWidth: 1,
+                          borderColor: '#E9D5FF',
+                        }}
+                        onPress={() => setShowCustomize(true)}
+                      >
+                        <Ionicons name="color-wand-outline" size={16} color="#7C3AED" />
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>Customize</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
               )}
             </View>
+          )}
+
+          {/* BREAKDOWN PANEL */}
+          {breakdownData && !isLoading && (
+            <BreakdownPanel
+              breakdown={breakdownData}
+              isLoading={isBreakdownLoading}
+              onSelectAlternative={(text) => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setTranslation(text);
+                setBreakdownData(null); // Clear breakdown since text changed
+              }}
+            />
           )}
 
           {/* FEEDBACK ICONS */}
@@ -351,7 +503,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       </ScrollView>
 
       {/* SHARED CONTRIBUTION MODAL */}
-      <ContributionModal 
+      <ContributionModal
         visible={feedbackModalVisible}
         onClose={() => setFeedbackModalVisible(false)}
         onSubmit={handleDetailedSubmit}
@@ -361,6 +513,14 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         setSuggestedTranslation={setSuggestionText}
       />
 
+      {/* CUSTOMIZE MODAL */}
+      <CustomizeModal
+        visible={showCustomize}
+        onClose={() => setShowCustomize(false)}
+        onSubmit={handleCustomizeSubmit}
+        isLoading={isCustomizeLoading}
+      />
+
       {/* LANGUAGE PICKER MODAL */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -368,15 +528,15 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>Select Language</Text>
             {LANGUAGES.map((item) => (
-               <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
-                 <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
-                   {item.name}
-                 </Text>
-                 {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
-               </TouchableOpacity>
+              <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
+                <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
+                  {item.name}
+                </Text>
+                {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
+              </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}>
-               <Text style={styles.closeSheetText}>Cancel</Text>
+              <Text style={styles.closeSheetText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>

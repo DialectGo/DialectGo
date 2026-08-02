@@ -1,8 +1,10 @@
 import axios from 'axios';
 import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
-
+import { ReportModel } from '../models/report.model.js';
 import * as TranslationService from '../services/translation.service.js';
+import * as MetaLayerService from '../services/metaLayer.service.js';
+import { synthesizeSpeech } from '../services/tts.service.js';
 
 export const translateImage = async (req, res, next) => {
     try {
@@ -85,14 +87,22 @@ export const translateAudio = async (req, res, next) => {
             }
         }
 
+        // Step: Synthesize the translated text into speech audio (Speech-to-Speech)
+        let audioBase64 = null;
+        try {
+            audioBase64 = await synthesizeSpeech(finalTranslation, targetLang);
+        } catch (ttsErr) {
+            console.warn('[translateAudio] TTS synthesis failed (non-fatal):', ttsErr.message);
+        }
+
         // Return the gathered ID to the mobile app
         res.status(200).json({
             success: true,
             translation: finalTranslation,
             transcript: result.transcript,
-            audioBase64: result.audioBase64,   // <-- add this line
             historyId: savedRecordId,
-            preprocessing: preprocessingMeta
+            preprocessing: preprocessingMeta,
+            audioBase64
         });
     } catch (err) {
         console.error("Translate Audio Controller Error:", err);
@@ -102,13 +112,18 @@ export const translateAudio = async (req, res, next) => {
 
 export const translateText = async (req, res, next) => {
     try {
-        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id, targetDialect } = req.body;
+        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
 
         // Ensure sourceText is a clean string
         if (!sourceText) return res.status(400).json({ message: "No text provided" });
 
-        // Run through the pre-processing pipeline before translation
-        const result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null);
+        // Choose pipeline: with or without LLM breakdown
+        let result;
+        if (withBreakdown) {
+            result = await TranslationService.performTranslationWithBreakdown(sourceText, sourceLang, targetLang, targetDialect || null);
+        } else {
+            result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null);
+        }
 
         // Log the result here to verify if it's "clean" before saving to Supabase
         console.log("Raw AI Output:", result.translatedText);
@@ -121,12 +136,33 @@ export const translateText = async (req, res, next) => {
         });
 
         if (error) throw error;
+
+        // If breakdown was requested, save the report to Supabase
+        if (withBreakdown && result.breakdown) {
+            try {
+                await ReportModel.saveReport(req.user.id, {
+                    translationId: data?.[0]?.id || null,
+                    sourceText,
+                    translatedText: result.translatedText,
+                    sourceLang,
+                    targetLang,
+                    targetDialect: targetDialect || null,
+                    breakdown: result.breakdown,
+                    sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
+                });
+            } catch (reportErr) {
+                console.warn('[translateText] Failed to save breakdown report:', reportErr.message);
+                // Non-fatal — continue with the response
+            }
+        }
+
         res.status(200).json({
             success: true,
             translatedText: result.translatedText,
             historyRecord: data?.[0],
             preprocessing: result.preprocessing,
-            dialectization: result.dialectization
+            dialectization: result.dialectization,
+            breakdown: result.breakdown || null,
         });
     } catch (err) { next(err); }
 };
@@ -244,6 +280,50 @@ export const submitUserTranslation = async (req, res, next) => {
         console.error('User Translation Submission Error:', error);
         return res.status(500).json({ success: false, message: 'Failed to submit translation: ' + error.message });
     }
+};
+
+// LLM Meta-Layer: Customize an existing translation with tone/audience/context
+export const customizeTranslation = async (req, res, next) => {
+    try {
+        const { sourceText, translatedText, sourceLang, targetLang, tone, audience, context, style } = req.body;
+        const userId = req.user?.id;
+
+        if (!sourceText || !translatedText) {
+            return res.status(400).json({ success: false, message: 'sourceText and translatedText are required' });
+        }
+
+        const customized = await MetaLayerService.customizeTranslation({
+            sourceText, translatedText, sourceLang, targetLang,
+            tone, audience, context, style,
+        });
+
+        // Save the customization report
+        if (userId) {
+            try {
+                await ReportModel.saveReport(userId, {
+                    translationId: null,
+                    sourceText,
+                    translatedText: customized.customizedText,
+                    sourceLang,
+                    targetLang,
+                    breakdown: customized,
+                    sentimentAnalysis: {},
+                });
+            } catch (reportErr) {
+                console.warn('[customizeTranslation] Failed to save report:', reportErr.message);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            customizedText: customized.customizedText,
+            explanation: customized.explanation,
+            toneApplied: customized.toneApplied,
+            audienceApplied: customized.audienceApplied,
+            changes: customized.changes || [],
+            metadata: customized.metadata,
+        });
+    } catch (err) { next(err); }
 };
 
 export const adminGetAllHistory = async (req, res, next) => {

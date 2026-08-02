@@ -33,7 +33,7 @@
     "express-rate-limit": "^8.4.1",
     "form-data": "^4.0.5",
     "google-auth-library": "^10.9.1",
-    "google-tts-api": "^2.0.2",
+    "groq-sdk": "^1.4.0",
     "helmet": "^8.1.0",
     "https-proxy-agent": "^9.1.0",
     "joi": "^18.0.2",

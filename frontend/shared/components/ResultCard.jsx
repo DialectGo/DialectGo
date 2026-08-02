@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Surface, Text } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function ResultCard({ translatedText, targetLang, pronounceIcon }) {
+export default function ResultCard({ translatedText, targetLang, pronounceIcon, onShowBreakdown, onCustomize, isBreakdownLoading }) {
   return (
     <Surface style={styles.card} elevation={0}>
       <View style={styles.header}>
@@ -14,6 +15,39 @@ export default function ResultCard({ translatedText, targetLang, pronounceIcon }
       </View>
       
       <View style={styles.footer}>
+        <View style={styles.actionRow}>
+          {/* Breakdown button */}
+          {onShowBreakdown && (
+            <TouchableOpacity
+              style={styles.breakdownBtn}
+              onPress={onShowBreakdown}
+              disabled={isBreakdownLoading}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="analytics-outline"
+                size={16}
+                color="#D97706"
+              />
+              <Text style={styles.breakdownBtnText}>
+                {isBreakdownLoading ? 'Analyzing...' : 'Breakdown'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Customize button */}
+          {onCustomize && (
+            <TouchableOpacity
+              style={styles.customizeBtn}
+              onPress={onCustomize}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="color-wand-outline" size={16} color="#7C3AED" />
+              <Text style={styles.customizeBtnText}>Customize</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <TouchableOpacity style={styles.pronounceBtn}>
            <Image source={pronounceIcon} style={styles.icon} />
         </TouchableOpacity>
@@ -44,6 +78,48 @@ const styles = StyleSheet.create({
     color: '#000000',
     textAlign: 'left' 
   },
-  footer: { alignItems: 'flex-end', marginTop: 10, marginRight: 10},
-  icon: { width: 20, height: 20, tintColor: '#000' }
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  breakdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  breakdownBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#D97706',
+  },
+  customizeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F3FF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+  },
+  customizeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7C3AED',
+  },
+  pronounceBtn: {},
+  icon: { width: 20, height: 20, tintColor: '#000' },
 });
