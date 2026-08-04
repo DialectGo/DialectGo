@@ -32,7 +32,7 @@ export const listSubmissions = async (req, res, next) => {
  */
 export const getSubmission = async (req, res, next) => {
     try {
-        const { data, error } = await WikiService.getDetail(req.params.id, req.user?.id);
+        const { data, error } = await WikiService.getDetail(req.params.id, req.user?.id, req.token);
 
         if (error) {
             return res.status(404).json({ success: false, message: 'Submission not found' });

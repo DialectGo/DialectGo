@@ -6,7 +6,7 @@ import { NotificationService } from '../services/notification.service.js';
  */
 export const getUserNotifications = async (req, res, next) => {
     try {
-        const { data, error } = await NotificationService.getUserNotifications(req.user.id);
+        const { data, error } = await NotificationService.getUserNotifications(req.token, req.user.id);
         
         if (error) {
             return res.status(500).json({ success: false, message: error.message });
@@ -24,7 +24,7 @@ export const getUserNotifications = async (req, res, next) => {
  */
 export const markAsRead = async (req, res, next) => {
     try {
-        const { error } = await NotificationService.markAsRead(req.params.id, req.user.id);
+        const { error } = await NotificationService.markAsRead(req.token, req.params.id, req.user.id);
         
         if (error) {
             return res.status(500).json({ success: false, message: error.message });
@@ -42,7 +42,7 @@ export const markAsRead = async (req, res, next) => {
  */
 export const markAllAsRead = async (req, res, next) => {
     try {
-        const { error } = await NotificationService.markAllAsRead(req.user.id);
+        const { error } = await NotificationService.markAllAsRead(req.token, req.user.id);
         
         if (error) {
             return res.status(500).json({ success: false, message: error.message });

@@ -1,11 +1,12 @@
-import { supabaseAdmin } from '../config/db.js';
+import { getAuthClient } from '../config/db.js';
 
 export const ActivityModel = {
     /**
      * Get user's Wiki Submissions (Posts)
      */
-    getUserPosts: async (userId, limit = 50) => {
-        const { data, error } = await supabaseAdmin
+    getUserPosts: async (token, userId, limit = 50) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('dialect_submissions')
             .select('*')
             .eq('user_id', userId)
@@ -17,8 +18,9 @@ export const ActivityModel = {
     /**
      * Get user's Wiki Comments
      */
-    getUserComments: async (userId, limit = 50) => {
-        const { data, error } = await supabaseAdmin
+    getUserComments: async (token, userId, limit = 50) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('wiki_comments')
             .select('id, submission_id, content, created_at, dialect_submissions(source_term)')
             .eq('user_id', userId)
@@ -30,8 +32,9 @@ export const ActivityModel = {
     /**
      * Get user's Bookmarked Wiki Posts
      */
-    getUserBookmarks: async (userId, limit = 50) => {
-        const { data, error } = await supabaseAdmin
+    getUserBookmarks: async (token, userId, limit = 50) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('wiki_bookmarks')
             .select('created_at, submission_id, dialect_submissions(*)')
             .eq('user_id', userId)
@@ -43,8 +46,9 @@ export const ActivityModel = {
     /**
      * Get user's Translation Suggestions
      */
-    getUserTranslations: async (userId, limit = 50) => {
-        const { data, error } = await supabaseAdmin
+    getUserTranslations: async (token, userId, limit = 50) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('user_recommended_translations')
             .select('*')
             .eq('user_id', userId)

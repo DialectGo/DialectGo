@@ -29,7 +29,7 @@ export const WikiService = {
     /**
      * Get a single submission with the current user's vote and bookmark state.
      */
-    getDetail: async (submissionId, userId) => {
+    getDetail: async (submissionId, userId, token) => {
         const { data: submission, error } = await WikiModel.getSubmissionById(submissionId);
 
         if (error || !submission) {
@@ -39,11 +39,11 @@ export const WikiService = {
         // Fetch the user's current vote on this submission
         let userVote = null;
         let bookmarked = false;
-        if (userId) {
+        if (userId && token) {
             const { data: voteData } = await WikiModel.getUserVote(submissionId, userId);
             userVote = voteData?.vote_type || null;
 
-            const { bookmarked: isBookmarked } = await WikiModel.checkBookmark(userId, submissionId);
+            const { bookmarked: isBookmarked } = await WikiModel.checkBookmark(token, userId, submissionId);
             bookmarked = isBookmarked;
         }
 

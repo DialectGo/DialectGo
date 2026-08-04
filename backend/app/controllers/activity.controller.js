@@ -6,7 +6,7 @@ import { ActivityService } from '../services/activity.service.js';
  */
 export const getUserActivities = async (req, res, next) => {
     try {
-        const { data, error } = await ActivityService.getUserActivities(req.user.id);
+        const { data, error } = await ActivityService.getUserActivities(req.token, req.user.id);
         
         if (error) {
             return res.status(500).json({ success: false, message: error.message });

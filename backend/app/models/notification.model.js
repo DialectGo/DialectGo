@@ -1,11 +1,12 @@
-import { supabaseAdmin } from '../config/db.js';
+import { getAuthClient } from '../config/db.js';
 
 export const NotificationModel = {
     /**
      * Get all notifications for a specific user, sorted by newest first.
      */
-    getUserNotifications: async (userId, limit = 50) => {
-        const { data, error } = await supabaseAdmin
+    getUserNotifications: async (token, userId, limit = 50) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('notifications')
             .select('*')
             .eq('user_id', userId)
@@ -18,8 +19,9 @@ export const NotificationModel = {
     /**
      * Mark a specific notification as read.
      */
-    markAsRead: async (notificationId, userId) => {
-        const { error } = await supabaseAdmin
+    markAsRead: async (token, notificationId, userId) => {
+        const client = getAuthClient(token);
+        const { error } = await client
             .from('notifications')
             .update({ is_read: true })
             .eq('id', notificationId)
@@ -31,8 +33,9 @@ export const NotificationModel = {
     /**
      * Mark all notifications for a user as read.
      */
-    markAllAsRead: async (userId) => {
-        const { error } = await supabaseAdmin
+    markAllAsRead: async (token, userId) => {
+        const client = getAuthClient(token);
+        const { error } = await client
             .from('notifications')
             .update({ is_read: true })
             .eq('user_id', userId)

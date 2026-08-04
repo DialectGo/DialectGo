@@ -127,6 +127,10 @@ export default function SubmissionDetail() {
 
       if (json.success) {
         setBookmarked(json.bookmarked);
+        Alert.alert(
+          json.bookmarked ? 'Saved!' : 'Removed',
+          json.bookmarked ? 'This post has been added to your bookmarks.' : 'This post was removed from your bookmarks.'
+        );
       }
     } catch (err) {
       console.error('[SubmissionDetail] Bookmark error:', err);

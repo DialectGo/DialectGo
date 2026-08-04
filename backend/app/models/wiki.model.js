@@ -349,8 +349,9 @@ export const WikiModel = {
     /**
      * Check if the user has bookmarked a submission.
      */
-    checkBookmark: async (userId, submissionId) => {
-        const { data, error } = await supabase
+    checkBookmark: async (token, userId, submissionId) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('wiki_bookmarks')
             .select('id')
             .eq('user_id', userId)
@@ -364,8 +365,9 @@ export const WikiModel = {
      * Toggle bookmark: add if not exists, remove if exists.
      */
     toggleBookmark: async (token, userId, submissionId) => {
+        const client = getAuthClient(token);
         // Check if already bookmarked
-        const { data: existing } = await supabase
+        const { data: existing } = await client
             .from('wiki_bookmarks')
             .select('id')
             .eq('user_id', userId)
@@ -374,7 +376,6 @@ export const WikiModel = {
 
         if (existing) {
             // Remove bookmark
-            const client = getAuthClient(token);
             const { error } = await client
                 .from('wiki_bookmarks')
                 .delete()
@@ -382,7 +383,6 @@ export const WikiModel = {
             return { bookmarked: false, error };
         } else {
             // Add bookmark
-            const client = getAuthClient(token);
             const { error } = await client
                 .from('wiki_bookmarks')
                 .insert([{ user_id: userId, submission_id: submissionId }]);
@@ -393,8 +393,9 @@ export const WikiModel = {
     /**
      * Get all bookmarked submissions for a user.
      */
-    getUserBookmarks: async (userId) => {
-        const { data, error } = await supabase
+    getUserBookmarks: async (token, userId) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('wiki_bookmarks')
             .select('submission_id')
             .eq('user_id', userId);

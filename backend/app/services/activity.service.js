@@ -1,13 +1,13 @@
 import { ActivityModel } from '../models/activity.model.js';
 
 export const ActivityService = {
-    getUserActivities: async (userId) => {
+    getUserActivities: async (token, userId) => {
         // Fetch all activities concurrently for better performance
         const [postsResult, commentsResult, bookmarksResult, translationsResult] = await Promise.all([
-            ActivityModel.getUserPosts(userId, 20),
-            ActivityModel.getUserComments(userId, 20),
-            ActivityModel.getUserBookmarks(userId, 20),
-            ActivityModel.getUserTranslations(userId, 20)
+            ActivityModel.getUserPosts(token, userId, 20),
+            ActivityModel.getUserComments(token, userId, 20),
+            ActivityModel.getUserBookmarks(token, userId, 20),
+            ActivityModel.getUserTranslations(token, userId, 20)
         ]);
 
         // If any of these failed critically, we could throw an error, 

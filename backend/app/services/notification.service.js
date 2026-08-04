@@ -23,15 +23,15 @@ export const notifyAllAdmins = async ({ type, title, message, metadata = {} }) =
 };
 
 export const NotificationService = {
-    getUserNotifications: async (userId) => {
-        return await NotificationModel.getUserNotifications(userId);
+    getUserNotifications: async (token, userId) => {
+        return await NotificationModel.getUserNotifications(token, userId, 50);
     },
 
-    markAsRead: async (notificationId, userId) => {
-        return await NotificationModel.markAsRead(notificationId, userId);
+    markAsRead: async (token, notificationId, userId) => {
+        return await NotificationModel.markAsRead(token, notificationId, userId);
     },
 
-    markAllAsRead: async (userId) => {
-        return await NotificationModel.markAllAsRead(userId);
+    markAllAsRead: async (token, userId) => {
+        return await NotificationModel.markAllAsRead(token, userId);
     }
 };
