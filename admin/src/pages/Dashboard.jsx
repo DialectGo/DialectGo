@@ -1,150 +1,73 @@
-// src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import '../assets/css/sidebar.css';
-import ActiveAdmins from '../components/ActiveAdmins';
-import { apiFetch } from '../services/apiService'; 
-
-const INITIAL_STATS = [
-  { title: 'Active System Anomalies', value: '—', color: '#ef4444' },
-  { title: 'Total Activity Logs',     value: '—', color: '#1a1a1a' },
-  { title: 'UAM Telemetry Status',    value: '—', color: '#22c55e' },
-];
+import { apiFetch } from '../services/apiService';
 
 const Dashboard = () => {
-  const [stats, setStats]           = useState(INITIAL_STATS);
-  const [recentLogs, setRecentLogs] = useState([]);
-  const [isLoading, setIsLoading]   = useState(true);
-  const [error, setError]           = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function loadDashboardMetrics() {
+    const loadStats = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        // apiFetch automatically attaches Authorization: Bearer <token>
-        // and redirects to /login if the token is missing or expired
-        const payload = await apiFetch('/api/dashboard/security');
-
-        const activeThreats = payload.data.anomalies.filter(
-          (a) => !a.is_resolved
-        ).length;
-
-        setStats([
-          { title: 'Active System Anomalies', value: activeThreats.toString(),                        color: '#ef4444' },
-          { title: 'Total Activity Logs',     value: payload.data.recentLogs.length.toString(),       color: '#1a1a1a' },
-          { title: 'UAM Telemetry Status',    value: 'Healthy',                                       color: '#22c55e' },
-        ]);
-
-        setRecentLogs(payload.data.recentLogs);
+        setLoading(true);
+        const payload = await apiFetch('/api/admin/dashboard');
+        setStats(payload.data);
       } catch (err) {
-        // apiFetch already handles 401 redirect — this catches everything else
         setError(err.message);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    }
-
-    loadDashboardMetrics();
+    };
+    loadStats();
   }, []);
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="page-content" style={{ padding: '24px', color: '#64748b' }}>
-        Loading dashboard...
+      <div className="empty-state loading-pulse">
+        <div className="empty-icon">📊</div>
+        <div className="empty-text">Loading dashboard metrics...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="page-content" style={{ padding: '24px', color: '#ef4444' }}>
-        Error: {error}
+      <div className="empty-state">
+        <div className="empty-icon">⚠️</div>
+        <div className="empty-text" style={{ color: 'var(--danger)' }}>{error}</div>
       </div>
     );
   }
 
+  const cards = [
+    { label: 'Total Users',            value: stats?.users?.total ?? 0,            icon: '👥', color: 'var(--info)',    bg: 'var(--info-bg)' },
+    { label: 'Active Users',           value: stats?.users?.active ?? 0,           icon: '✅', color: 'var(--success)', bg: 'var(--success-bg)' },
+    { label: 'Admin Accounts',         value: stats?.users?.admins ?? 0,           icon: '🛡️', color: 'var(--accent)',  bg: 'var(--accent-glow)' },
+    { label: 'Dictionary Entries',     value: stats?.dictionary?.total ?? 0,       icon: '📖', color: 'var(--info)',    bg: 'var(--info-bg)' },
+    { label: 'Corpus Entries',         value: stats?.corpus?.total ?? 0,           icon: '🗃️', color: 'var(--warning)', bg: 'var(--warning-bg)' },
+    { label: 'Wiki Submissions',       value: stats?.wiki?.total ?? 0,             icon: '📝', color: 'var(--info)',    bg: 'var(--info-bg)' },
+    { label: 'Pending Submissions',    value: stats?.wiki?.pending ?? 0,           icon: '⏳', color: 'var(--warning)', bg: 'var(--warning-bg)' },
+    { label: 'Verified Submissions',   value: stats?.wiki?.verified ?? 0,          icon: '✓',  color: 'var(--success)', bg: 'var(--success-bg)' },
+    { label: 'Translation Suggestions',value: stats?.translations?.total ?? 0,     icon: '🌍', color: 'var(--info)',    bg: 'var(--info-bg)' },
+    { label: 'Pending Translations',   value: stats?.translations?.pending ?? 0,   icon: '⏳', color: 'var(--warning)', bg: 'var(--warning-bg)' },
+    { label: 'Approved Translations',  value: stats?.translations?.approved ?? 0,  icon: '✅', color: 'var(--success)', bg: 'var(--success-bg)' },
+  ];
+
   return (
-    <div className="page-content" style={{ padding: 0 }}>
-      {/* Stats Row */}
-      <div className="stats-grid" style={{ margin: '0 0 24px 0' }}>
-        {stats.map((stat) => (
-          <div key={stat.title} className="stat-card">
-            <span className="stat-title">{stat.title}</span>
-            <h3
-              className="stat-value"
-              style={{ borderLeft: `4px solid ${stat.color}` }}
-            >
-              {stat.value}
-            </h3>
+    <div>
+      <div className="stats-grid">
+        {cards.map(card => (
+          <div key={card.label} className="stat-card">
+            <div className="stat-icon" style={{ background: card.bg, color: card.color }}>
+              {card.icon}
+            </div>
+            <div>
+              <div className="stat-label">{card.label}</div>
+              <div className="stat-value">{card.value.toLocaleString()}</div>
+            </div>
           </div>
         ))}
       </div>
-
-      {/* Logs Table */}
-      <section className="main-card">
-        <div className="card-header">
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
-            Recent Administrative Logs (UAM Trail)
-          </h3>
-        </div>
-
-        <div className="table-wrapper" style={{ marginTop: '15px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '12px', color: '#64748b' }}>Audited Event</th>
-                <th style={{ padding: '12px', color: '#64748b' }}>Origin Location</th>
-                <th style={{ padding: '12px', color: '#64748b' }}>Timestamp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentLogs.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="3"
-                    style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}
-                  >
-                    No logs found.
-                  </td>
-                </tr>
-              ) : (
-                recentLogs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '14px 12px' }}>
-                      <code
-                        style={{
-                          backgroundColor: '#f1f5f9',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontFamily: 'monospace',
-                          color: '#0f172a',
-                        }}
-                      >
-                        {log.action_type}
-                      </code>
-                    </td>
-                    <td style={{ padding: '14px 12px', color: '#334155' }}>
-                      {log.city_name}, {log.country_code}
-                    </td>
-                    <td style={{ padding: '14px 12px', color: '#64748b' }}>
-                      {new Date(log.created_at).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div>
-          <ActiveAdmins />
-        </div>
-      </section>
     </div>
   );
 };

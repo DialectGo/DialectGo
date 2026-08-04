@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { authService } from '../services/authService';
 
 const Login = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   async function handleLogin() {
     try {
@@ -24,12 +24,8 @@ const Login = ({ onLoginSuccess }) => {
         throw new Error(data.message || 'Login failed.');
       }
 
-      // Save the JWT token
       authService.setToken(data.token);
-
-      // Tell App.jsx we're authenticated — no page reload needed
       onLoginSuccess();
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,39 +34,65 @@ const Login = ({ onLoginSuccess }) => {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <div style={{ width: 360, padding: 32, border: '1px solid #e2e8f0', borderRadius: 12 }}>
-        <h2 style={{ marginBottom: 24 }}>Admin Login</h2>
+    <div className="login-container">
+      <div className="login-card">
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: '2rem', marginBottom: 8 }}>🚀</div>
+          <h2 className="login-title">DialectGo Admin</h2>
+          <p className="login-subtitle">Sign in to manage your platform</p>
+        </div>
 
         {error && (
-          <p style={{ color: '#ef4444', marginBottom: 16 }}>{error}</p>
+          <div style={{
+            background: 'var(--danger-bg)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            color: 'var(--danger)',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.85rem',
+            marginBottom: 16,
+          }}>
+            {error}
+          </div>
         )}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: '100%', padding: 10, marginBottom: 12, borderRadius: 6, border: '1px solid #cbd5e1' }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-          style={{ width: '100%', padding: 10, marginBottom: 20, borderRadius: 6, border: '1px solid #cbd5e1' }}
-        />
+        <div className="form-group">
+          <label className="form-label">Email</label>
+          <input
+            type="email"
+            className="input"
+            placeholder="admin@dialectgo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Password</label>
+          <input
+            type="password"
+            className="input"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+          />
+        </div>
+
         <button
+          className="btn btn-primary"
           onClick={handleLogin}
           disabled={isLoading}
           style={{
-            width: '100%', padding: 12, backgroundColor: '#1a1a1a',
-            color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer',
+            width: '100%',
+            justifyContent: 'center',
+            padding: '12px',
+            marginTop: 8,
+            fontSize: '0.92rem',
             opacity: isLoading ? 0.7 : 1,
           }}
         >
-          {isLoading ? 'Logging in...' : 'Login'}
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
       </div>
     </div>

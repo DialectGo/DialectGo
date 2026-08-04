@@ -23,6 +23,7 @@ import datasetRoutes from './routes/dataset.route.js';
 import wikiRoutes from './routes/wiki.route.js';
 import notificationRoutes from './routes/notification.route.js';
 import activityRoutes from './routes/activity.route.js';
+import adminRoutes from './routes/admin.route.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -60,6 +61,7 @@ app.use('/api/wiki', wikiRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api', securityRouter);
+app.use('/api/admin', adminRoutes);
 
 // ─── Error Handler (MUST be last) ────────────────────────────────────────────
 
