@@ -208,8 +208,8 @@ export const WikiModel = {
      * and update the submission record.
      */
     recalculateUpvotes: async (submissionId) => {
-        // Sum all votes for this submission (must use Admin to read all votes & update)
-        const { data: votes, error: fetchError } = await supabaseAdmin
+        // Sum all votes for this submission
+        const { data: votes, error: fetchError } = await supabase
             .from('submission_votes')
             .select('vote_type')
             .eq('submission_id', submissionId);
@@ -221,7 +221,7 @@ export const WikiModel = {
 
         const netVotes = (votes || []).reduce((sum, v) => sum + v.vote_type, 0);
 
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabase
             .from('dialect_submissions')
             .update({ upvotes: netVotes })
             .eq('id', submissionId);
@@ -238,8 +238,8 @@ export const WikiModel = {
      * Copies the term data and marks the submission as 'verified'.
      */
     promoteToCorpus: async (submissionId) => {
-        // Fetch the submission first using Admin to bypass any RLS
-        const { data: submission, error: fetchError } = await supabaseAdmin
+        // Fetch the submission first
+        const { data: submission, error: fetchError } = await supabase
             .from('dialect_submissions')
             .select('*')
             .eq('id', submissionId)
@@ -254,7 +254,7 @@ export const WikiModel = {
         if (submission.type === 'Question') {
             console.log(`[WikiModel] Skipping corpus promotion for Question "${submission.source_term}"`);
             // Still mark as verified
-            const { error: updateError } = await supabaseAdmin
+            const { error: updateError } = await supabase
                 .from('dialect_submissions')
                 .update({ status: 'verified' })
                 .eq('id', submissionId);
@@ -281,7 +281,7 @@ export const WikiModel = {
         }
 
         // Mark submission as verified
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await supabase
             .from('dialect_submissions')
             .update({ status: 'verified' })
             .eq('id', submissionId);
