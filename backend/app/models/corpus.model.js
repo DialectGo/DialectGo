@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../config/db.js';
+import { supabase } from '../config/db.js';
 
 /**
  * Data access layer for the dialect_corpus table.
@@ -20,7 +20,7 @@ export const CorpusModel = {
             return { data: [], error: null };
         }
 
-        let query = supabaseAdmin
+        let query = supabase
             .from('dialect_corpus')
             .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status')
             .in('source_text', normalizedTerms)
@@ -50,7 +50,7 @@ export const CorpusModel = {
      * @returns {Promise<{data: string[], error: object|null}>}
      */
     getMultiWordPhrases: async (sourceLang = null) => {
-        let query = supabaseAdmin
+        let query = supabase
             .from('dialect_corpus')
             .select('source_text')
             .like('source_text', '% %')  // Contains at least one space
@@ -88,7 +88,7 @@ export const CorpusModel = {
             return { data: [], error: null };
         }
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('dialect_corpus')
             .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status')
             .in('standard_term', normalizedTerms)
@@ -112,7 +112,7 @@ export const CorpusModel = {
      * @returns {Promise<{data: object|null, error: object|null}>}
      */
     getByTermAndScore: async (term, sentimentScore) => {
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('dialect_corpus')
             .select('*')
             .eq('source_text', term.toLowerCase())

@@ -50,7 +50,7 @@ export const WikiModel = {
         // Fetch profiles separately
         if (data && data.length > 0) {
             const userIds = [...new Set(data.map(item => item.user_id))];
-            const { data: profiles } = await supabaseAdmin
+            const { data: profiles } = await supabase
                 .from('profiles')
                 .select('id, username, first_name, last_name')
                 .in('id', userIds);
@@ -75,7 +75,7 @@ export const WikiModel = {
      */
     getSubmissionById: async (id) => {
         // Increment views before fetching
-        const { error: rpcError } = await supabaseAdmin
+        const { error: rpcError } = await supabase
             .rpc('increment_wiki_views', { row_id: id });
         if (rpcError) {
             // Silently fail if RPC doesn't exist yet
@@ -93,7 +93,7 @@ export const WikiModel = {
         }
 
         if (data) {
-            const { data: profile } = await supabaseAdmin
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('username, first_name, last_name')
                 .eq('id', data.user_id)
@@ -208,7 +208,7 @@ export const WikiModel = {
      * and update the submission record.
      */
     recalculateUpvotes: async (submissionId) => {
-        // Sum all votes for this submission
+        // Sum all votes for this submission (must use Admin to read all votes & update)
         const { data: votes, error: fetchError } = await supabaseAdmin
             .from('submission_votes')
             .select('vote_type')
