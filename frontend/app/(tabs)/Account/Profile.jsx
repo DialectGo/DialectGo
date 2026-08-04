@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../shared/lib/supabase';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import BottomNav from '../../../shared/components/BottomNav';
+import { Ionicons } from '@expo/vector-icons';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal'; 
 import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ Imported RefreshContainer
 import { styles } from '../../../shared/styles/ProfileStyles';
@@ -213,6 +214,14 @@ export default function Profile({ onNavigate }) {
             <View style={styles.menuLeft}>
               <Image source={require('../../../assets/icons/profileIcon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Account Information</Text>
+            </View>
+            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Activities')}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="pulse-outline" size={24} color="#6B7280" style={{ marginRight: 16 }} />
+              <Text style={styles.menuText}>My Activities</Text>
             </View>
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>

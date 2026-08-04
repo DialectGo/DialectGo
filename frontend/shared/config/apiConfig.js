@@ -9,6 +9,8 @@ export const PASSWORD_RESET_REDIRECT_URL = process.env.EXPO_PUBLIC_PASSWORD_RESE
 export const API_API_BASE = `${API_BASE_URL}/api`;
 export const TRANSLATION_API_BASE = `${API_BASE_URL}/api/v1/translations`;
 export const WIKI_API_BASE = `${API_BASE_URL}/api/wiki`;
+export const NOTIFICATIONS_API_BASE = `${API_BASE_URL}/api/notifications`;
+export const ACTIVITIES_API_BASE = `${API_BASE_URL}/api/activities`;
 
 export const endpoints = {
   USER_PROFILE: `${API_BASE_URL}/api/v1/users/profile`,

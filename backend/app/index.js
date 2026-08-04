@@ -21,6 +21,8 @@ import progressRoutes from './routes/progress.route.js';
 import securityRouter from './routes/security.route.js';
 import datasetRoutes from './routes/dataset.route.js';
 import wikiRoutes from './routes/wiki.route.js';
+import notificationRoutes from './routes/notification.route.js';
+import activityRoutes from './routes/activity.route.js';
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -55,6 +57,8 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/dataset', datasetRoutes);
 app.use('/api/wiki', wikiRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/activities', activityRoutes);
 app.use('/api', securityRouter);
 
 // ─── Error Handler (MUST be last) ────────────────────────────────────────────

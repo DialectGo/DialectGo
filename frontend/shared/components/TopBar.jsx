@@ -3,10 +3,35 @@ import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, Touchab
 import { supabase } from '../../shared/lib/supabase';
 import { useRouter } from 'expo-router';
 import { handleLogout } from '../../app/Logout';
+import { Ionicons } from '@expo/vector-icons';
+import NotificationsModal from './NotificationsModal';
+import { NOTIFICATIONS_API_BASE } from '../config/apiConfig';
 
 const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  React.useEffect(() => {
+    fetchUnreadCount();
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetch(NOTIFICATIONS_API_BASE, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = await response.json();
+      if (json.success) {
+        setUnreadCount(json.data.filter(n => !n.is_read).length);
+      }
+    } catch (err) {
+      console.log('[TopBar] unread count error:', err);
+    }
+  };
 
   const onSignOutPress = async () => {
     setMenuVisible(false); // Close menu
@@ -31,10 +56,25 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
             />
           </View>
 
-          {/* Right Section (Kebab Dots) */}
+          {/* Right Section (Kebab Dots & Bell) */}
           <View style={styles.rightSection}>
             <TouchableOpacity 
-              style={styles.menuBtn} 
+              style={styles.bellBtn} 
+              onPress={() => {
+                setNotificationsVisible(true);
+                setUnreadCount(0); // Optimistic clear
+              }}
+            >
+              <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuBtn}  
               onPress={() => setMenuVisible(true)} // Dito lalabas ang menu
               activeOpacity={0.6}
             >
@@ -81,6 +121,15 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* --- NOTIFICATIONS MODAL --- */}
+      <NotificationsModal 
+        visible={notificationsVisible} 
+        onClose={() => {
+          setNotificationsVisible(false);
+          fetchUnreadCount(); // Refresh count on close
+        }} 
+      />
     </View>
   );
 };
@@ -110,8 +159,33 @@ const styles = StyleSheet.create({
     height: 38,
   },
   rightSection: {
-    flex: 1,
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingRight: 15,
+  },
+  bellBtn: {
+    position: 'relative',
+    padding: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
   },
   menuBtn: {
     width: 40,
