@@ -1,5 +1,5 @@
 // config/apiConfig.js
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.64:5001';
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.1.72:5001';
 export const GROQ_API_KEY = process.env.EXPO_PUBLIC_GROQ_API_KEY;
 export const DICTIONARY_BASE_URL = `${API_BASE_URL}/api/dictionary`;
 export const WORD_OF_DAY = `${DICTIONARY_BASE_URL}/word-of-the-day`;
@@ -8,6 +8,7 @@ export const PASSWORD_RESET_REDIRECT_URL = process.env.EXPO_PUBLIC_PASSWORD_RESE
 // General API base (non-dictionary) for endpoints under /api
 export const API_API_BASE = `${API_BASE_URL}/api`;
 export const TRANSLATION_API_BASE = `${API_BASE_URL}/api/v1/translations`;
+export const WIKI_API_BASE = `${API_BASE_URL}/api/wiki`;
 
 export const endpoints = {
   USER_PROFILE: `${API_BASE_URL}/api/v1/users/profile`,

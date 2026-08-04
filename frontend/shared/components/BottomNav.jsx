@@ -1,19 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Animated, 
-  Image, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  View 
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { useRouter, usePathname } from 'expo-router'; 
+import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import FeatureGateModal from './FeatureGateModal'; 
+import FeatureGateModal from './FeatureGateModal';
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
-const TabItem = ({ icon, label, isActive, onPress }) => {
+const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
   const animatedValue = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
@@ -27,32 +28,40 @@ const TabItem = ({ icon, label, isActive, onPress }) => {
 
   const scale = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.35], 
+    outputRange: [1, 1.35],
   });
 
   const translateY = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -10], 
+    outputRange: [0, -10],
   });
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
-      style={styles.tabItem} 
-      activeOpacity={1} 
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.tabItem}
+      activeOpacity={1}
     >
       <Animated.View style={[
         styles.iconWrapper,
         { transform: [{ scale }, { translateY }] },
-        isActive && styles.activeShadow 
+        isActive && styles.activeShadow
       ]}>
-        <Image 
-          source={icon} 
-          style={styles.tabIcon} 
-          resizeMode="contain" 
-        />
+        {ioniconName ? (
+          <Ionicons
+            name={isActive ? ioniconName : `${ioniconName}-outline`}
+            size={26}
+            color={isActive ? '#FFD54F' : '#757575'}
+          />
+        ) : (
+          <Image
+            source={icon}
+            style={styles.tabIcon}
+            resizeMode="contain"
+          />
+        )}
       </Animated.View>
-      
+
       <Text style={[styles.tabLabel, isActive && styles.activeLabel]}>
         {label}
       </Text>
@@ -76,7 +85,7 @@ export default function BottomNav() {
       if (!connected) {
         setIsGuestMode(true);
       } else {
-        checkUserMode(); 
+        checkUserMode();
       }
     });
 
@@ -101,8 +110,8 @@ export default function BottomNav() {
   const tabs = [
     { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
     { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false }, 
-    { name: 'Games', path: '/Games/Games', icon: require('../../assets/icons/gameIcon.png'), isGated: true }, 
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false },
+    { name: 'Wiki', path: '/Wiki/WikiFeed', ioniconName: 'book', isGated: true },
     { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png'), isGated: false },
   ];
 
@@ -115,7 +124,7 @@ export default function BottomNav() {
     }
     router.push(tab.path);
   };
-  
+
   return (
     <View style={styles.navContainer}>
       <View style={styles.bottomTab}>
@@ -127,9 +136,10 @@ export default function BottomNav() {
             <TabItem
               key={tab.name}
               icon={tab.icon}
+              ioniconName={tab.ioniconName}
               label={tab.name}
-              isActive={isTabActive} 
-              onPress={() => handleNavigationInterception(tab)} 
+              isActive={isTabActive}
+              onPress={() => handleNavigationInterception(tab)}
             />
           );
         })}
@@ -154,11 +164,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     // ✅ FIX 1: Standardized a unified height across iOS and Android
-    height: 65, 
+    height: 65,
     justifyContent: 'space-around',
     alignItems: 'center',
     // ✅ FIX 2: Removed Platform specific bottom padding causing the empty float gap
-    paddingBottom: 0, 
+    paddingBottom: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,

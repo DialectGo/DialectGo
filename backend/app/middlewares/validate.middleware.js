@@ -121,3 +121,22 @@ export const validateCustomizeRequest = createValidationMiddleware(
         style: Joi.string().trim().optional().allow(null, ''),
     })
 );
+
+export const validateWikiSubmission = createValidationMiddleware(
+    Joi.object({
+        source_term: Joi.string().trim().min(1).max(200).required(),
+        region: Joi.string().trim().required(),
+        category: Joi.string().valid('Slang', 'Idiom', 'Colloquial', 'Literal').required(),
+        translation: Joi.string().trim().min(1).max(500).required(),
+        usage_example: Joi.string().trim().max(500).optional().allow(null, ''),
+        sentiment_tag: Joi.string().trim().max(50).optional().allow(null, ''),
+    })
+);
+
+export const validateWikiVote = createValidationMiddleware(
+    Joi.object({
+        id: Joi.string().guid({ version: ['uuidv4'] }).optional(),
+        vote_type: Joi.number().valid(1, -1).required(),
+    })
+);
+
