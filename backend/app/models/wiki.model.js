@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../config/db.js';
+import { supabase, supabaseAdmin, getAuthClient } from '../config/db.js';
 
 /**
  * Data access layer for dialect_submissions and submission_votes.
@@ -10,7 +10,7 @@ export const WikiModel = {
      * Fetch paginated submissions with optional filters.
      * Joins profiles for author attribution.
      */
-    getSubmissions: async ({ page = 1, limit = 20, region, category, status, search, sort = 'newest' }) => {
+    getSubmissions: async ({ page = 1, limit = 20, region, category, status, search, sort = 'newest', type }) => {
         const offset = (page - 1) * limit;
 
         let query = supabase
@@ -21,6 +21,8 @@ export const WikiModel = {
         if (region) query = query.eq('region', region);
         if (category) query = query.eq('category', category);
         if (status) query = query.eq('status', status);
+        if (type) query = query.eq('type', type);
+
 
         // Keyword search across source_term and translation
         if (search && search.trim()) {
@@ -72,6 +74,13 @@ export const WikiModel = {
      * Fetch a single submission by ID with author profile.
      */
     getSubmissionById: async (id) => {
+        // Increment views before fetching
+        const { error: rpcError } = await supabaseAdmin
+            .rpc('increment_wiki_views', { row_id: id });
+        if (rpcError) {
+            // Silently fail if RPC doesn't exist yet
+        }
+
         const { data, error } = await supabase
             .from('dialect_submissions')
             .select('*')
@@ -98,8 +107,9 @@ export const WikiModel = {
     /**
      * Insert a new community submission.
      */
-    createSubmission: async (userId, submissionData) => {
-        const { data, error } = await supabase
+    createSubmission: async (token, userId, submissionData) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('dialect_submissions')
             .insert([{
                 user_id: userId,
@@ -109,6 +119,7 @@ export const WikiModel = {
                 translation: submissionData.translation,
                 usage_example: submissionData.usage_example || null,
                 sentiment_tag: submissionData.sentiment_tag || null,
+                type: submissionData.type || 'Term',
             }])
             .select();
 
@@ -156,8 +167,9 @@ export const WikiModel = {
     /**
      * Upsert a vote (insert or update).
      */
-    upsertVote: async (submissionId, userId, voteType) => {
-        const { data, error } = await supabase
+    upsertVote: async (token, submissionId, userId, voteType) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('submission_votes')
             .upsert({
                 submission_id: submissionId,
@@ -176,8 +188,9 @@ export const WikiModel = {
     /**
      * Remove a user's vote entirely.
      */
-    removeVote: async (submissionId, userId) => {
-        const { error } = await supabase
+    removeVote: async (token, submissionId, userId) => {
+        const client = getAuthClient(token);
+        const { error } = await client
             .from('submission_votes')
             .delete()
             .eq('submission_id', submissionId)
@@ -196,7 +209,7 @@ export const WikiModel = {
      */
     recalculateUpvotes: async (submissionId) => {
         // Sum all votes for this submission
-        const { data: votes, error: fetchError } = await supabase
+        const { data: votes, error: fetchError } = await supabaseAdmin
             .from('submission_votes')
             .select('vote_type')
             .eq('submission_id', submissionId);
@@ -208,7 +221,7 @@ export const WikiModel = {
 
         const netVotes = (votes || []).reduce((sum, v) => sum + v.vote_type, 0);
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('dialect_submissions')
             .update({ upvotes: netVotes })
             .eq('id', submissionId);
@@ -225,8 +238,8 @@ export const WikiModel = {
      * Copies the term data and marks the submission as 'verified'.
      */
     promoteToCorpus: async (submissionId) => {
-        // Fetch the submission first
-        const { data: submission, error: fetchError } = await supabase
+        // Fetch the submission first using Admin to bypass any RLS
+        const { data: submission, error: fetchError } = await supabaseAdmin
             .from('dialect_submissions')
             .select('*')
             .eq('id', submissionId)
@@ -235,6 +248,17 @@ export const WikiModel = {
         if (fetchError || !submission) {
             console.error('[WikiModel.promoteToCorpus] Fetch error:', fetchError?.message);
             return { error: fetchError || new Error('Submission not found') };
+        }
+
+        // Guard: Don't promote Questions to the corpus
+        if (submission.type === 'Question') {
+            console.log(`[WikiModel] Skipping corpus promotion for Question "${submission.source_term}"`);
+            // Still mark as verified
+            const { error: updateError } = await supabaseAdmin
+                .from('dialect_submissions')
+                .update({ status: 'verified' })
+                .eq('id', submissionId);
+            return { error: updateError };
         }
 
         // Insert into dialect_corpus
@@ -257,7 +281,7 @@ export const WikiModel = {
         }
 
         // Mark submission as verified
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseAdmin
             .from('dialect_submissions')
             .update({ status: 'verified' })
             .eq('id', submissionId);
@@ -268,5 +292,118 @@ export const WikiModel = {
 
         console.log(`[WikiModel] ✅ Promoted submission "${submission.source_term}" to dialect_corpus`);
         return { error: null };
+    },
+
+    // ─── Comments ────────────────────────────────────────────────────────────
+
+    /**
+     * Fetch all comments for a submission, with author profiles.
+     */
+    getComments: async (submissionId) => {
+        const { data, error } = await supabase
+            .from('wiki_comments')
+            .select('*')
+            .eq('submission_id', submissionId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('[WikiModel.getComments] Error:', error.message);
+            return { data: [], error };
+        }
+
+        // Fetch author profiles
+        if (data && data.length > 0) {
+            const userIds = [...new Set(data.map(c => c.user_id))];
+            const { data: profiles } = await supabaseAdmin
+                .from('profiles')
+                .select('id, username, first_name, last_name')
+                .in('id', userIds);
+
+            const profileMap = {};
+            if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+            data.forEach(c => { c.profiles = profileMap[c.user_id] || null; });
+        }
+
+        return { data: data || [], error: null };
+    },
+
+    /**
+     * Add a comment to a submission.
+     */
+    addComment: async (token, userId, submissionId, content) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
+            .from('wiki_comments')
+            .insert([{ user_id: userId, submission_id: submissionId, content }])
+            .select();
+
+        if (error) {
+            console.error('[WikiModel.addComment] Error:', error.message);
+        }
+
+        return { data: data?.[0] || null, error };
+    },
+
+    // ─── Bookmarks ───────────────────────────────────────────────────────────
+
+    /**
+     * Check if the user has bookmarked a submission.
+     */
+    checkBookmark: async (userId, submissionId) => {
+        const { data, error } = await supabase
+            .from('wiki_bookmarks')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('submission_id', submissionId)
+            .maybeSingle();
+
+        return { bookmarked: !!data, error };
+    },
+
+    /**
+     * Toggle bookmark: add if not exists, remove if exists.
+     */
+    toggleBookmark: async (token, userId, submissionId) => {
+        // Check if already bookmarked
+        const { data: existing } = await supabase
+            .from('wiki_bookmarks')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('submission_id', submissionId)
+            .maybeSingle();
+
+        if (existing) {
+            // Remove bookmark
+            const client = getAuthClient(token);
+            const { error } = await client
+                .from('wiki_bookmarks')
+                .delete()
+                .eq('id', existing.id);
+            return { bookmarked: false, error };
+        } else {
+            // Add bookmark
+            const client = getAuthClient(token);
+            const { error } = await client
+                .from('wiki_bookmarks')
+                .insert([{ user_id: userId, submission_id: submissionId }]);
+            return { bookmarked: true, error };
+        }
+    },
+
+    /**
+     * Get all bookmarked submissions for a user.
+     */
+    getUserBookmarks: async (userId) => {
+        const { data, error } = await supabase
+            .from('wiki_bookmarks')
+            .select('submission_id')
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('[WikiModel.getUserBookmarks] Error:', error.message);
+            return { data: [], error };
+        }
+
+        return { data: data || [], error: null };
     },
 };

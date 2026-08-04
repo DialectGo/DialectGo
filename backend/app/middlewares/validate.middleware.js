@@ -126,10 +126,11 @@ export const validateWikiSubmission = createValidationMiddleware(
     Joi.object({
         source_term: Joi.string().trim().min(1).max(200).required(),
         region: Joi.string().trim().required(),
-        category: Joi.string().valid('Slang', 'Idiom', 'Colloquial', 'Literal').required(),
+        category: Joi.string().valid('Slang', 'Idiom', 'Colloquial', 'Literal', 'Cultural', 'General').required(),
         translation: Joi.string().trim().min(1).max(500).required(),
         usage_example: Joi.string().trim().max(500).optional().allow(null, ''),
         sentiment_tag: Joi.string().trim().max(50).optional().allow(null, ''),
+        type: Joi.string().valid('Term', 'Question').optional().default('Term'),
     })
 );
 
@@ -140,3 +141,34 @@ export const validateWikiVote = createValidationMiddleware(
     })
 );
 
+export const validateWikiComment = createValidationMiddleware(
+    Joi.object({
+        id: Joi.string().guid({ version: ['uuidv4'] }).optional(),
+        content: Joi.string().trim().min(1).max(2000).required(),
+    })
+);
+
+export const validateWikiAsk = createValidationMiddleware(
+    Joi.object({
+        id: Joi.string().guid({ version: ['uuidv4'] }).optional(),
+        message: Joi.string().trim().min(1).max(1000).required(),
+        history: Joi.array().items(
+            Joi.object({
+                role: Joi.string().valid('user', 'assistant').required(),
+                content: Joi.string().required(),
+            })
+        ).optional().default([]),
+    })
+);
+
+export const validateGlobalWikiAsk = createValidationMiddleware(
+    Joi.object({
+        message: Joi.string().trim().min(1).max(1000).required(),
+        history: Joi.array().items(
+            Joi.object({
+                role: Joi.string().valid('user', 'assistant').required(),
+                content: Joi.string().required(),
+            })
+        ).optional().default([]),
+    })
+);

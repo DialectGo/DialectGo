@@ -30,8 +30,7 @@ const port = process.env.PORT || 5001;
 app.use(helmet());
 
 app.use(cors({
-  origin: ['http://localhost:5001', 'http://localhost:5173'],
-  credentials: true,
+  origin: '*', // Allow all origins for Expo Go development
 }));
 
 // Body parsers — MUST be before routes

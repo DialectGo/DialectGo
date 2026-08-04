@@ -8,7 +8,8 @@ import { supabase } from '../lib/supabase';
 import { WIKI_API_BASE } from '../config/apiConfig';
 
 const REGIONS = ['Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
-const CATEGORIES = ['Slang', 'Idiom', 'Colloquial', 'Literal'];
+const TERM_CATEGORIES = ['Slang', 'Idiom', 'Colloquial', 'Literal'];
+const QUESTION_CATEGORIES = ['Cultural', 'General', 'Colloquial', 'Literal'];
 const SENTIMENTS = ['Casual', 'Humorous', 'Aggressive', 'Affectionate', 'Formal', 'Sarcastic'];
 
 export default function SubmitTermModal({ visible, onClose, onSuccess }) {
@@ -18,7 +19,11 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
   const [translation, setTranslation] = useState('');
   const [usageExample, setUsageExample] = useState('');
   const [sentimentTag, setSentimentTag] = useState('');
+  const [submissionType, setSubmissionType] = useState('Term');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isQuestion = submissionType === 'Question';
+  const CATEGORIES = isQuestion ? QUESTION_CATEGORIES : TERM_CATEGORIES;
 
   const resetForm = () => {
     setSourceTerm('');
@@ -27,6 +32,7 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
     setTranslation('');
     setUsageExample('');
     setSentimentTag('');
+    setSubmissionType('Term');
   };
 
   const handleSubmit = async () => {
@@ -56,6 +62,7 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
           translation: translation.trim(),
           usage_example: usageExample.trim() || null,
           sentiment_tag: sentimentTag || null,
+          type: submissionType,
         }),
       });
 
@@ -85,23 +92,47 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
           <View style={styles.handle} />
 
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Contribute a Term</Text>
+            <Text style={styles.sheetTitle}>
+              {isQuestion ? 'Ask a Question' : 'Contribute a Term'}
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {/* Source Term */}
+            {/* Type Toggle */}
+            <View style={styles.typeToggle}>
+              <TouchableOpacity
+                style={[styles.typeBtn, !isQuestion && styles.typeBtnActive]}
+                onPress={() => { setSubmissionType('Term'); setCategory(''); }}
+              >
+                <Ionicons name="text-outline" size={16} color={!isQuestion ? '#1F2937' : '#9CA3AF'} />
+                <Text style={[styles.typeBtnText, !isQuestion && styles.typeBtnTextActive]}>Term</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.typeBtn, isQuestion && styles.typeBtnActive]}
+                onPress={() => { setSubmissionType('Question'); setCategory(''); }}
+              >
+                <Ionicons name="help-circle-outline" size={16} color={isQuestion ? '#1F2937' : '#9CA3AF'} />
+                <Text style={[styles.typeBtnText, isQuestion && styles.typeBtnTextActive]}>Question</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Source Term / Question */}
             <Text style={styles.label}>
-              Source Term / Phrase <Text style={styles.required}>*</Text>
+              {isQuestion ? 'Your Question' : 'Source Term / Phrase'} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={styles.input}
-              placeholder='e.g., "Ala eh", "Buang"'
+              style={[styles.input, isQuestion && styles.multilineInput]}
+              placeholder={isQuestion
+                ? 'e.g., "Ano mas magandang sabihin sa isang Batangueño na Magulang?"'
+                : 'e.g., "Ala eh", "Buang"'
+              }
               placeholderTextColor="#9CA3AF"
               value={sourceTerm}
               onChangeText={setSourceTerm}
+              multiline={isQuestion}
+              numberOfLines={isQuestion ? 3 : 1}
             />
 
             {/* Region */}
@@ -136,16 +167,21 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
               ))}
             </View>
 
-            {/* Standard Translation */}
+            {/* Standard Translation / Context */}
             <Text style={styles.label}>
-              Standard Translation <Text style={styles.required}>*</Text>
+              {isQuestion ? 'Context / Background' : 'Standard Translation'} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={styles.input}
-              placeholder="What it means in English or standard language"
+              style={[styles.input, isQuestion && styles.multilineInput]}
+              placeholder={isQuestion
+                ? 'Provide context about your situation...'
+                : 'What it means in English or standard language'
+              }
               placeholderTextColor="#9CA3AF"
               value={translation}
               onChangeText={setTranslation}
+              multiline={isQuestion}
+              numberOfLines={isQuestion ? 3 : 1}
             />
 
             {/* Usage Example */}
@@ -231,6 +267,39 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: '#1F2937',
+  },
+  typeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 4,
+  },
+  typeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  typeBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  typeBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  typeBtnTextActive: {
+    color: '#1F2937',
+    fontWeight: '800',
   },
   label: {
     fontSize: 13,

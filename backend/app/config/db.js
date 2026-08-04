@@ -18,6 +18,20 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+/**
+ * Instantiate a scoped Supabase client authenticated as the user making the request.
+ * This ensures that Row Level Security (RLS) is applied to all queries made with this client.
+ */
+export const getAuthClient = (token) => {
+    return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
+        global: {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    });
+};
+
 const connectDB = async () => {
     try {
         // check connection

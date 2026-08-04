@@ -9,6 +9,7 @@ import { supabase } from '../../../shared/lib/supabase';
 import TopBar from '../../../shared/components/TopBar';
 import BottomNav from '../../../shared/components/BottomNav';
 import SubmitTermModal from '../../../shared/components/SubmitTermModal';
+import GlobalWikiAssistantModal from '../../../shared/components/GlobalWikiAssistantModal';
 import { WIKI_API_BASE } from '../../../shared/config/apiConfig';
 
 const REGIONS = ['All', 'Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
@@ -18,6 +19,7 @@ const SORTS = [
   { label: 'Most Voted', value: 'most_voted' },
   { label: 'Verified', value: 'verified' },
 ];
+const TYPE_FILTERS = ['All', 'Term', 'Question'];
 
 export default function WikiFeed() {
   const router = useRouter();
@@ -33,7 +35,9 @@ export default function WikiFeed() {
   const [activeRegion, setActiveRegion] = useState('All');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeSort, setActiveSort] = useState('newest');
+  const [activeType, setActiveType] = useState('All');
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const fetchSubmissions = useCallback(async (pageNum = 1, append = false) => {
@@ -48,6 +52,7 @@ export default function WikiFeed() {
       });
       if (activeRegion !== 'All') params.append('region', activeRegion);
       if (activeCategory !== 'All') params.append('category', activeCategory);
+      if (activeType !== 'All') params.append('type', activeType);
       if (search.trim()) params.append('search', search.trim());
 
       const response = await fetch(`${WIKI_API_BASE}?${params}`, {
@@ -70,13 +75,13 @@ export default function WikiFeed() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [activeRegion, activeCategory, activeSort, search]);
+  }, [activeRegion, activeCategory, activeSort, activeType, search]);
 
   useEffect(() => {
     setLoading(true);
     setPage(1);
     fetchSubmissions(1);
-  }, [activeRegion, activeCategory, activeSort]);
+  }, [activeRegion, activeCategory, activeSort, activeType]);
 
   // Debounced search
   useEffect(() => {
@@ -146,15 +151,22 @@ export default function WikiFeed() {
       || `${item.profiles?.first_name || ''} ${item.profiles?.last_name || ''}`.trim()
       || 'Anonymous';
 
+    const isQuestion = item.type === 'Question';
+
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, isQuestion && styles.questionCard]}
         activeOpacity={0.7}
         onPress={() => router.push({ pathname: '/(tabs)/Wiki/SubmissionDetail', params: { id: item.id } })}
       >
         {/* Header row */}
         <View style={styles.cardHeader}>
-          <Text style={styles.sourceTerm}>{item.source_term}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
+            {isQuestion && (
+              <Ionicons name="help-circle" size={18} color="#7C3AED" />
+            )}
+            <Text style={styles.sourceTerm} numberOfLines={2}>{item.source_term}</Text>
+          </View>
           <View style={[styles.regionBadge, item.status === 'verified' && styles.verifiedBadge]}>
             <Text style={[styles.regionBadgeText, item.status === 'verified' && styles.verifiedBadgeText]}>
               {item.status === 'verified' ? '✓ Verified' : item.region}
@@ -163,10 +175,15 @@ export default function WikiFeed() {
         </View>
 
         {/* Translation */}
-        <Text style={styles.translation}>{item.translation}</Text>
+        <Text style={styles.translation} numberOfLines={2}>{item.translation}</Text>
 
         {/* Tags row */}
         <View style={styles.tagsRow}>
+          {isQuestion && (
+            <View style={[styles.categoryChip, { backgroundColor: '#EDE9FE' }]}>
+              <Text style={[styles.categoryChipText, { color: '#7C3AED' }]}>Question</Text>
+            </View>
+          )}
           <View style={styles.categoryChip}>
             <Text style={styles.categoryChipText}>{item.category}</Text>
           </View>
@@ -196,6 +213,23 @@ export default function WikiFeed() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <TopBar title="Dialect Wiki" />
+
+      {/* Type filter tabs */}
+      <View style={styles.typeFilterRow}>
+        {TYPE_FILTERS.map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.typeFilterBtn, activeType === t && styles.typeFilterBtnActive]}
+            onPress={() => setActiveType(t)}
+          >
+            {t === 'Question' && <Ionicons name="help-circle-outline" size={14} color={activeType === t ? '#1F2937' : '#9CA3AF'} />}
+            {t === 'Term' && <Ionicons name="text-outline" size={14} color={activeType === t ? '#1F2937' : '#9CA3AF'} />}
+            <Text style={[styles.typeFilterText, activeType === t && styles.typeFilterTextActive]}>
+              {t === 'All' ? 'All Posts' : t + 's'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* Search bar */}
       <View style={styles.searchContainer}>
@@ -315,19 +349,36 @@ export default function WikiFeed() {
         />
       )}
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={() => setShowSubmitModal(true)}
-      >
-        <Ionicons name="add" size={28} color="#1F2937" />
-      </TouchableOpacity>
+      {/* FABs */}
+      <View style={styles.fabContainer}>
+        {/* Ask AI FAB */}
+        <TouchableOpacity
+          style={[styles.fab, styles.aiFab]}
+          activeOpacity={0.85}
+          onPress={() => setShowAiModal(true)}
+        >
+          <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        {/* Add Entry FAB */}
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.85}
+          onPress={() => setShowSubmitModal(true)}
+        >
+          <Ionicons name="add" size={28} color="#1F2937" />
+        </TouchableOpacity>
+      </View>
 
       <SubmitTermModal
         visible={showSubmitModal}
         onClose={() => setShowSubmitModal(false)}
         onSuccess={handleSubmitSuccess}
+      />
+
+      <GlobalWikiAssistantModal
+        visible={showAiModal}
+        onClose={() => setShowAiModal(false)}
       />
 
       <BottomNav />
@@ -339,6 +390,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  typeFilterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginTop: 10,
+    gap: 8,
+  },
+  typeFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+    gap: 4,
+  },
+  typeFilterBtnActive: {
+    backgroundColor: '#FEF3C7',
+  },
+  typeFilterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  typeFilterTextActive: {
+    color: '#1F2937',
+    fontWeight: '800',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -481,6 +559,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  questionCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#7C3AED',
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -587,10 +669,14 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 6,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
     bottom: 100,
     right: 24,
+    gap: 16,
+    alignItems: 'center',
+  },
+  fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -602,5 +688,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 6,
+  },
+  aiFab: {
+    backgroundColor: '#7C3AED',
+    shadowColor: '#7C3AED',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
 });

@@ -311,3 +311,178 @@ export async function customizeTranslation({ sourceText, translatedText, sourceL
         };
     }
 }
+
+// ─── Wiki Assistant Prompt Builder ──────────────────────────────────────────
+
+function buildWikiAssistantSystemPrompt(submission) {
+    const typeLabel = submission.type === 'Question' ? 'community question' : 'dialect term';
+
+    return `You are a Filipino linguistics and cultural expert AI assistant embedded in DialectGo, a Philippine dialect learning app. You are helping a user understand a specific ${typeLabel} from the community wiki.
+
+Here is the ${typeLabel} you are helping with:
+
+---
+Term/Title: "${submission.source_term}"
+Region: ${submission.region}
+Category: ${submission.category}
+Translation/Meaning: "${submission.translation}"
+${submission.usage_example ? `Usage Example: "${submission.usage_example}"` : ''}
+${submission.sentiment_tag ? `Tone/Sentiment: ${submission.sentiment_tag}` : ''}
+---
+
+Your rules:
+- ONLY answer questions related to this specific ${typeLabel}, Philippine dialects, Filipino culture, and language learning.
+- If the user asks something completely unrelated (e.g., math, coding, politics), politely redirect them to ask about the term or dialect topics.
+- Provide culturally sensitive and respectful answers.
+- When giving example sentences, provide both the dialect/Filipino version and an English translation.
+- Keep responses concise but educational (2-4 paragraphs max).
+- If the user asks for more examples, provide 2-3 natural usage examples with context.
+- If the user asks about cultural etiquette (e.g., how to speak to elders), give practical, respectful advice.
+- Respond in a warm, friendly, and encouraging tone — the user is learning.
+- Do NOT use markdown formatting like **bold** or headers. Use plain text only.`;
+}
+
+/**
+ * Ask the Wiki AI Assistant a question about a specific submission.
+ *
+ * @param {Object} params
+ * @param {Object} params.submission - The full submission object (source_term, translation, region, etc.)
+ * @param {string} params.userMessage - The user's question
+ * @param {Array}  params.conversationHistory - Previous messages for multi-turn context
+ * @returns {Promise<Object>} The assistant's response
+ */
+export async function askWikiAssistant({ submission, userMessage, conversationHistory = [] }) {
+    const startTime = Date.now();
+
+    try {
+        const client = getGroqClient();
+
+        // Build messages array with conversation history for multi-turn
+        const messages = [
+            { role: 'system', content: buildWikiAssistantSystemPrompt(submission) },
+            ...conversationHistory.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+            })),
+            { role: 'user', content: userMessage },
+        ];
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 1000,
+            temperature: 0.6,
+            messages,
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+
+        if (!rawContent) {
+            throw new Error('Groq returned an empty response');
+        }
+
+        console.log(`[MetaLayer] Wiki assistant responded in ${Date.now() - startTime}ms`);
+
+        return {
+            success: true,
+            response: rawContent.trim(),
+            metadata: {
+                model: GROQ_MODEL,
+                responseMs: Date.now() - startTime,
+                tokensUsed: completion.usage?.total_tokens || null,
+            }
+        };
+
+    } catch (error) {
+        console.error('[MetaLayer] Wiki assistant failed:', error.message);
+
+        return {
+            success: false,
+            response: 'Sorry, I couldn\'t process your question right now. Please try again in a moment.',
+            metadata: {
+                model: GROQ_MODEL,
+                responseMs: Date.now() - startTime,
+                error: error.message,
+            }
+        };
+    }
+}
+
+// ─── Global Wiki Assistant ──────────────────────────────────────────────────
+
+function buildGlobalWikiAssistantSystemPrompt() {
+    return `You are DialectGo's Global AI Assistant, a friendly Filipino linguistics and cultural expert. 
+You are embedded in the DialectWiki feed to help users learn about Philippine dialects (such as Batangueño, Boholano, Cebuano, etc.), Filipino culture, and general translation questions.
+
+Your rules:
+- ONLY answer questions related to Philippine languages, dialects, Filipino culture, and language learning.
+- If the user asks something completely unrelated (e.g., math, coding, politics), politely redirect them to ask about dialects or cultural topics.
+- Provide culturally sensitive and respectful answers.
+- When giving example sentences, provide both the dialect/Filipino version and an English translation.
+- Keep responses concise but educational (2-4 paragraphs max).
+- Respond in a warm, friendly, and encouraging tone — the user is learning.
+- Do NOT use markdown formatting like **bold** or headers. Use plain text only.`;
+}
+
+/**
+ * Ask the Global Wiki AI Assistant a general question.
+ *
+ * @param {Object} params
+ * @param {string} params.userMessage - The user's question
+ * @param {Array}  params.conversationHistory - Previous messages for multi-turn context
+ * @returns {Promise<Object>} The assistant's response
+ */
+export async function askGlobalWikiAssistant({ userMessage, conversationHistory = [] }) {
+    const startTime = Date.now();
+
+    try {
+        const client = getGroqClient();
+
+        const messages = [
+            { role: 'system', content: buildGlobalWikiAssistantSystemPrompt() },
+            ...conversationHistory.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+            })),
+            { role: 'user', content: userMessage },
+        ];
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 1000,
+            temperature: 0.6,
+            messages,
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+
+        if (!rawContent) {
+            throw new Error('Groq returned an empty response');
+        }
+
+        console.log(`[MetaLayer] Global Wiki assistant responded in ${Date.now() - startTime}ms`);
+
+        return {
+            success: true,
+            response: rawContent.trim(),
+            metadata: {
+                model: GROQ_MODEL,
+                responseMs: Date.now() - startTime,
+                tokensUsed: completion.usage?.total_tokens || null,
+            }
+        };
+
+    } catch (error) {
+        console.error('[MetaLayer] Global Wiki assistant failed:', error.message);
+
+        return {
+            success: false,
+            response: 'Sorry, I couldn\'t process your question right now. Please try again in a moment.',
+            metadata: {
+                model: GROQ_MODEL,
+                responseMs: Date.now() - startTime,
+                error: error.message,
+            }
+        };
+    }
+}
+

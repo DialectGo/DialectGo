@@ -1,4 +1,5 @@
 import { WikiModel } from '../models/wiki.model.js';
+import { askWikiAssistant, askGlobalWikiAssistant } from './metaLayer.service.js';
 
 const PROMOTION_THRESHOLD = 10; // Net upvotes needed for auto-promotion
 
@@ -19,13 +20,14 @@ export const WikiService = {
             status: query.status || null,
             search: query.search || null,
             sort: query.sort || 'newest',
+            type: query.type || null,
         };
 
         return await WikiModel.getSubmissions(filters);
     },
 
     /**
-     * Get a single submission with the current user's vote state.
+     * Get a single submission with the current user's vote and bookmark state.
      */
     getDetail: async (submissionId, userId) => {
         const { data: submission, error } = await WikiModel.getSubmissionById(submissionId);
@@ -36,32 +38,38 @@ export const WikiService = {
 
         // Fetch the user's current vote on this submission
         let userVote = null;
+        let bookmarked = false;
         if (userId) {
             const { data: voteData } = await WikiModel.getUserVote(submissionId, userId);
             userVote = voteData?.vote_type || null;
+
+            const { bookmarked: isBookmarked } = await WikiModel.checkBookmark(userId, submissionId);
+            bookmarked = isBookmarked;
         }
 
         return {
-            data: { ...submission, userVote },
+            data: { ...submission, userVote, bookmarked },
             error: null,
         };
     },
 
     /**
-     * Submit a new term. Checks for duplicates first.
+     * Submit a new term or question. Checks for duplicates first (only for Terms).
      */
-    submitTerm: async (userId, data) => {
-        // Check for near-duplicate
-        const { exists } = await WikiModel.checkDuplicate(data.source_term, data.region);
-        if (exists) {
-            return {
-                data: null,
-                error: { message: 'A similar term for this region already exists.' },
-                status: 409,
-            };
+    submitTerm: async (token, userId, data) => {
+        // Only check duplicates for Term type submissions
+        if (data.type !== 'Question') {
+            const { exists } = await WikiModel.checkDuplicate(data.source_term, data.region);
+            if (exists) {
+                return {
+                    data: null,
+                    error: { message: 'A similar term for this region already exists.' },
+                    status: 409,
+                };
+            }
         }
 
-        const { data: submission, error } = await WikiModel.createSubmission(userId, data);
+        const { data: submission, error } = await WikiModel.createSubmission(token, userId, data);
 
         if (error) {
             return { data: null, error, status: 500 };
@@ -80,21 +88,21 @@ export const WikiService = {
      * 
      * After any change, recalculates upvotes and checks promotion threshold.
      */
-    castVote: async (submissionId, userId, voteType) => {
+    castVote: async (token, submissionId, userId, voteType) => {
         // 1. Check current vote
         const { data: existingVote } = await WikiModel.getUserVote(submissionId, userId);
 
         if (existingVote) {
             if (existingVote.vote_type === voteType) {
                 // Same direction → remove vote (toggle off)
-                await WikiModel.removeVote(submissionId, userId);
+                await WikiModel.removeVote(token, submissionId, userId);
             } else {
                 // Opposite direction → flip vote
-                await WikiModel.upsertVote(submissionId, userId, voteType);
+                await WikiModel.upsertVote(token, submissionId, userId, voteType);
             }
         } else {
             // No existing vote → insert new
-            await WikiModel.upsertVote(submissionId, userId, voteType);
+            await WikiModel.upsertVote(token, submissionId, userId, voteType);
         }
 
         // 2. Recalculate the net upvote count
@@ -120,4 +128,71 @@ export const WikiService = {
 
         return { upvotes, promoted, error: null };
     },
+
+    // ─── Comments ────────────────────────────────────────────────────────────
+
+    /**
+     * Get all comments for a submission.
+     */
+    getComments: async (submissionId) => {
+        return await WikiModel.getComments(submissionId);
+    },
+
+    /**
+     * Add a comment to a submission.
+     */
+    addComment: async (token, userId, submissionId, content) => {
+        const { data, error } = await WikiModel.addComment(token, userId, submissionId, content);
+
+        if (error) {
+            return { data: null, error };
+        }
+
+        // Fetch the author profile for the response
+        return { data, error: null };
+    },
+
+    // ─── Bookmarks ───────────────────────────────────────────────────────────
+
+    /**
+     * Toggle bookmark for a submission.
+     */
+    toggleBookmark: async (token, userId, submissionId) => {
+        return await WikiModel.toggleBookmark(token, userId, submissionId);
+    },
+
+    // ─── AI Assistant ────────────────────────────────────────────────────────
+
+    /**
+     * Ask the AI assistant about a specific submission.
+     * Fetches the full submission data to provide context.
+     */
+    askAssistant: async (submissionId, userMessage, conversationHistory) => {
+        // Fetch the submission to provide context
+        const { data: submission, error } = await WikiModel.getSubmissionById(submissionId);
+
+        if (error || !submission) {
+            return {
+                success: false,
+                response: 'Could not find the submission to provide context.',
+            };
+        }
+
+        return await askWikiAssistant({
+            submission,
+            userMessage,
+            conversationHistory,
+        });
+    },
+
+    /**
+     * Ask the global AI assistant about dialects and culture.
+     */
+    askGlobalAssistant: async (userMessage, conversationHistory) => {
+        return await askGlobalWikiAssistant({
+            userMessage,
+            conversationHistory,
+        });
+    },
 };
+
