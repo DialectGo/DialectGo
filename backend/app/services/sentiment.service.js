@@ -243,7 +243,7 @@ export function disambiguateToken(token, contextWords) {
             for (const keyword of category.keywords) {
                 const lowerKeyword = keyword.toLowerCase();
                 for (const contextWord of contextWords) {
-                    if (contextWord === lowerKeyword || contextWord.includes(lowerKeyword)) {
+                    if (contextWord === lowerKeyword || (lowerKeyword.length >= 4 && contextWord.includes(lowerKeyword))) {
                         overlap++;
                         break; // Count at most once per keyword
                     }
@@ -256,11 +256,18 @@ export function disambiguateToken(token, contextWords) {
             const tags = match.context_tag.toLowerCase().split(/[,\s]+/);
             for (const tag of tags) {
                 for (const contextWord of contextWords) {
-                    if (contextWord === tag || contextWord.includes(tag)) {
+                    if (contextWord === tag || (tag.length >= 4 && contextWord.includes(tag))) {
                         overlap++;
                         break;
                     }
                 }
+            }
+        }
+
+        // Add POS context overlap boost
+        if (match.part_of_speech && token.inferredPOS && token.inferredPOS !== 'Unknown') {
+            if (match.part_of_speech.toLowerCase() === token.inferredPOS.toLowerCase()) {
+                overlap += 2; // Strong boost for grammatical match
             }
         }
 
@@ -301,6 +308,11 @@ function applyNegationAndIntensifiers(resolvedTokens) {
         const token = resolvedTokens[tokenIdx];
 
         if (token.status !== 'keep') continue;
+
+        // VSO Predicate Multiplier: In Philippine languages, the first word carries the heaviest emotional weight
+        if (token.isPredicate) {
+            token.effectiveWeight = Math.round(token.effectiveWeight * 1.5 * 100) / 100;
+        }
 
         // Look at the 2 preceding word tokens
         for (let lookback = 1; lookback <= 2 && (wi - lookback) >= 0; lookback++) {

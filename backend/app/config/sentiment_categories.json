@@ -6,8 +6,6 @@
         "gusto",
         "crush",
         "mahal",
-        "siya",
-        "kita",
         "heart",
         "love",
         "babe",
@@ -31,7 +29,6 @@
         "langga",
         "higugma",
         "gugma",
-        "date",
         "manliligaw",
         "nobyo",
         "nobya",
@@ -107,7 +104,6 @@
       "label": "Happy / Positive",
       "keywords": [
         "masaya",
-        "saya",
         "galing",
         "nice",
         "sarap",
@@ -152,7 +148,6 @@
         "away",
         "tampuhan",
         "reklamo",
-        "sama",
         "init",
         "ulo",
         "gago",
@@ -325,7 +320,6 @@
         "remote",
         "raket",
         "negosyo",
-        "kita",
         "puhunan"
       ]
     },
@@ -568,7 +562,7 @@
   },
   "score_thresholds": {
     "very_negative": [
-      -1.0,
+      -1,
       -0.6
     ],
     "negative": [
@@ -585,7 +579,7 @@
     ],
     "very_positive": [
       0.6,
-      1.0
+      1
     ]
   }
 }

@@ -55,7 +55,41 @@ export const preprocessText = async (text, sourceLang = 'Tagalog', token = null)
         const multiWordPhrases = await getMultiWordPhrases(sourceLang, token);
         const tokens = tokenize(text, multiWordPhrases);
 
-        console.log(`[Preprocessor] Stage 1 — Tokenized ${tokens.length} tokens`);
+        // ─── Stage 1.5: POS Inferencing (VSO Structure) ─────────────────
+        let isFirstWord = true;
+        for (let i = 0; i < tokens.length; i++) {
+            if (tokens[i].type === 'word') {
+                tokens[i].inferredPOS = 'Unknown';
+                tokens[i].isPredicate = false;
+                
+                // 1. VSO Predicate heuristic (first word is usually Verb/Adj)
+                if (isFirstWord) {
+                    tokens[i].inferredPOS = 'Predicate';
+                    tokens[i].isPredicate = true;
+                    isFirstWord = false;
+                }
+
+                // 2. Noun marker heuristic
+                // Follows standard markers or demonstrative/interrogative linkers ending in -ng
+                let prevWord = null;
+                for (let j = i - 1; j >= 0; j--) {
+                    if (tokens[j].type === 'word') {
+                        prevWord = tokens[j].normalized;
+                        break;
+                    }
+                }
+                const nounMarkers = [
+                    'ang', 'ng', 'sa', 'mga', 'yung', 'si', 'ni', 
+                    'kaninong', 'anong', 'itong', 'iyong', 'niyang', 'nitong'
+                ];
+                if (prevWord && nounMarkers.includes(prevWord)) {
+                    tokens[i].inferredPOS = 'Noun';
+                    tokens[i].isPredicate = false; // Override if it somehow follows a marker
+                }
+            }
+        }
+
+        console.log(`[Preprocessor] Stage 1 — Tokenized ${tokens.length} tokens with POS inferencing`);
 
         // Quick exit: if no word tokens found, nothing to process
         const uniqueWords = getUniqueWords(tokens);
