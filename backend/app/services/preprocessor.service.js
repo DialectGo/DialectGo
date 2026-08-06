@@ -52,7 +52,7 @@ export const preprocessText = async (text, sourceLang = 'Tagalog', token = null)
 
     try {
         // ─── Stage 1: Tokenization ──────────────────────────────────────
-        const { data: multiWordPhrases, error: phraseError } = await getMultiWordPhrases(sourceLang, token);
+        const multiWordPhrases = await getMultiWordPhrases(sourceLang, token);
         const tokens = tokenize(text, multiWordPhrases);
 
         console.log(`[Preprocessor] Stage 1 — Tokenized ${tokens.length} tokens`);
