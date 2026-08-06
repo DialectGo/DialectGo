@@ -23,6 +23,9 @@ const supabaseAdmin = createClient(
  * This ensures that Row Level Security (RLS) is applied to all queries made with this client.
  */
 export const getAuthClient = (token) => {
+    if (!token || token === 'null' || token === 'undefined') {
+        return supabase;
+    }
     return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
         global: {
             headers: {

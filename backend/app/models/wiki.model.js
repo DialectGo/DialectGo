@@ -10,10 +10,11 @@ export const WikiModel = {
      * Fetch paginated submissions with optional filters.
      * Joins profiles for author attribution.
      */
-    getSubmissions: async ({ page = 1, limit = 20, region, category, status, search, sort = 'newest', type }) => {
+    getSubmissions: async (token, { page = 1, limit = 20, region, category, status, search, sort = 'newest', type }) => {
+        const client = getAuthClient(token);
         const offset = (page - 1) * limit;
 
-        let query = supabase
+        let query = client
             .from('dialect_submissions')
             .select('*', { count: 'exact' });
 
@@ -50,7 +51,7 @@ export const WikiModel = {
         // Fetch profiles separately
         if (data && data.length > 0) {
             const userIds = [...new Set(data.map(item => item.user_id))];
-            const { data: profiles } = await supabase
+            const { data: profiles } = await client
                 .from('profiles')
                 .select('id, username, first_name, last_name')
                 .in('id', userIds);
@@ -73,15 +74,16 @@ export const WikiModel = {
     /**
      * Fetch a single submission by ID with author profile.
      */
-    getSubmissionById: async (id) => {
+    getSubmissionById: async (token, id) => {
+        const client = getAuthClient(token);
         // Increment views before fetching
-        const { error: rpcError } = await supabase
+        const { error: rpcError } = await client
             .rpc('increment_wiki_views', { row_id: id });
         if (rpcError) {
             // Silently fail if RPC doesn't exist yet
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await client
             .from('dialect_submissions')
             .select('*')
             .eq('id', id)
@@ -93,7 +95,7 @@ export const WikiModel = {
         }
 
         if (data) {
-            const { data: profile } = await supabase
+            const { data: profile } = await client
                 .from('profiles')
                 .select('username, first_name, last_name')
                 .eq('id', data.user_id)
@@ -133,8 +135,9 @@ export const WikiModel = {
     /**
      * Check if a near-duplicate submission already exists.
      */
-    checkDuplicate: async (sourceTerm, region) => {
-        const { data, error } = await supabase
+    checkDuplicate: async (token, sourceTerm, region) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('dialect_submissions')
             .select('id')
             .ilike('source_term', sourceTerm.trim())
@@ -153,8 +156,9 @@ export const WikiModel = {
     /**
      * Get the current user's vote on a specific submission.
      */
-    getUserVote: async (submissionId, userId) => {
-        const { data, error } = await supabase
+    getUserVote: async (token, submissionId, userId) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('submission_votes')
             .select('vote_type')
             .eq('submission_id', submissionId)
@@ -207,9 +211,10 @@ export const WikiModel = {
      * Recalculate the upvotes count from the votes table
      * and update the submission record.
      */
-    recalculateUpvotes: async (submissionId) => {
+    recalculateUpvotes: async (token, submissionId) => {
+        const client = getAuthClient(token);
         // Sum all votes for this submission
-        const { data: votes, error: fetchError } = await supabase
+        const { data: votes, error: fetchError } = await client
             .from('submission_votes')
             .select('vote_type')
             .eq('submission_id', submissionId);
@@ -221,7 +226,7 @@ export const WikiModel = {
 
         const netVotes = (votes || []).reduce((sum, v) => sum + v.vote_type, 0);
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await client
             .from('dialect_submissions')
             .update({ upvotes: netVotes })
             .eq('id', submissionId);
@@ -237,9 +242,10 @@ export const WikiModel = {
      * Promote a verified submission into the dialect_corpus table.
      * Copies the term data and marks the submission as 'verified'.
      */
-    promoteToCorpus: async (submissionId) => {
+    promoteToCorpus: async (token, submissionId) => {
+        const client = getAuthClient(token);
         // Fetch the submission first
-        const { data: submission, error: fetchError } = await supabase
+        const { data: submission, error: fetchError } = await client
             .from('dialect_submissions')
             .select('*')
             .eq('id', submissionId)
@@ -254,15 +260,14 @@ export const WikiModel = {
         if (submission.type === 'Question') {
             console.log(`[WikiModel] Skipping corpus promotion for Question "${submission.source_term}"`);
             // Still mark as verified
-            const { error: updateError } = await supabase
+            const { error: updateError } = await client
                 .from('dialect_submissions')
                 .update({ status: 'verified' })
                 .eq('id', submissionId);
             return { error: updateError };
         }
 
-        // Insert into dialect_corpus
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseAdmin
             .from('dialect_corpus')
             .insert([{
                 source_text: submission.source_term.toLowerCase(),
@@ -281,7 +286,7 @@ export const WikiModel = {
         }
 
         // Mark submission as verified
-        const { error: updateError } = await supabase
+        const { error: updateError } = await client
             .from('dialect_submissions')
             .update({ status: 'verified' })
             .eq('id', submissionId);
@@ -299,8 +304,9 @@ export const WikiModel = {
     /**
      * Fetch all comments for a submission, with author profiles.
      */
-    getComments: async (submissionId) => {
-        const { data, error } = await supabase
+    getComments: async (token, submissionId) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('wiki_comments')
             .select('*')
             .eq('submission_id', submissionId)

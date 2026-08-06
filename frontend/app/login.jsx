@@ -18,6 +18,11 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../shared/lib/supabase';
 import { endpoints } from '../shared/config/apiConfig';
 import axios from 'axios';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import { FontAwesome5 } from '@expo/vector-icons';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const LOGIN_URL = endpoints.USER_LOGIN;
 
@@ -73,6 +78,71 @@ export default function LogIn({ onSwitch, onSuccess }) {
         setLoading(false); 
       }
     };
+
+  const handleOAuthLogin = async (provider) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const redirectUrl = makeRedirectUri();
+      console.log("Generated Redirect URL:", redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+      
+      console.log("Supabase OAuth URL:", data?.url);
+
+      if (error) throw error;
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          
+          const accessTokenMatch = url.match(/access_token=([^&]+)/);
+          const refreshTokenMatch = url.match(/refresh_token=([^&]+)/);
+          
+          if (accessTokenMatch && refreshTokenMatch) {
+             const access_token = accessTokenMatch[1];
+             const refresh_token = refreshTokenMatch[1];
+             
+             const { error: sessionError } = await supabase.auth.setSession({
+                access_token,
+                refresh_token,
+             });
+             
+             if (sessionError) throw sessionError;
+             
+             await AsyncStorage.removeItem('@guest_mode');
+             await AsyncStorage.setItem('@user_role', 'authenticated');
+             if (onSuccess) {
+                onSuccess();
+             } else {
+                router.replace('../(tabs)/Home'); 
+             }
+          } else {
+            // If Supabase natively parsed the URL via a deep link listener, session might already be set.
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              await AsyncStorage.removeItem('@guest_mode');
+              await AsyncStorage.setItem('@user_role', 'authenticated');
+              if (onSuccess) onSuccess();
+              else router.replace('../(tabs)/Home'); 
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("OAuth Error:", error);
+      Alert.alert("OAuth Error", error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -157,6 +227,17 @@ export default function LogIn({ onSwitch, onSuccess }) {
               <View style={styles.line} />
               <Text style={styles.lineText}>OR</Text>
               <View style={styles.line} />
+            </View>
+
+            <View style={styles.socialRow}>
+              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('google')} disabled={loading}>
+                <FontAwesome5 name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                <Text style={styles.socialText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('facebook')} disabled={loading}>
+                <FontAwesome5 name="facebook" size={20} color="#4267B2" style={{ marginRight: 10 }} />
+                <Text style={styles.socialText}>Facebook</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.footer}>

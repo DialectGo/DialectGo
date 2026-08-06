@@ -6,19 +6,19 @@ const sendResponse = (res, next, result) => {
 };
 
 export const getAllGames = async (req, res, next) => {
-    const result = await GameService.getAllGames();
+    const result = await GameService.getAllGames(req.token);
     sendResponse(res, next, result);
 };
 
 export const getGameChallenges = async (req, res, next) => {
     // Captures both ?difficulty and ?targetLanguage parameters from client url strings
     const { difficulty, targetLanguage } = req.query; 
-    const result = await GameService.getChallenges(req.params.id, difficulty, targetLanguage);
+    const result = await GameService.getChallenges(req.params.id, difficulty, targetLanguage, req.token);
     sendResponse(res, next, result);
 };
 export const getBridgeChallenges = async (req, res, next) => {
     // Game ID for Word Bridge is 2
     const { targetLanguage } = req.query; 
-    const result = await GameService.getChallenges(2, 'bridge_mode', targetLanguage);
+    const result = await GameService.getChallenges(2, 'bridge_mode', targetLanguage, req.token);
     sendResponse(res, next, result);
 };

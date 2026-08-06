@@ -5,7 +5,7 @@ export const getWordDefinition = async (req, res, next) => {
         const { term } = req.params;
         const userId = req.user?.id; // Optional chaining
 
-        const data = await DictionaryService.findWord(term.trim(), userId);
+        const data = await DictionaryService.findWord(term.trim(), userId, req.token);
         
         if (!data) return res.status(404).json({ success: false, message: 'Word not found' });
         res.status(200).json({ success: true, data });
@@ -26,7 +26,8 @@ export const getBrowseWords = async (req, res, next) => {
             page, 
             limit, 
             languageId, 
-            letter
+            letter,
+            req.token
         );
 
         res.status(200).json({
@@ -47,7 +48,7 @@ export const getBrowseWords = async (req, res, next) => {
 
 export const saveWord = async (req, res, next) => {
     try {
-        const data = await DictionaryService.saveWord(req.user.id, req.body.dictionary_id);
+        const data = await DictionaryService.saveWord(req.user.id, req.body.dictionary_id, req.token);
         res.status(201).json({ success: true, data });
     } catch (err) {
         next(err);
@@ -56,7 +57,7 @@ export const saveWord = async (req, res, next) => {
 
 export const getSavedWords = async (req, res, next) => {
     try {
-        const data = await DictionaryService.getSavedWords(req.user.id);
+        const data = await DictionaryService.getSavedWords(req.user.id, req.token);
         res.status(200).json({ success: true, data });
     } catch (err) {
         next(err);
@@ -68,7 +69,7 @@ export const deleteSelectedWords = async (req, res, next) => {
         const { ids } = req.body;
         const userId = req.user.id;
 
-        await DictionaryService.deleteSavedWords(userId, ids);
+        await DictionaryService.deleteSavedWords(userId, ids, req.token);
 
         res.status(200).json({ 
             success: true, 
@@ -85,7 +86,7 @@ export const deleteSelectedWords = async (req, res, next) => {
 
 export const getSearchHistory = async (req, res, next) => {
     try {
-        const data = await DictionaryService.getSearchHistory(req.user.id);
+        const data = await DictionaryService.getSearchHistory(req.user.id, req.token);
         res.status(200).json({ success: true, data });
     } catch (err) {
         next(err);
@@ -97,7 +98,7 @@ export const deleteSelectedHistory = async (req, res, next) => {
         const { ids } = req.body;
         const userId = req.user.id;
 
-        await DictionaryService.deleteHistoryItems(userId, ids);
+        await DictionaryService.deleteHistoryItems(userId, ids, req.token);
 
         res.status(200).json({ 
             success: true, 
@@ -113,7 +114,7 @@ export const deleteSelectedHistory = async (req, res, next) => {
 
 export const getWordOfTheDay = async (req, res, next) => {
     try {
-        const data = await DictionaryService.getRandomCebuanoWord();
+        const data = await DictionaryService.getRandomCebuanoWord(req.token);
         res.status(200).json({ success: true, data });
     } catch (err) {
         // This ensures the error is returned as JSON, preventing the HTML error page
@@ -130,7 +131,7 @@ export const checkSavedStatus = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Dictionary Entry ID is missing.' });
         }
 
-        const isBookmarked = await DictionaryService.checkIfSaved(userId, parseInt(id, 10));
+        const isBookmarked = await DictionaryService.checkIfSaved(userId, parseInt(id, 10), req.token);
         
         res.status(200).json({ 
             success: true, 

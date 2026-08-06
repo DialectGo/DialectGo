@@ -55,7 +55,7 @@ export function clearReverseCache() {
  * @param {string} targetDialect - The user-selected dialect (e.g., 'Boholano', 'Batangeño')
  * @returns {Promise<DialectizeResult>}
  */
-export async function dialectize(text, targetDialect) {
+export async function dialectize(text, targetDialect, token = null) {
     const startTime = Date.now();
 
     // Guard: empty input or no dialect
@@ -106,7 +106,7 @@ export async function dialectize(text, targetDialect) {
         let dbResults = new Map();
 
         if (wordsToLookup.length > 0) {
-            const { data, error } = await CorpusModel.reverseLookup(wordsToLookup, targetDialect);
+            const { data, error } = await CorpusModel.reverseLookup(wordsToLookup, targetDialect, token);
 
             if (error) {
                 console.error('[ReverseCanonicalizer] Reverse lookup failed:', error.message);

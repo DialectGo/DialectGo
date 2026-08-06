@@ -1,4 +1,4 @@
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 /**
  * Data access layer for the dialect_corpus table.
@@ -15,12 +15,13 @@ export const CorpusModel = {
      * @param {string|null} sourceLang - Optional source language filter (e.g., 'Tagalog')
      * @returns {Promise<{data: object[], error: object|null}>}
      */
-    batchLookup: async (normalizedTerms, sourceLang = null) => {
+    batchLookup: async (normalizedTerms, sourceLang = null, token = null) => {
         if (!normalizedTerms || normalizedTerms.length === 0) {
             return { data: [], error: null };
         }
 
-        let query = supabase
+        const client = getAuthClient(token);
+        let query = client
             .from('dialect_corpus')
             .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status')
             .in('source_text', normalizedTerms)
@@ -49,8 +50,9 @@ export const CorpusModel = {
      * @param {string|null} sourceLang - Optional source language filter
      * @returns {Promise<{data: string[], error: object|null}>}
      */
-    getMultiWordPhrases: async (sourceLang = null) => {
-        let query = supabase
+    getMultiWordPhrases: async (sourceLang = null, token = null) => {
+        const client = getAuthClient(token);
+        let query = client
             .from('dialect_corpus')
             .select('source_text')
             .like('source_text', '% %')  // Contains at least one space
@@ -83,12 +85,13 @@ export const CorpusModel = {
      * @param {string} targetDialect - The target dialect/region (e.g., 'Boholano', 'Batangeño')
      * @returns {Promise<{data: object[], error: object|null}>}
      */
-    reverseLookup: async (normalizedTerms, targetDialect) => {
+    reverseLookup: async (normalizedTerms, targetDialect, token = null) => {
         if (!normalizedTerms || normalizedTerms.length === 0 || !targetDialect) {
             return { data: [], error: null };
         }
 
-        const { data, error } = await supabase
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('dialect_corpus')
             .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status')
             .in('standard_term', normalizedTerms)
@@ -111,8 +114,9 @@ export const CorpusModel = {
      * @param {number} sentimentScore - The specific sentiment score
      * @returns {Promise<{data: object|null, error: object|null}>}
      */
-    getByTermAndScore: async (term, sentimentScore) => {
-        const { data, error } = await supabase
+    getByTermAndScore: async (term, sentimentScore, token = null) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('dialect_corpus')
             .select('*')
             .eq('source_text', term.toLowerCase())

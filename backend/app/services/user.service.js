@@ -4,7 +4,7 @@ import { generateDeviceFingerprint } from '../utils/deviceFingerprint.js';
 import { notifyAllAdmins } from './notification.service.js';
 import { recordFailedLogin } from './security.service.js';
 import { checkImpossibleTravel } from '../utils/impossibleTravel.js';
-import { supabaseAdmin } from '../config/db.js';
+import { supabaseAdmin, getAuthClient } from '../config/db.js';
 
 export const register = async (data) => {
   return await UserModel.registerUser(data);
@@ -14,12 +14,12 @@ export const login = async (email, password) => {
   return await UserModel.loginUser(email, password);
 };
 
-export const getProfile = async (userId) => {
-  return await UserModel.getProfileById(userId);
+export const getProfile = async (userId, token) => {
+  return await UserModel.getProfileById(userId, token);
 };
 
-export const updateProfile = async (userId, data) => {
-  return await UserModel.updateProfileById(userId, data);
+export const updateProfile = async (userId, data, token) => {
+  return await UserModel.updateProfileById(userId, data, token);
 };
 
 export const getAllUsers = async () => {
@@ -38,20 +38,21 @@ export const deleteUser = async (id) => {
   return await UserModel.deleteUser(id);
 };
 
-export const getStreakInfo = async (userId) => {
+export const getStreakInfo = async (userId, token) => {
   // Always recalculate to ensure accuracy based on historical data
-  return await UserModel.calculateAndSyncStreak(userId);
+  return await UserModel.calculateAndSyncStreak(userId, token);
 };
 
-export const refreshStreak = async (userId) => {
-  return await UserModel.calculateAndSyncStreak(userId);
+export const refreshStreak = async (userId, token) => {
+  return await UserModel.calculateAndSyncStreak(userId, token);
 };
 
-export const updateStreakStatus = async (userId) => {
+export const updateStreakStatus = async (userId, token) => {
   const today = new Date().toISOString().split('T')[0];
+  const client = getAuthClient(token);
 
   // 1. Count translations for the user today
-  const { count, error } = await supabase
+  const { count, error } = await client
     .from('translation_history')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
@@ -63,13 +64,13 @@ export const updateStreakStatus = async (userId) => {
   // 2. If threshold (3) is met, update the profile streak
   if (count === 3) {
     // We only increment once per day when they hit exactly 3
-    const { data: profile } = await supabase
+    const { data: profile } = await client
       .from('profiles')
       .select('streak_count')
       .eq('id', userId)
       .single();
 
-    await supabase
+    await client
       .from('profiles')
       .update({ streak_count: (profile.streak_count || 0) + 1 })
       .eq('id', userId);

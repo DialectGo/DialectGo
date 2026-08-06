@@ -40,22 +40,15 @@ export function clearCache() {
  * @param {string|null} sourceLang - Optional language filter
  * @returns {Promise<string[]>} Lowercased multi-word phrases
  */
-export async function getMultiWordPhrases(sourceLang = null) {
-    const cacheKey = sourceLang || 'all';
-    const cached = multiWordCache.get(cacheKey);
-
-    if (isCacheValid(cached)) {
-        return cached.phrases;
-    }
-
-    const { data, error } = await CorpusModel.getMultiWordPhrases(sourceLang);
+export const getMultiWordPhrases = async (sourceLang = null, token = null) => {
+    // We could add caching here (e.g., Redis) since this data doesn't change often
+    const { data, error } = await CorpusModel.getMultiWordPhrases(sourceLang, token);
 
     if (error) {
         console.error('[CorpusLookup] Failed to fetch multi-word phrases:', error.message);
         return [];
     }
 
-    multiWordCache.set(cacheKey, { phrases: data, timestamp: Date.now() });
     return data;
 }
 
@@ -90,7 +83,7 @@ export async function getMultiWordPhrases(sourceLang = null) {
  * @param {string|null} sourceLang - Optional source language filter for corpus queries
  * @returns {Promise<EnrichedToken[]>}
  */
-export async function lookupTokens(tokens, sourceLang = null) {
+export const lookupTokens = async (tokens, sourceLang = null, token = null) => {
     // 1. Collect unique normalized words that need lookup
     const wordsToLookup = [];
     const cachedResults = new Map();
@@ -110,7 +103,7 @@ export async function lookupTokens(tokens, sourceLang = null) {
     let dbResults = new Map();
 
     if (wordsToLookup.length > 0) {
-        const { data, error } = await CorpusModel.batchLookup(wordsToLookup, sourceLang);
+        const { data, error } = await CorpusModel.batchLookup(wordsToLookup, sourceLang, token);
 
         if (error) {
             console.error('[CorpusLookup] Batch lookup failed:', error.message);

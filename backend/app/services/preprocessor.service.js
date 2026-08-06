@@ -28,9 +28,10 @@ import { canonicalize } from './canonicalization.service.js';
  * 
  * @param {string} text - Raw user input text
  * @param {string|null} sourceLang - Source language identifier (e.g., 'Tagalog', 'tl')
+ * @param {string|null} token - Auth token for database access
  * @returns {Promise<PreprocessingResult>}
  */
-export async function preprocessText(text, sourceLang = null) {
+export const preprocessText = async (text, sourceLang = 'Tagalog', token = null) => {
     const startTime = Date.now();
 
     // Guard: empty/invalid input passes through unchanged
@@ -51,7 +52,7 @@ export async function preprocessText(text, sourceLang = null) {
 
     try {
         // ─── Stage 1: Tokenization ──────────────────────────────────────
-        const multiWordPhrases = await getMultiWordPhrases(sourceLang);
+        const { data: multiWordPhrases, error: phraseError } = await getMultiWordPhrases(sourceLang, token);
         const tokens = tokenize(text, multiWordPhrases);
 
         console.log(`[Preprocessor] Stage 1 — Tokenized ${tokens.length} tokens`);
@@ -70,7 +71,7 @@ export async function preprocessText(text, sourceLang = null) {
         }
 
         // ─── Stage 2: Corpus Lookup ─────────────────────────────────────
-        const enrichedTokens = await lookupTokens(tokens, sourceLang);
+        const enrichedTokens = await lookupTokens(tokens, sourceLang, token);
 
         const matchedCount = enrichedTokens.filter(t => t.corpusMatches !== null).length;
         console.log(`[Preprocessor] Stage 2 — Found ${matchedCount} corpus matches out of ${uniqueWords.length} unique words`);

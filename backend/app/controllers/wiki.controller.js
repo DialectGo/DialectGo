@@ -6,7 +6,7 @@ import { WikiService } from '../services/wiki.service.js';
  */
 export const listSubmissions = async (req, res, next) => {
     try {
-        const { data, error, count } = await WikiService.listSubmissions(req.query);
+        const { data, error, count } = await WikiService.listSubmissions(req.token, req.query);
 
         if (error) {
             return res.status(500).json({ success: false, message: error.message });
@@ -98,7 +98,7 @@ export const voteOnSubmission = async (req, res, next) => {
  */
 export const getComments = async (req, res, next) => {
     try {
-        const { data, error } = await WikiService.getComments(req.params.id);
+        const { data, error } = await WikiService.getComments(req.token, req.params.id);
 
         if (error) {
             return res.status(500).json({ success: false, message: error.message });

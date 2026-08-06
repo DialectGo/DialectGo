@@ -11,7 +11,7 @@ export const WikiService = {
     /**
      * List submissions with pagination and filters.
      */
-    listSubmissions: async (query) => {
+    listSubmissions: async (token, query) => {
         const filters = {
             page: parseInt(query.page) || 1,
             limit: Math.min(parseInt(query.limit) || 20, 50), // Cap at 50
@@ -23,14 +23,14 @@ export const WikiService = {
             type: query.type || null,
         };
 
-        return await WikiModel.getSubmissions(filters);
+        return await WikiModel.getSubmissions(token, filters);
     },
 
     /**
      * Get a single submission with the current user's vote and bookmark state.
      */
     getDetail: async (submissionId, userId, token) => {
-        const { data: submission, error } = await WikiModel.getSubmissionById(submissionId);
+        const { data: submission, error } = await WikiModel.getSubmissionById(token, submissionId);
 
         if (error || !submission) {
             return { data: null, error: error || new Error('Not found') };
@@ -40,7 +40,7 @@ export const WikiService = {
         let userVote = null;
         let bookmarked = false;
         if (userId && token) {
-            const { data: voteData } = await WikiModel.getUserVote(submissionId, userId);
+            const { data: voteData } = await WikiModel.getUserVote(token, submissionId, userId);
             userVote = voteData?.vote_type || null;
 
             const { bookmarked: isBookmarked } = await WikiModel.checkBookmark(token, userId, submissionId);
@@ -59,7 +59,7 @@ export const WikiService = {
     submitTerm: async (token, userId, data) => {
         // Only check duplicates for Term type submissions
         if (data.type !== 'Question') {
-            const { exists } = await WikiModel.checkDuplicate(data.source_term, data.region);
+            const { exists } = await WikiModel.checkDuplicate(token, data.source_term, data.region);
             if (exists) {
                 return {
                     data: null,
@@ -90,7 +90,7 @@ export const WikiService = {
      */
     castVote: async (token, submissionId, userId, voteType) => {
         // 1. Check current vote
-        const { data: existingVote } = await WikiModel.getUserVote(submissionId, userId);
+        const { data: existingVote } = await WikiModel.getUserVote(token, submissionId, userId);
 
         if (existingVote) {
             if (existingVote.vote_type === voteType) {
@@ -106,7 +106,7 @@ export const WikiService = {
         }
 
         // 2. Recalculate the net upvote count
-        const { upvotes, error } = await WikiModel.recalculateUpvotes(submissionId);
+        const { upvotes, error } = await WikiModel.recalculateUpvotes(token, submissionId);
 
         if (error) {
             return { upvotes: 0, promoted: false, error };
@@ -116,9 +116,9 @@ export const WikiService = {
         let promoted = false;
         if (upvotes >= PROMOTION_THRESHOLD) {
             // Fetch current status to avoid re-promoting
-            const { data: submission } = await WikiModel.getSubmissionById(submissionId);
+            const { data: submission } = await WikiModel.getSubmissionById(token, submissionId);
             if (submission && submission.status !== 'verified') {
-                const { error: promoError } = await WikiModel.promoteToCorpus(submissionId);
+                const { error: promoError } = await WikiModel.promoteToCorpus(token, submissionId);
                 if (!promoError) {
                     promoted = true;
                     console.log(`[WikiService] 🎉 Submission ${submissionId} auto-promoted (${upvotes} upvotes)`);
@@ -134,8 +134,8 @@ export const WikiService = {
     /**
      * Get all comments for a submission.
      */
-    getComments: async (submissionId) => {
-        return await WikiModel.getComments(submissionId);
+    getComments: async (token, submissionId) => {
+        return await WikiModel.getComments(token, submissionId);
     },
 
     /**
@@ -169,7 +169,7 @@ export const WikiService = {
      */
     askAssistant: async (submissionId, userMessage, conversationHistory) => {
         // Fetch the submission to provide context
-        const { data: submission, error } = await WikiModel.getSubmissionById(submissionId);
+        const { data: submission, error } = await WikiModel.getSubmissionById(null, submissionId); // No token needed for assistant context
 
         if (error || !submission) {
             return {

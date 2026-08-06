@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from '../config/db.js';
+import { supabase, supabaseAdmin, getAuthClient } from '../config/db.js';
 import { createClient } from '@supabase/supabase-js';
 
 const getAuthenticatedClient = (token) => {
@@ -38,8 +38,9 @@ export const loginUser = async (email, password) => {
 };
 
 // PROFILE (RLS SAFE)
-export const getProfileById = async (id) => {
-  const { data, error } = await supabase
+export const getProfileById = async (id, token) => {
+  const client = getAuthClient(token);
+  const { data, error } = await client
     .from('profiles')
     .select('*')
     .eq('id', id)
@@ -49,7 +50,8 @@ export const getProfileById = async (id) => {
   return data;
 };
 
-export const updateProfileById = async (userId, updateData) => {
+export const updateProfileById = async (userId, updateData, token) => {
+    const client = getAuthClient(token);
     // Complete mapping: Ensure these keys match your Database column names exactly
     const mapping = {
         firstName: 'first_name',
@@ -73,7 +75,7 @@ export const updateProfileById = async (userId, updateData) => {
     }
 
     // Perform the update
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from('profiles')
         .update(dbData)
         .eq('id', userId)
@@ -124,9 +126,10 @@ export const deleteUser = async (id) => {
 // Add to user.model.js
 // user.model.js
 
-export const calculateAndSyncStreak = async (userId) => {
+export const calculateAndSyncStreak = async (userId, token) => {
+  const client = getAuthClient(token);
   // 1. Fetch all translation timestamps for this user
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('translation_history')
     .select('created_at')
     .eq('user_id', userId)
@@ -148,7 +151,7 @@ export const calculateAndSyncStreak = async (userId) => {
     .sort((a, b) => new Date(b) - new Date(a)); // Newest first
 
   if (activeDays.length === 0) {
-    await supabase.from('profiles').update({ streak_count: 0 }).eq('id', userId);
+    await client.from('profiles').update({ streak_count: 0 }).eq('id', userId);
     return { streak: 0, activeDays: [] };
   }
 
@@ -180,7 +183,7 @@ export const calculateAndSyncStreak = async (userId) => {
   }
 
   // 5. Sync to profile
-  await supabase
+  await client
     .from('profiles')
     .update({ streak_count: streak })
     .eq('id', userId);

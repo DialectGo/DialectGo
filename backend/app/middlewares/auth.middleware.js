@@ -31,6 +31,7 @@ const verifyToken = async (req, res, next) => {
           email: decoded.email,
           role: decoded.role,
         };
+        req.token = token;
 
         return next();
       } catch (jwtErr) {

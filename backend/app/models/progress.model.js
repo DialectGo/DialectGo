@@ -1,4 +1,4 @@
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 const MAX_HEARTS = 8;
 const REGEN_RATE_MS = 60 * 60 * 1000; // 1 hour in milliseconds
@@ -7,8 +7,9 @@ const HEART_PURCHASE_BONUS = 2;
 const normalizeHearts = (value) => Math.max(0, Number(value || 0));
 
 export const ProgressModel = {
-    async getProgressWithHeartRegen(userId, gameId = 1, difficulty = 'none') {
-        const { data: current, error: getError } = await supabase
+    async getProgressWithHeartRegen(userId, gameId = 1, difficulty = 'none', token) {
+        const client = getAuthClient(token);
+        const { data: current, error: getError } = await client
             .from('user_game_progress')
             .select('id, user_id, game_id, difficulty, total_xp, current_level, high_score, current_hearts, last_heart_consumed_at, completed_levels')
             .eq('user_id', userId)
@@ -44,7 +45,7 @@ export const ProgressModel = {
                     ? new Date().toISOString()
                     : new Date(lastConsumed + (heartsToRestore * REGEN_RATE_MS)).toISOString();
 
-                const { data: updatedData, error: updateError } = await supabase
+                const { data: updatedData, error: updateError } = await client
                     .from('user_game_progress')
                     .update({ current_hearts: updatedHearts, last_heart_consumed_at: newTimestamp })
                     .eq('id', current.id)
@@ -58,23 +59,24 @@ export const ProgressModel = {
         return { data: current, error: null };
     },
 
-    async getProgress(userId, gameId = 1, difficulty = 'none') {
+    async getProgress(userId, gameId = 1, difficulty = 'none', token) {
         if (Number(gameId) === 0) {
-            return await this.getCentralizedProgress(userId);
+            return await this.getCentralizedProgress(userId, token);
         }
-        return await this.getProgressWithHeartRegen(userId, gameId, difficulty);
+        return await this.getProgressWithHeartRegen(userId, gameId, difficulty, token);
     },
 
-    async getAllUserProgressRows(userId) {
-        return await supabase
+    async getAllUserProgressRows(userId, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_game_progress')
             .select('id, user_id, game_id, difficulty, total_xp, current_level, high_score, current_hearts, last_heart_consumed_at, completed_levels')
             .eq('user_id', userId)
             .order('game_id', { ascending: true });
     },
 
-    async getCentralizedProgress(userId) {
-        const { data: rows, error } = await this.getAllUserProgressRows(userId);
+    async getCentralizedProgress(userId, token) {
+        const { data: rows, error } = await this.getAllUserProgressRows(userId, token);
 
         if (error) return { data: null, error };
 
@@ -113,16 +115,18 @@ export const ProgressModel = {
         };
     },
 
-    async getSessionById(sessionId) {
-        return await supabase
+    async getSessionById(sessionId, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_game_sessions')
             .select('user_id, game_id, session_data')
             .eq('id', sessionId)
             .maybeSingle();
     },
 
-    async updateProgress(userId, gameId = 1, difficulty = 'none', xpGained = 0, scoreGained = 0, levelCompleted = null) {
-        const { data: current, error: getError } = await this.getProgress(userId, gameId, difficulty);
+    async updateProgress(userId, gameId = 1, difficulty = 'none', xpGained = 0, scoreGained = 0, levelCompleted = null, token) {
+        const client = getAuthClient(token);
+        const { data: current, error: getError } = await this.getProgress(userId, gameId, difficulty, token);
         if (getError) return { data: null, error: getError };
 
         const currentXp = Number(current?.total_xp || 0);
@@ -136,7 +140,7 @@ export const ProgressModel = {
             : currentLevels;
 
         if (!current || !current.id) {
-            return await supabase
+            return await client
                 .from('user_game_progress')
                 .insert([{
                     user_id: userId,
@@ -154,7 +158,7 @@ export const ProgressModel = {
                 .single();
         }
 
-        const updatedRow = await supabase
+        const updatedRow = await client
             .from('user_game_progress')
             .update({
                 total_xp: newXp,
@@ -173,7 +177,8 @@ export const ProgressModel = {
     },
 
     // Deducts a life manually and shifts timestamps when falling below MAX_HEARTS
-    async consumeHeart(userId, gameId = 1, difficulty = 'none', currentHeartsValue) {
+    async consumeHeart(userId, gameId = 1, difficulty = 'none', currentHeartsValue, token) {
+        const client = getAuthClient(token);
         const newHearts = normalizeHearts(currentHeartsValue);
         const updatePayload = { current_hearts: newHearts };
 
@@ -181,11 +186,11 @@ export const ProgressModel = {
             updatePayload.last_heart_consumed_at = new Date().toISOString();
         }
 
-        const { data: rows } = await this.getAllUserProgressRows(userId);
+        const { data: rows } = await this.getAllUserProgressRows(userId, token);
 
         if (rows && rows.length > 0) {
             await Promise.all(rows.map(row =>
-                supabase
+                client
                     .from('user_game_progress')
                     .update({
                         current_hearts: newHearts,
@@ -195,7 +200,7 @@ export const ProgressModel = {
             ));
         }
 
-        return await supabase
+        return await client
             .from('user_game_progress')
             .update(updatePayload)
             .eq('user_id', userId)
@@ -205,8 +210,9 @@ export const ProgressModel = {
             .single();
     },
 
-    async purchaseHeartsWithXp(userId, gameId = 1, difficulty = 'none', xpCost) {
-        const { data: rows, error: getRowsError } = await this.getAllUserProgressRows(userId);
+    async purchaseHeartsWithXp(userId, gameId = 1, difficulty = 'none', xpCost, token) {
+        const client = getAuthClient(token);
+        const { data: rows, error: getRowsError } = await this.getAllUserProgressRows(userId, token);
         if (getRowsError) return { data: null, error: getRowsError };
 
         const totalXp = rows.reduce((sum, row) => sum + Number(row.total_xp || 0), 0);
@@ -232,7 +238,7 @@ export const ProgressModel = {
         }
 
         await Promise.all(deductions.map(({ row, deduction }) =>
-            supabase
+            client
                 .from('user_game_progress')
                 .update({
                     total_xp: Math.max(0, Number(row.total_xp || 0) - deduction),
@@ -243,7 +249,7 @@ export const ProgressModel = {
                 .eq('id', row.id)
         ));
 
-        const { data: updatedRows } = await this.getAllUserProgressRows(userId);
+        const { data: updatedRows } = await this.getAllUserProgressRows(userId, token);
         return {
             data: {
                 total_xp: newTotalXp,
@@ -254,8 +260,9 @@ export const ProgressModel = {
         };
     },
 
-    async getLeaderboard() {
-        return await supabase
+    async getLeaderboard(token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_game_progress')
             .select('user_id, total_xp, high_score')
             .order('high_score', { ascending: false }) 

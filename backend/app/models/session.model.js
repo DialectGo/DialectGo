@@ -1,8 +1,9 @@
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 export const SessionModel = {
-    async startSession(userId, gameId) {
-        return await supabase
+    async startSession(userId, gameId, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_game_sessions')
             .insert([{ 
                 user_id: userId, 
@@ -13,8 +14,9 @@ export const SessionModel = {
             .single();
     },
 
-    async completeSession(sessionId, accuracyScore, sessionData) {
-        return await supabase
+    async completeSession(sessionId, accuracyScore, sessionData, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_game_sessions')
             .update({ 
                 end_time: new Date().toISOString(), 

@@ -1,8 +1,9 @@
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 export const TranslationModel = {
-    saveHistory: async (userId, data) => {
-        return await supabase
+    saveHistory: async (userId, data, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_history')
             .insert([{
                 user_id: userId,
@@ -14,30 +15,34 @@ export const TranslationModel = {
             .select();
     },
 
-    getHistory: async (userId) => {
-        return await supabase
+    getHistory: async (userId, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_history')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
     },
 
-    deleteHistory: async (id, userId) => {
-        return await supabase
+    deleteHistory: async (id, userId, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_history')
             .delete()
             .eq('id', id)
             .eq('user_id', userId);
     },
 
-    saveBookmark: async (userId, translationId) => {
-        return await supabase
+    saveBookmark: async (userId, translationId, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('saved_translations')
             .insert([{ user_id: userId, translation_id: translationId }]);
     },
 
-    addFeedback: async (userId, translationId, rating, comment) => {
-        return await supabase
+    addFeedback: async (userId, translationId, rating, comment, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('user_feedback')
             .upsert({
                 translation_id: translationId, // The Primary Key
@@ -48,8 +53,9 @@ export const TranslationModel = {
             }, { onConflict: 'translation_id' }); // This handles the UPDATE if the ID exists
     },
 
-    saveUserTranslation: async (userId, data) => {
-        return await supabase
+    saveUserTranslation: async (userId, data, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('user_recommended_translations')
             .insert([{
                 user_id: userId,

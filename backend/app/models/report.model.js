@@ -5,7 +5,7 @@
  * Stores LLM Meta-Layer breakdown reports linked to translation history entries.
  */
 
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 export const ReportModel = {
     /**
@@ -23,8 +23,9 @@ export const ReportModel = {
      * @param {Object} reportData.sentimentAnalysis - Sentiment evaluation JSON
      * @returns {Promise<{data: object[], error: object|null}>}
      */
-    saveReport: async (userId, reportData) => {
-        return await supabase
+    saveReport: async (userId, reportData, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_reports')
             .insert([{
                 user_id: userId,
@@ -49,8 +50,9 @@ export const ReportModel = {
      * @param {string} customizationData.customizedText - The LLM-regenerated text
      * @returns {Promise<{data: object[], error: object|null}>}
      */
-    saveCustomization: async (reportId, customizationData) => {
-        return await supabase
+    saveCustomization: async (reportId, customizationData, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_reports')
             .update({
                 customization_params: customizationData.params || {},
@@ -67,8 +69,9 @@ export const ReportModel = {
      * @param {number} translationId - The translation_history.id
      * @returns {Promise<{data: object|null, error: object|null}>}
      */
-    getReportByTranslationId: async (translationId) => {
-        const { data, error } = await supabase
+    getReportByTranslationId: async (translationId, token) => {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('translation_reports')
             .select('*')
             .eq('translation_id', translationId)
@@ -86,8 +89,9 @@ export const ReportModel = {
      * @param {number} limit - Max rows to return (default 20)
      * @returns {Promise<{data: object[], error: object|null}>}
      */
-    getReportsByUser: async (userId, limit = 20) => {
-        return await supabase
+    getReportsByUser: async (userId, limit = 20, token) => {
+        const client = getAuthClient(token);
+        return await client
             .from('translation_reports')
             .select('*')
             .eq('user_id', userId)

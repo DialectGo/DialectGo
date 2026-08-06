@@ -12,7 +12,7 @@ export const translateImage = async (req, res, next) => {
         const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
 
         // Run through the pre-processing pipeline before translation
-        const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect || null);
+        const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect || null, req.token);
 
         let savedRecord = null;
         if (req.user?.id) {
@@ -22,7 +22,7 @@ export const translateImage = async (req, res, next) => {
                 translatedText: result.translatedText,
                 sourceLanguageId: source_language_id,
                 targetLanguageId: target_language_id
-            });
+            }, req.token);
             if (!error) savedRecord = data?.[0];
         }
 
@@ -57,7 +57,7 @@ export const translateAudio = async (req, res, next) => {
         if (result.transcript && result.transcript.trim().length > 0) {
             try {
                 const preprocessed = await TranslationService.performPreprocessedTranslation(
-                    result.transcript, sourceLang, targetLang, targetDialect || null
+                    result.transcript, sourceLang, targetLang, targetDialect || null, req.token
                 );
                 finalTranslation = preprocessed.translatedText;
                 preprocessingMeta = preprocessed.preprocessing;
@@ -77,8 +77,7 @@ export const translateAudio = async (req, res, next) => {
                 targetLanguageId: target_language_id || 2
             };
 
-            // FIX: Destructure 'data' from the service call
-            const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload);
+            const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload, req.token);
 
             if (error) {
                 console.error("Supabase Save Error:", error.message);
@@ -120,9 +119,9 @@ export const translateText = async (req, res, next) => {
         // Choose pipeline: with or without LLM breakdown
         let result;
         if (withBreakdown) {
-            result = await TranslationService.performTranslationWithBreakdown(sourceText, sourceLang, targetLang, targetDialect || null);
+            result = await TranslationService.performTranslationWithBreakdown(sourceText, sourceLang, targetLang, targetDialect || null, req.token);
         } else {
-            result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null);
+            result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null, req.token);
         }
 
         // Log the result here to verify if it's "clean" before saving to Supabase
@@ -133,7 +132,7 @@ export const translateText = async (req, res, next) => {
 
         const { data, error } = await TranslationService.saveHistory(req.user.id, {
             sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
-        });
+        }, req.token);
 
         if (error) throw error;
 
@@ -149,7 +148,7 @@ export const translateText = async (req, res, next) => {
                     targetDialect: targetDialect || null,
                     breakdown: result.breakdown,
                     sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
-                });
+                }, req.token);
             } catch (reportErr) {
                 console.warn('[translateText] Failed to save breakdown report:', reportErr.message);
                 // Non-fatal — continue with the response
@@ -175,7 +174,7 @@ export const getUserHistory = async (req, res) => {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
 
-        const { data, error } = await TranslationModel.getHistory(userId);
+        const { data, error } = await TranslationModel.getHistory(userId, req.token);
 
         if (error) {
             console.error('Supabase History Error:', error);
@@ -196,7 +195,7 @@ export const deleteUserHistory = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid history id' });
     }
 
-    const { error } = await TranslationModel.deleteHistory(Number(id), req.user.id);
+    const { error } = await TranslationModel.deleteHistory(Number(id), req.user.id, req.token);
     if (error) {
         return res.status(400).json({ success: false, message: error.message });
     }
@@ -219,7 +218,8 @@ export const submitFeedback = async (req, res) => {
             req.user.id,
             Number(translationId),
             dbRating,
-            comment
+            comment,
+            req.token
         );
 
         if (error) throw error;
@@ -265,7 +265,7 @@ export const submitUserTranslation = async (req, res, next) => {
             userTranslation,
             sourceLanguageId,
             targetLanguageId,
-        });
+        }, req.token);
 
         if (error) {
             throw error;
@@ -308,7 +308,7 @@ export const customizeTranslation = async (req, res, next) => {
                     targetLang,
                     breakdown: customized,
                     sentimentAnalysis: {},
-                });
+                }, req.token);
             } catch (reportErr) {
                 console.warn('[customizeTranslation] Failed to save report:', reportErr.message);
             }

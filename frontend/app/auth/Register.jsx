@@ -16,6 +16,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { styles } from '../../shared/styles/LoginStyles';
 import { useRouter } from 'expo-router'; 
 import { endpoints } from '../../shared/config/apiConfig';
+import { supabase } from '../../shared/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+import { FontAwesome5 } from '@expo/vector-icons';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = endpoints.USER_REGISTER;
 
@@ -83,6 +90,70 @@ export default function SignUp({ onSwitch, onSuccess }) {
       }
     } catch (error) {
       Alert.alert("Sign Up Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthLogin = async (provider) => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const redirectUrl = makeRedirectUri();
+      console.log("Generated Redirect URL:", redirectUrl);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+      
+      console.log("Supabase OAuth URL:", data?.url);
+
+      if (error) throw error;
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+        if (result.type === 'success' && result.url) {
+          const url = result.url;
+          
+          const accessTokenMatch = url.match(/access_token=([^&]+)/);
+          const refreshTokenMatch = url.match(/refresh_token=([^&]+)/);
+          
+          if (accessTokenMatch && refreshTokenMatch) {
+             const access_token = accessTokenMatch[1];
+             const refresh_token = refreshTokenMatch[1];
+             
+             const { error: sessionError } = await supabase.auth.setSession({
+                access_token,
+                refresh_token,
+             });
+             
+             if (sessionError) throw sessionError;
+             
+             await AsyncStorage.removeItem('@guest_mode');
+             await AsyncStorage.setItem('@user_role', 'authenticated');
+             if (onSuccess) {
+                onSuccess();
+             } else {
+                router.replace('/(tabs)/Home'); 
+             }
+          } else {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              await AsyncStorage.removeItem('@guest_mode');
+              await AsyncStorage.setItem('@user_role', 'authenticated');
+              if (onSuccess) onSuccess();
+              else router.replace('/(tabs)/Home'); 
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("OAuth Error:", error);
+      Alert.alert("OAuth Error", error.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -185,6 +256,23 @@ export default function SignUp({ onSwitch, onSuccess }) {
             <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 20 }]} onPress={handleRegister} disabled={loading}>
               {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>SIGN UP</Text>}
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.line} />
+              <Text style={styles.lineText}>OR</Text>
+              <View style={styles.line} />
+            </View>
+
+            <View style={styles.socialRow}>
+              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('google')} disabled={loading}>
+                <FontAwesome5 name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
+                <Text style={styles.socialText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('facebook')} disabled={loading}>
+                <FontAwesome5 name="facebook" size={20} color="#4267B2" style={{ marginRight: 10 }} />
+                <Text style={styles.socialText}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={[styles.footer, { marginTop: 20 }]}>
               <Text style={styles.footerText}>Already have an account? </Text>

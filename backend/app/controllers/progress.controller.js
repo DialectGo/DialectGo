@@ -5,7 +5,7 @@ export const getOwnProgress = async (req, res, next) => {
         const gameId = req.query.game_id ? Number(req.query.game_id) : 1;
         const difficulty = req.query.difficulty || 'none';
 
-        const { data, error } = await ProgressService.getUserProgress(req.user.id, gameId, difficulty);
+        const { data, error } = await ProgressService.getUserProgress(req.user.id, gameId, difficulty, req.token);
         if (error) throw error;
         res.status(200).json({ success: true, data });
     } catch (err) { next(err); }
@@ -14,7 +14,7 @@ export const getOwnProgress = async (req, res, next) => {
 export const getProgressBySession = async (req, res, next) => {
     try {
         const { session_id } = req.params;
-        const { data: session, error: sessionError } = await ProgressService.getSessionOwner(session_id);
+        const { data: session, error: sessionError } = await ProgressService.getSessionOwner(session_id, req.token);
 
         if (sessionError) throw sessionError;
         if (!session || session.user_id !== req.user.id) {
@@ -24,7 +24,7 @@ export const getProgressBySession = async (req, res, next) => {
         const gameId = session.game_id || 1;
         const difficulty = session.session_data?.difficulty || 'none';
 
-        const { data, error } = await ProgressService.getUserProgress(session.user_id, gameId, difficulty);
+        const { data, error } = await ProgressService.getUserProgress(session.user_id, gameId, difficulty, req.token);
         if (error) throw error;
         res.status(200).json({ success: true, data });
     } catch (err) { next(err); }
@@ -47,6 +47,7 @@ export const updateProgress = async (req, res, next) => {
             Number(xp_gained),
             Number(score_gained),
             level_completed,
+            req.token
         );
 
         if (error) throw error;
@@ -60,7 +61,7 @@ export const getUserProgress = async (req, res, next) => {
         const gameId = req.query.game_id ? Number(req.query.game_id) : 1;
         const difficulty = req.query.difficulty || 'none';
 
-        const { data, error } = await ProgressService.getUserProgress(user_id, gameId, difficulty);
+        const { data, error } = await ProgressService.getUserProgress(user_id, gameId, difficulty, req.token);
 
         if (error) throw error;
         res.status(200).json({ success: true, data });
@@ -69,7 +70,7 @@ export const getUserProgress = async (req, res, next) => {
 
 export const getLeaderboard = async (req, res, next) => {
     try {
-        const { data, error } = await ProgressService.fetchLeaderboard();
+        const { data, error } = await ProgressService.fetchLeaderboard(req.token);
         if (error) throw error;
         res.status(200).json({ success: true, data });
     } catch (err) { next(err); }
@@ -83,7 +84,7 @@ export const buyHearts = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Invalid or missing xp_cost parameter.' });
         }
 
-        const { data, error } = await ProgressService.deductXpForHearts(req.user.id, Number(game_id), difficulty, xp_cost);
+        const { data, error } = await ProgressService.deductXpForHearts(req.user.id, Number(game_id), difficulty, xp_cost, req.token);
         
         if (error) {
             // Handle explicit balance validation failures safely
@@ -112,6 +113,7 @@ export const loseHeart = async (req, res, next) => {
             Number(game_id),
             difficulty,
             current_hearts,
+            req.token
         );
 
         if (error) throw error;

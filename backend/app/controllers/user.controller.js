@@ -23,7 +23,7 @@ export const login = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
   try {
-    const profile = await UserService.getProfile(req.user.id);
+    const profile = await UserService.getProfile(req.user.id, req.token);
     res.json({ success: true, data: profile });
   } catch (err) {
     next(err);
@@ -32,7 +32,7 @@ export const getProfile = async (req, res, next) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const updated = await UserService.updateProfile(req.user.id, req.body);
+    const updated = await UserService.updateProfile(req.user.id, req.body, req.token);
     res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
@@ -41,7 +41,7 @@ export const updateProfile = async (req, res, next) => {
 
 export const getStreakData = async (req, res, next) => {
   try {
-    const data = await UserService.getStreakInfo(req.user.id);
+    const data = await UserService.getStreakInfo(req.user.id, req.token);
     res.json({ success: true, data });
   } catch (err) {
     next(err);

@@ -1,10 +1,11 @@
-import { supabase, supabaseAdmin } from '../config/db.js';
+import { supabase, supabaseAdmin, getAuthClient } from '../config/db.js';
 
 export const DictionaryModel = {
-    async findWordByTerm(term) {
+    async findWordByTerm(term, token) {
         console.log(`🔍 Searching for: "${term}"`);
+        const client = getAuthClient(token);
         
-        const { data: word, error: err } = await supabase
+        const { data: word, error: err } = await client
             .from('dictionary_entries')
             .select(`
                 *,
@@ -34,10 +35,11 @@ export const DictionaryModel = {
         return word; 
     },
 
-    async getPaginatedWords(page = 1, limit = 15, languageId = null, startLetter = null) {
+    async getPaginatedWords(page = 1, limit = 15, languageId = null, startLetter = null, token) {
         const offset = (page - 1) * limit;
+        const client = getAuthClient(token);
         
-        let query = supabase
+        let query = client
             .from('dictionary_entries')
             .select(`
                 *,
@@ -66,15 +68,17 @@ export const DictionaryModel = {
         return data;
     },
 
-    async saveWord(userId, dictionaryId) {
-        return await supabase
+    async saveWord(userId, dictionaryId, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_saved_words')
             .insert([{ user_id: userId, dictionary_id: dictionaryId }])
             .select();
     },
 
-    async getSavedWordsByUserId(userId) {
-        return await supabase
+    async getSavedWordsByUserId(userId, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_saved_words')
             .select(`
                 *,
@@ -94,17 +98,19 @@ export const DictionaryModel = {
             .eq('user_id', userId);
     },
 
-    async deleteMultipleSavedWords(userId, ids) {
-        return await supabase
+    async deleteMultipleSavedWords(userId, ids, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('user_saved_words')
             .delete()
             .eq('user_id', userId)
             .in('id', ids);
     },
 
-    async addSearchHistory(userId, term) {
+    async addSearchHistory(userId, term, token) {
+        const client = getAuthClient(token);
         // console.log("Attempting to insert:", { userId, term });
-        const result = await supabase
+        const result = await client
             .from('search_history')
             .insert([{ user_id: userId, search_term: term }])
             .select();
@@ -112,8 +118,9 @@ export const DictionaryModel = {
         if (result.error) console.error("Database Insert Error:", result.error);
         return result;
     },
-    async getHistoryByUserId(userId) {
-        const { data, error } = await supabase
+    async getHistoryByUserId(userId, token) {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('search_history')
             .select('*')
             .eq('user_id', userId)
@@ -123,17 +130,19 @@ export const DictionaryModel = {
         return data;
     },
 
-    async deleteMultipleHistory(userId, ids) {
-        return await supabase
+    async deleteMultipleHistory(userId, ids, token) {
+        const client = getAuthClient(token);
+        return await client
             .from('search_history')
             .delete()
             .eq('user_id', userId)
             .in('id', ids);
     },
     
-    async getRandomCebuanoWord() {
+    async getRandomCebuanoWord(token) {
+        const client = getAuthClient(token);
         // 1. Get total count of Cebuano entries (Language ID 3 based on your code)
-        const { count, error: countErr } = await supabase
+        const { count, error: countErr } = await client
             .from('dictionary_entries')
             .select('*', { count: 'exact', head: true })
             .eq('language_id', 3);
@@ -144,7 +153,7 @@ export const DictionaryModel = {
         const randomOffset = Math.floor(Math.random() * count);
 
         // 2. Fetch word with full translation details
-        const { data, error } = await supabase
+        const { data, error } = await client
         .from('dictionary_entries')
         .select(`
             *,
@@ -166,8 +175,9 @@ export const DictionaryModel = {
         return data;
     },
     // Add this inside the DictionaryModel object wrapper inside dictionary.model.js
-    async isWordSaved(userId, dictionaryId) {
-        const { data, error } = await supabase
+    async isWordSaved(userId, dictionaryId, token) {
+        const client = getAuthClient(token);
+        const { data, error } = await client
             .from('user_saved_words')
             .select('id')
             .eq('user_id', userId)

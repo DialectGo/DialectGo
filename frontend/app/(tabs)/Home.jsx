@@ -160,7 +160,11 @@ export default function Home({ onNavigate, activeTab }) {
         setUserName(user.first_name || 'User');
         if (user.profile_avatar_url) {
           const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
-          if (matched) setUserAvatar(matched.source);
+          if (matched) {
+            setUserAvatar(matched.source);
+          } else if (user.profile_avatar_url.startsWith('http')) {
+            setUserAvatar({ uri: user.profile_avatar_url });
+          }
         }
       }
     } catch (error) {

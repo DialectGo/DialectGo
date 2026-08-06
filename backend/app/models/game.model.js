@@ -1,14 +1,15 @@
-import { supabase } from '../config/db.js';
+import { supabase, getAuthClient } from '../config/db.js';
 
 export const GameModel = {
-    async getAllActiveGames() {
-        return await supabase
+    async getAllActiveGames(token) {
+        const client = getAuthClient(token);
+        return await client
             .from('games')
             .select('id, game_title, category, min_language_proficiency')
             .eq('is_active', true);
     },
 
-    async getChallengesByGameId(gameId, difficulty = 'easy', targetLanguage = 'english') {
+    async getChallengesByGameId(gameId, difficulty = 'easy', targetLanguage = 'english', token) {
         console.log(`\n============== BACKEND DEBUG ROW CHECK ==============`);
         console.log(`🎯 Targeting Game ID: ${gameId} | Difficulty Mode: ${difficulty} | Chosen Language: ${targetLanguage}`);
 
@@ -19,7 +20,8 @@ export const GameModel = {
         try {
             // 1. Fetch Cebuano entries (language_id: 3) along with their related target translations
             // using your foreign key: dictionary_translations_source_entry_id_fkey
-            let baseQuery = supabase
+            const client = getAuthClient(token);
+            let baseQuery = client
                 .from('dictionary_entries')
                 .select(`
                     id, 

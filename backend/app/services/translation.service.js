@@ -154,11 +154,12 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
  * @param {string} sourceLang - Source language code
  * @param {string} targetLang - Target language code
  * @param {string|null} targetDialect - Optional dialect variant (e.g., 'Boholano', 'Batangeño')
+ * @param {string|null} token - Optional user session token
  * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing, dialectization}>}
  */
-export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
+export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null) => {
     // Step 1: Run the input pre-processing pipeline
-    const preprocessResult = await preprocessText(text, sourceLang);
+    const preprocessResult = await preprocessText(text, sourceLang, token);
 
     // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
     const textForTranslation = preprocessResult.canonicalizedText;
@@ -169,7 +170,7 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
     let dialectMeta = null;
 
     if (targetDialect) {
-        const dialectResult = await dialectize(nllbOutput, targetDialect);
+        const dialectResult = await dialectize(nllbOutput, targetDialect, token);
         if (dialectResult.wasModified) {
             finalText = dialectResult.dialectText;
         }
@@ -218,9 +219,9 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
  * @param {string|null} targetDialect - Optional dialect variant
  * @returns {Promise<Object>} Full translation result + breakdown
  */
-export const performTranslationWithBreakdown = async (text, sourceLang, targetLang, targetDialect = null) => {
+export const performTranslationWithBreakdown = async (text, sourceLang, targetLang, targetDialect = null, token = null) => {
     // Step 1-3: Run the existing pipeline (preprocess → NLLB → dialectize)
-    const result = await performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect);
+    const result = await performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect, token);
 
     // Step 4: Run LLM Meta-Layer analysis on the translation pair
     const breakdown = await analyzeTranslation({
@@ -245,8 +246,8 @@ export const performTranslationWithBreakdown = async (text, sourceLang, targetLa
     };
 };
 
-export const saveHistory = async (userId, data) => await TranslationModel.saveHistory(userId, data);
-export const getHistory = async (userId) => await TranslationModel.getHistory(userId);
-export const deleteHistory = async (id, userId) => await TranslationModel.deleteHistory(id, userId);
-export const addFeedback = async (userId, tId, rating) => await TranslationModel.addFeedback(userId, tId, rating);
-export const submitRecommendation = async (userId, data) => await TranslationModel.saveUserTranslation(userId, data);
+export const saveHistory = async (userId, data, token) => await TranslationModel.saveHistory(userId, data, token);
+export const getHistory = async (userId, token) => await TranslationModel.getHistory(userId, token);
+export const deleteHistory = async (id, userId, token) => await TranslationModel.deleteHistory(id, userId, token);
+export const addFeedback = async (userId, tId, rating, comment, token) => await TranslationModel.addFeedback(userId, tId, rating, comment, token);
+export const submitRecommendation = async (userId, data, token) => await TranslationModel.saveUserTranslation(userId, data, token);
