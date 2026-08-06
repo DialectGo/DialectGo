@@ -241,8 +241,12 @@ export function disambiguateToken(token, contextWords) {
 
         if (category && category.keywords) {
             for (const keyword of category.keywords) {
-                if (contextSet.has(keyword.toLowerCase())) {
-                    overlap++;
+                const lowerKeyword = keyword.toLowerCase();
+                for (const contextWord of contextWords) {
+                    if (contextWord === lowerKeyword || contextWord.includes(lowerKeyword)) {
+                        overlap++;
+                        break; // Count at most once per keyword
+                    }
                 }
             }
         }
@@ -251,8 +255,11 @@ export function disambiguateToken(token, contextWords) {
         if (match.context_tag) {
             const tags = match.context_tag.toLowerCase().split(/[,\s]+/);
             for (const tag of tags) {
-                if (contextSet.has(tag)) {
-                    overlap++;
+                for (const contextWord of contextWords) {
+                    if (contextWord === tag || contextWord.includes(tag)) {
+                        overlap++;
+                        break;
+                    }
                 }
             }
         }
