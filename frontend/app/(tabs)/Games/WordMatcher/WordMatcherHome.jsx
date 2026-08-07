@@ -125,7 +125,7 @@ export default function WordMatcherHome({ route }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFF9E1" barStyle="dark-content" />
 
       {/* HEADER AREA */}
@@ -259,6 +259,6 @@ export default function WordMatcherHome({ route }) {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -76,7 +76,7 @@ export default function Streaks() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="Streaks" />
 
@@ -125,6 +125,6 @@ export default function Streaks() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

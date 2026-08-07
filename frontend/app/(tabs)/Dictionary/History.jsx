@@ -174,7 +174,7 @@ export default function History() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <ProfileTopBar title="Recent History" />
 
       {/* LIST / LOADING SECTION WRAPPED IN THE REFRESH CONTAINER */}
@@ -235,7 +235,7 @@ export default function History() {
           )}
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -322,7 +322,7 @@ export default function WordMatcherGame() {
   );
 
   return (
-    <SafeAreaView style={styles.gameContainer} edges={['bottom', 'left', 'right']}>
+    <View style={styles.gameContainer}>
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.gameHeader}>
@@ -440,6 +440,6 @@ export default function WordMatcherGame() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -57,8 +57,14 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
             />
           </View>
 
-          {/* Right Section (Kebab Dots & Bell) */}
+          {/* Right Section (Profile, Bell & Kebab Dots) */}
           <View style={styles.rightSection}>
+            <TouchableOpacity 
+              style={styles.profileBtn}
+              onPress={() => handleNavigation('/Account/Profile')}
+            >
+              <Ionicons name="person-circle-outline" size={28} color="#1F2937" />
+            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.bellBtn} 
               onPress={() => {
@@ -193,6 +199,9 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  profileBtn: {
+    marginRight: 15,
   },
   kebabContainer: {
     height: 20,

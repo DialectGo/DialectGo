@@ -353,7 +353,7 @@ export default function WordBridgeGame() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#FFFDF9' }]} edges={['bottom', 'left', 'right']}>
+    <View style={[styles.container, { backgroundColor: '#FFFDF9' }]}>
       <StatusBar barStyle="dark-content" />
       
       {/* --- HUD HEADER --- */}
@@ -500,6 +500,6 @@ export default function WordBridgeGame() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

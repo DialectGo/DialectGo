@@ -117,7 +117,7 @@ export default function Activities() {
   const { data, render } = getActiveData();
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="My Activities" />
 
@@ -151,7 +151,7 @@ export default function Activities() {
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -5,7 +5,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Easing
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,45 +14,43 @@ import FeatureGateModal from './FeatureGateModal';
 import NetInfo from '@react-native-community/netinfo';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
-  const animatedValue = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+  const animatedWidth = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.spring(animatedValue, {
+    Animated.timing(animatedWidth, {
       toValue: isActive ? 1 : 0,
-      useNativeDriver: true,
-      friction: 7,
-      tension: 40,
+      duration: 300,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false, // Must be false for width/padding animation
     }).start();
   }, [isActive]);
 
-  const scale = animatedValue.interpolate({
+  const pillWidth = animatedWidth.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.35],
+    outputRange: [50, 110], // Approximate widths
   });
 
-  const translateY = animatedValue.interpolate({
+  const textOpacity = animatedWidth.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -10],
+    outputRange: [0, 1],
+  });
+
+  const backgroundColor = animatedWidth.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['transparent', '#FFFFFF'],
   });
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={styles.tabItem}
-      activeOpacity={1}
-    >
-      <Animated.View style={[
-        styles.iconWrapper,
-        { transform: [{ scale }, { translateY }] },
-        isActive && styles.activeShadow
-      ]}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <Animated.View style={[styles.tabItem, { backgroundColor }]}>
         {ioniconName ? (
           <Ionicons
             name={isActive ? ioniconName : `${ioniconName}-outline`}
-            size={26}
-            color={isActive ? '#FFD54F' : '#757575'}
+            size={24}
+            color={isActive ? '#000000' : '#8C7423'}
           />
         ) : (
           <Image
@@ -60,11 +59,15 @@ const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
             resizeMode="contain"
           />
         )}
+        
+        {isActive && (
+          <Animated.View style={{ opacity: textOpacity, marginLeft: 8, overflow: 'hidden' }}>
+            <Text style={styles.activeLabel} numberOfLines={1}>
+              {label}
+            </Text>
+          </Animated.View>
+        )}
       </Animated.View>
-
-      <Text style={[styles.tabLabel, isActive && styles.activeLabel]}>
-        {label}
-      </Text>
     </TouchableOpacity>
   );
 };
@@ -73,6 +76,7 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [gateVisible, setGateVisible] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const [isConnected, setIsConnected] = useState(true);
   const [isGuestMode, setIsGuestMode] = useState(false);
@@ -108,11 +112,10 @@ export default function BottomNav() {
   };
 
   const tabs = [
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false },
     { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
     { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false },
     { name: 'Wiki', path: '/Wiki/WikiFeed', ioniconName: 'book', isGated: true },
-    { name: 'Profile', path: '/Account/Profile', icon: require('../../assets/icons/profile_icon.png'), isGated: false },
   ];
 
   const handleNavigationInterception = async (tab) => {
@@ -126,7 +129,7 @@ export default function BottomNav() {
   };
 
   return (
-    <View style={styles.navContainer}>
+    <View style={[styles.navContainer, { bottom: Math.max(insets.bottom, 15) }]}>
       <View style={styles.bottomTab}>
         {tabs.map((tab) => {
           const currentPath = pathname.toLowerCase();
@@ -152,61 +155,39 @@ export default function BottomNav() {
 const styles = StyleSheet.create({
   navContainer: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
+    left: 20,
+    right: 20,
     zIndex: 1000,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   bottomTab: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    // ✅ FIX 1: Standardized a unified height across iOS and Android
-    height: 65,
-    justifyContent: 'space-around',
+    backgroundColor: '#FFD54F',
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    // ✅ FIX 2: Removed Platform specific bottom padding causing the empty float gap
-    paddingBottom: 0,
+    paddingHorizontal: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 15,
   },
   tabItem: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%', // ✅ Ensures full touch target engagement
-  },
-  iconWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 1,
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   tabIcon: {
-    width: 28, // ✅ Scaled down slightly so layout remains perfectly balanced at 65px height
-    height: 28,
-  },
-  activeShadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#757575',
-    marginTop: 1,
-    textAlign: 'center',
+    width: 24,
+    height: 24,
   },
   activeLabel: {
-    color: '#FFD54F',
-    fontWeight: '900',
-    fontSize: 10.5,
+    color: '#000000',
+    fontWeight: '700',
+    fontSize: 12,
   },
 });

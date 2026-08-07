@@ -297,7 +297,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar style="dark" />
       <TopBar onMenuPress={() => { }} />
 
@@ -544,6 +544,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       </Modal>
 
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
-    </SafeAreaView>
+    </View>
   );
 }

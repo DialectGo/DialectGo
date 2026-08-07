@@ -10,7 +10,7 @@ export default function DialectBot() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="DialectBot" />
 
@@ -38,6 +38,6 @@ export default function DialectBot() {
           <Text style={styles.startBtnText}>Start Chat</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

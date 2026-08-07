@@ -170,7 +170,7 @@ export default function ResultDictionary() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar style="dark" />
       
       {!isConnected && (
@@ -350,6 +350,6 @@ export default function ResultDictionary() {
 
       <FeatureGateModal visible={showFeatureModal} onClose={() => setShowFeatureModal(false)} />
       <BottomNav activeTab="Dictionary" />
-    </SafeAreaView>
+    </View>
   );
 }

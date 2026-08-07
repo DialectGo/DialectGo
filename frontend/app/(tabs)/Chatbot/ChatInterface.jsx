@@ -217,7 +217,7 @@ export default function Learn() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <ProfileTopBar title="DialectBot" />
 
       <KeyboardAvoidingView
@@ -300,6 +300,6 @@ export default function Learn() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -139,7 +139,7 @@ export default function WordBridgeHome() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       {/* --- MODAL: LANGUAGE PICKER --- */}
@@ -304,7 +304,7 @@ export default function WordBridgeHome() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

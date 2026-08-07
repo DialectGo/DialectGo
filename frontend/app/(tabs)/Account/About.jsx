@@ -16,7 +16,7 @@ export default function AboutDialectGo() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="About DialectGo" />
 
@@ -70,7 +70,7 @@ export default function AboutDialectGo() {
           <View style={{ height: 40 }} />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

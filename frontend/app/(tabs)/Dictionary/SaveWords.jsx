@@ -188,7 +188,7 @@ export default function SaveWords() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <ProfileTopBar title="Saved Words" />
 
       {/* CORE DISPLAY CONTENT INGESTED BY REFRESHCONTAINER */}
@@ -240,7 +240,7 @@ export default function SaveWords() {
           )}
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

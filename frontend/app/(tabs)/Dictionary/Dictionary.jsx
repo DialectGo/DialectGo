@@ -229,7 +229,7 @@ export default function Dictionary() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
       {isGuestMode && (
@@ -342,6 +342,6 @@ export default function Dictionary() {
 
       <FeatureGateModal visible={showFeatureModal} onClose={() => setShowFeatureModal(false)} />
       <BottomNav activeTab="Dictionary" />
-    </SafeAreaView>
+    </View>
   );
 }

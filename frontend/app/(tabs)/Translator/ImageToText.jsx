@@ -139,7 +139,7 @@ export default function ImageToText() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
 
       <View style={styles.header}>
         <TouchableOpacity 
@@ -180,7 +180,7 @@ export default function ImageToText() {
       </ScrollView>
 
       <ActionButtons onPickImage={handlePickImage} loading={loading} />
-    </SafeAreaView>
+    </View>
   );
 }
 

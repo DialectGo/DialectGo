@@ -31,7 +31,7 @@ export default function Settings() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
 
       <ProfileTopBar title="Settings" />
@@ -90,6 +90,6 @@ export default function Settings() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

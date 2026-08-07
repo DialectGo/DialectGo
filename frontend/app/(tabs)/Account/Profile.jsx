@@ -188,7 +188,7 @@ export default function Profile({ onNavigate }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
 
       <ProfileTopBar title="Profile" />
@@ -263,6 +263,6 @@ export default function Profile({ onNavigate }) {
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
 
       <BottomNav activeTab="Profile" />
-    </SafeAreaView>
+    </View>
   );
 }

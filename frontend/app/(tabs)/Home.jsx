@@ -231,7 +231,7 @@ export default function Home({ onNavigate, activeTab }) {
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
       <TopBar onLogout={() => { }} onProfile={() => { }} />
 
-      <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]} edges={['bottom', 'left', 'right']}>
+      <View style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}
         <RefreshContainer
           refreshing={refreshing}
@@ -332,7 +332,7 @@ export default function Home({ onNavigate, activeTab }) {
           </View>
           
         </RefreshContainer>
-      </SafeAreaView>
+      </View>
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>
   );

@@ -149,7 +149,7 @@ export default function AccountInformation() {
   if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
       <ProfileTopBar title="Account Information" />
@@ -282,6 +282,6 @@ export default function AccountInformation() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
