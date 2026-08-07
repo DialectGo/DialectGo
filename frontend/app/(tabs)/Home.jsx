@@ -1,12 +1,13 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  Image,
-  
+  Animated, Easing, Image,
+
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,10 +38,24 @@ export default function Home({ onNavigate, activeTab }) {
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // ✅ NEW REFRESHING CONTROL STATE
-  const [userName, setUserName] = useState('User'); 
+  const [userName, setUserName] = useState('User');
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
-  
+  const [wotdModalVisible, setWotdModalVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
+
+  const mascotAnim = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(mascotAnim, { toValue: -8, duration: 1200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(mascotAnim, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
 
   const getValidSession = async () => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -212,6 +227,7 @@ export default function Home({ onNavigate, activeTab }) {
 
         const formattedWord = {
           term: raw.word_term,
+          translation: englishEntry?.word_term || null,
           definition: englishEntry?.definition || 'No definition available',
           usageCeb: raw.example_usage,
           usageEng: englishEntry?.example_usage,
@@ -230,7 +246,7 @@ export default function Home({ onNavigate, activeTab }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Stack.Screen options={{ animation: "fade" }} />
       <TopBar onLogout={() => { }} onProfile={() => { }} />
 
@@ -239,38 +255,51 @@ export default function Home({ onNavigate, activeTab }) {
         <RefreshContainer
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 120, paddingTop: insets.top + 55 }]}
         >
-          
-          <View style={styles.header}>
-            <View style={styles.headerTextGroup}>
-              <Text style={styles.helloText}>{getCebuanoGreeting()}</Text>
-              <Text style={styles.userName}>{userName}</Text>
-              <View style={styles.statusBadge}><Text style={styles.statusText}>• Online</Text></View>
-            </View>
-            <View style={styles.avatarWrapper}>
-              <Image source={userAvatar} style={styles.avatarMain} />
+
+          {/* TARSI STYLE HEADER */}
+          <View style={styles.tarsiHeader}>
+            <Text style={styles.tarsiDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase()}</Text>
+            <Text style={styles.tarsiGreeting}>{getCebuanoGreeting()}, <Text style={{ fontWeight: '900', color: '#111827' }}>{userName}</Text>!</Text>
+          </View>
+
+          {/* MASCOT BANNER */}
+          <View style={styles.mascotBannerWrapper}>
+            <View style={styles.mascotBannerBg} />
+            <Animated.Image
+              source={require('../../assets/logo/bee.png')}
+              style={[styles.mascotImage, { transform: [{ translateY: mascotAnim }] }]}
+              resizeMode="contain"
+            />
+            <View style={styles.speechBubble}>
+              <View style={styles.speechArrow} />
+              {loading ? <ActivityIndicator color="#4D7A58" /> : (
+                <>
+                  <Text style={[styles.speechTerm, { color: '#B45309' }]}>“{wordOfDay?.term || 'Searching...'}”</Text>
+                  
+                  {wordOfDay?.translation && (
+                    <Text style={[styles.speechText, { fontSize: 13, fontWeight: '500', marginBottom: 2, color: '#374151' }]} numberOfLines={1}>
+                      English: {wordOfDay.translation}
+                    </Text>
+                  )}
+
+                  <Text style={styles.speechText} numberOfLines={2}>
+                    {wordOfDay?.definition || 'Loading definition...'}
+                  </Text>
+                  <TouchableOpacity
+                    style={{ marginTop: 8, alignSelf: 'flex-start' }}
+                    onPress={() => setWotdModalVisible(true)}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#B45309', textDecorationLine: 'underline' }}>
+                      View Details
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
 
-          {/* WORD OF THE DAY */}
-          <View style={styles.wordCard}>
-            <Text style={styles.wordLabel}>Word of the day</Text>
-            {loading ? <ActivityIndicator color="#FFD54F" /> : (
-              <>
-                <Text style={styles.wordText}>“{wordOfDay?.term || 'Searching...'}”</Text>
-                <View style={styles.wordDetails}>
-                  <Text style={[styles.meaningText, { fontWeight: 'bold' }]}>Definition (EN): {wordOfDay?.definition}</Text>
-                  <View style={{ marginTop: 10 }}>
-                    <Text style={{ fontSize: 12, color: '#421C00', opacity: 0.6, marginBottom: 4 }}>Example Usages:</Text>
-                    {wordOfDay?.usageCeb && <Text style={styles.usageText}>• Ceb: "{wordOfDay.usageCeb}"</Text>}
-                    {wordOfDay?.usageEng && <Text style={styles.usageText}>• Eng: "{wordOfDay.usageEng}"</Text>}
-                    {wordOfDay?.usageTag && <Text style={styles.usageText}>• Tag: "{wordOfDay.usageTag}"</Text>}
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
 
           {/* DYNAMIC PROGRESS SECTION */}
           <View style={styles.sectionHeaderRow}>
@@ -321,8 +350,8 @@ export default function Home({ onNavigate, activeTab }) {
               <View style={styles.promoTextContainer}>
                 <Text style={styles.promoLabel}>Learn more about</Text>
                 <Text style={styles.promoBrand}>dialectGo</Text>
-                <TouchableOpacity 
-                  style={styles.exploreBtn} 
+                <TouchableOpacity
+                  style={styles.exploreBtn}
                   activeOpacity={0.8}
                   onPress={() => router.push('/Chatbot/ChatOnboarding')}
                 >
@@ -333,10 +362,33 @@ export default function Home({ onNavigate, activeTab }) {
               <Image source={require('../../assets/logo/jeepLogo.png')} style={styles.jeepneyImageFixed} resizeMode="contain" />
             </View>
           </View>
-          
+
         </RefreshContainer>
       </View>
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
+      {/* WORD OF THE DAY MODAL */}
+      <Modal visible={wotdModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.wotdModalCard}>
+            <Text style={styles.wotdModalTitle}>“{wordOfDay?.term}”</Text>
+            <View style={styles.wotdDivider} />
+            <Text style={styles.wotdModalSubtitle}>Definition</Text>
+            <Text style={styles.wotdModalText}>{wordOfDay?.definition}</Text>
+
+            <Text style={[styles.wotdModalSubtitle, { marginTop: 15 }]}>Usages</Text>
+            {wordOfDay?.usageCeb ? <Text style={styles.wotdModalUsage}>• Ceb: "{wordOfDay.usageCeb}"</Text> : null}
+            {wordOfDay?.usageEng ? <Text style={styles.wotdModalUsage}>• Eng: "{wordOfDay.usageEng}"</Text> : null}
+            {wordOfDay?.usageTag ? <Text style={styles.wotdModalUsage}>• Tag: "{wordOfDay.usageTag}"</Text> : null}
+
+            <TouchableOpacity
+              style={styles.wotdModalCloseBtn}
+              onPress={() => setWotdModalVisible(false)}
+            >
+              <Text style={styles.wotdModalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

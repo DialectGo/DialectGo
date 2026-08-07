@@ -4,12 +4,163 @@ import { StatusBar } from 'expo-status-bar';
 const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
+
+  // Tarsi Header Styles
+  tarsiHeader: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 5, // Reduced gap between greeting and banner
+  },
+  tarsiDate: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#9CA3AF',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  tarsiGreeting: {
+    fontSize: 26,
+    color: '#374151',
+    fontFamily: 'System', // Use default font but could be custom
+  },
+
+  // Mascot Banner Styles
+  mascotBannerWrapper: {
+    width: width, // use full width
+    marginHorizontal: -25, // stretch past container padding
+    height: 115, // Decreased height
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 25,
+    marginTop: 0,
+    position: 'relative',
+  },
+  mascotBannerBg: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    bottom: -5,
+    backgroundColor: '#FFD54F', // The yellow band theme
+  },
+  mascotImage: {
+    position: 'absolute',
+    left: 10,
+    bottom: -10, // Adjusted to match new thinner height
+    width: 100,
+    height: 100,
+    zIndex: 10,
+  },
+  speechBubble: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 15,
+    marginLeft: 110,
+    marginRight: 20,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
+    minHeight: 80,
+    justifyContent: 'center',
+    zIndex: 5,
+  },
+  speechArrow: {
+    position: 'absolute',
+    left: -12,
+    top: '50%',
+    marginTop: -8,
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 8,
+    borderBottomColor: 'transparent',
+    borderRightWidth: 15,
+    borderRightColor: '#FFFFFF',
+  },
+  speechTerm: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4D7A58', // Green text for the mascot name/term
+    marginBottom: 4,
+  },
+  speechText: {
+    fontSize: 12,
+    color: '#4B5563',
+    lineHeight: 18,
+  },
+  speechUsage: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+
+  // --- MODAL STYLES ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wotdModalCard: {
+    backgroundColor: '#FFF',
+    width: '80%',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  wotdModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#B45309',
+    textAlign: 'center',
+  },
+  wotdDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  wotdModalSubtitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4B5563',
+    marginBottom: 5,
+  },
+  wotdModalText: {
+    fontSize: 13,
+    color: '#1F2937',
+    lineHeight: 20,
+  },
+  wotdModalUsage: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  wotdModalCloseBtn: {
+    marginTop: 20,
+    backgroundColor: '#FFD54F',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  wotdModalCloseText: {
+    fontWeight: 'bold',
+    color: '#421C00',
+  },
+
   // --- MAIN CONTAINER ---
-container: {
-  flex: 1,
-  backgroundColor: '#FFFFFF', // o kahit anong background color ng app mo
-  paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Para sa Android
-},
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF', // o kahit anong background color ng app mo
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Para sa Android
+  },
   scrollContent: {
     paddingHorizontal: 25,
     paddingBottom: 120, // Space para hindi matakpan ng Bottom Tab
@@ -246,13 +397,13 @@ container: {
     color: '#421C00',
     letterSpacing: -0.5,
   },
-  
+
   // Orange Accent para sa Progress
   titleAccentOrange: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF6F00', 
+    backgroundColor: '#FF6F00',
     marginLeft: 6,
     marginTop: 8,
   },
@@ -443,7 +594,7 @@ container: {
     fontSize: 18,
   },
 
-// --- SECTION HEADER ---
+  // --- SECTION HEADER ---
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -574,4 +725,4 @@ container: {
     height: 42,
     transform: [{ rotate: '-10deg' }],
   },
-  });
+});

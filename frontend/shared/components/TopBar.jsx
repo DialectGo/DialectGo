@@ -1,27 +1,43 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
-import { Image, Modal,  StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../shared/lib/supabase';
 import { useRouter } from 'expo-router';
-import { handleLogout } from '../../app/Logout';
 import { Ionicons } from '@expo/vector-icons';
 import NotificationsModal from './NotificationsModal';
 import { NOTIFICATIONS_API_BASE } from '../config/apiConfig';
 
-const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
-  const [menuVisible, setMenuVisible] = useState(false);
+const availableAvatars = [
+  { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
+  { id: 2, name: '1.png', source: require('../../assets/avatars/1.png') },
+  { id: 3, name: '2.png', source: require('../../assets/avatars/2.png') },
+  { id: 4, name: '3.png', source: require('../../assets/avatars/3.png') },
+  { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
+];
+
+const TopBar = () => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   const router = useRouter();
 
-  React.useEffect(() => {
-    fetchUnreadCount();
+  useEffect(() => {
+    fetchTopBarData();
   }, []);
 
-  const fetchUnreadCount = async () => {
+  const fetchTopBarData = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+      
+      // Fetch avatar
+      const { data: userData } = await supabase.auth.getUser(session.access_token);
+      if (userData?.user?.user_metadata?.avatar_url) {
+        const found = availableAvatars.find(a => a.name === userData.user.user_metadata.avatar_url);
+        if (found) setUserAvatar(found.source);
+      }
+
+      // Fetch unread count
       const response = await fetch(NOTIFICATIONS_API_BASE, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -30,49 +46,33 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
         setUnreadCount(json.data.filter(n => !n.is_read).length);
       }
     } catch (err) {
-      console.log('[TopBar] unread count error:', err);
+      console.log('[TopBar] fetch error:', err);
     }
   };
 
-  const onSignOutPress = async () => {
-    setMenuVisible(false); // Close menu
-    await handleLogout();  // Run the logic from Logout.jsx
-  };
-
   const handleNavigation = (path) => {
-    setMenuVisible(false); // Close menu first
-    router.push(path);     // Navigate to the absolute path
+    router.push(path);
   };
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.topBar}>
-          {/* Logo Section */}
+          {/* Logo Section (Removed per request) */}
           <View style={styles.leftSection}>
-            <Image
-              source={require('../../assets/logo/bee.png')}
-              style={styles.miniLogoHeader}
-              resizeMode="contain"
-            />
           </View>
 
-          {/* Right Section (Profile, Bell & Kebab Dots) */}
+          {/* Right Section (Glassmorphism Pill Buttons) */}
           <View style={styles.rightSection}>
+            
             <TouchableOpacity 
-              style={styles.profileBtn}
-              onPress={() => handleNavigation('/Account/Profile')}
-            >
-              <Ionicons name="person-circle-outline" size={28} color="#1F2937" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.bellBtn} 
+              style={styles.glassBtn} 
               onPress={() => {
                 setNotificationsVisible(true);
                 setUnreadCount(0); // Optimistic clear
               }}
             >
-              <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+              <Ionicons name="notifications-outline" size={20} color="#1F2937" />
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -81,60 +81,22 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.menuBtn}  
-              onPress={() => setMenuVisible(true)} // Dito lalabas ang menu
-              activeOpacity={0.6}
+              style={styles.glassBtn}
+              onPress={() => handleNavigation('/Account/Profile')}
             >
-              <View style={styles.kebabContainer}>
-                <View style={styles.kebabDot} />
-                <View style={styles.kebabDot} />
-                <View style={styles.kebabDot} />
-              </View>
+              <Image source={userAvatar} style={styles.avatarIcon} />
             </TouchableOpacity>
+
           </View>
         </View>
       </SafeAreaView>
-
-      {/* --- MENU OPTIONS MODAL --- */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.menuCard}>
-              {/* Option 1: Profile */}
-              {/* Option 1: Profile */}
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => handleNavigation('/Account/Profile')}
-              >
-                <Text style={styles.menuText}>Profile</Text>
-              </TouchableOpacity>
-
-              {/* Option 3: Settings */}
-              <TouchableOpacity 
-                style={styles.menuItem} 
-                onPress={() => handleNavigation('/Account/Settings')}
-              >
-                <Text style={styles.menuText}>Settings</Text>
-              </TouchableOpacity>
-
-              {/* Option 4: Logout (With Touch of Yellow/Orange) */}
-              <TouchableOpacity 
-                style={[styles.menuItem, styles.lastItem]} 
-                onPress={onSignOutPress} // Uses the new utility
-              >
-                <Text style={[styles.menuText, { color: '#FFB300', fontWeight: 'bold' }]}>Logout</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
 
       {/* --- NOTIFICATIONS MODAL --- */}
       <NotificationsModal 
         visible={notificationsVisible} 
         onClose={() => {
           setNotificationsVisible(false);
-          fetchUnreadCount(); // Refresh count on close
+          fetchTopBarData(); // Refresh count on close
         }} 
       />
     </View>
@@ -143,42 +105,54 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFD54F', // Solid Yellow
-    shadowColor: '#000',
-    shadowRadius: 3,
-    elevation: 5,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    zIndex: 100,
   },
   safeArea: {
-    backgroundColor: '#FFD54F', // Match container yellow to prevent white gap
+    backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',
-    height: 60,
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 10,
+    height: 55,
   },
   leftSection: {
     flex: 1,
+    justifyContent: 'center',
   },
   miniLogoHeader: {
-    width: 38,
-    height: 38,
+    width: 32,
+    height: 32,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingRight: 15,
+    gap: 12, // Space between glass buttons
   },
-  bellBtn: {
-    position: 'relative',
-    padding: 4,
+  glassBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)', // Subdued glassmorphism background
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
   badge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -4,
+    right: -4,
     backgroundColor: '#EF4444',
     borderRadius: 10,
     minWidth: 18,
@@ -193,64 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     paddingHorizontal: 4,
-  },
-  menuBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileBtn: {
-    marginRight: 15,
-  },
-  kebabContainer: {
-    height: 20,
-    width: 20,
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
-  },
-  kebabDot: {
-    width: 5,
-    height: 5,
-    backgroundColor: '#000000', // Black dots gaya ng request mo
-    borderRadius: 5,
-  },
-  
-  // --- MENU STYLES ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)', // Sobrang light na shadow lang
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-  },
-  menuCard: {
-    marginTop: 60, // Sa ilalim ng TopBar lalabas
-    marginRight: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    width: 160,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    borderWidth: 1,
-    borderColor: '#FFD54F', // Touch of Yellow border
-    overflow: 'hidden',
-  },
-  menuItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#f0f0f0',
-  },
-  lastItem: {
-    borderBottomWidth: 0,
-    backgroundColor: '#FFFDE7', // Touch of light yellow para sa logout area
-  },
-  menuText: {
-    fontSize: 14,
-    color: '#333',
-    fontFamily: 'System', // Pwede mong palitan ng Poppins kung naka-install
   },
 });
 
