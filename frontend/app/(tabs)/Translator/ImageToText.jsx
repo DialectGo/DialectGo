@@ -139,7 +139,7 @@ export default function ImageToText() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
 
       <View style={styles.header}>
         <TouchableOpacity 

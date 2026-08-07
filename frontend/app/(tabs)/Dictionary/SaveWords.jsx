@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Image,
-  SafeAreaView,
+  
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -187,7 +188,7 @@ export default function SaveWords() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ProfileTopBar title="Saved Words" />
 
       {/* CORE DISPLAY CONTENT INGESTED BY REFRESHCONTAINER */}

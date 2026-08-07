@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState, useCallback } from 'react';
 import {
   Modal,
-  SafeAreaView,
+  
   ScrollView,
   StatusBar,
   Switch,
@@ -138,7 +139,7 @@ export default function WordBridgeHome() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       {/* --- MODAL: LANGUAGE PICKER --- */}

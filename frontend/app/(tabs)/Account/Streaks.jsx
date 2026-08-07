@@ -1,6 +1,7 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
 import {
-  Image, ScrollView, StatusBar, Text, TouchableOpacity, View, SafeAreaView, ActivityIndicator
+  Image, ScrollView, StatusBar, Text, TouchableOpacity, View,  ActivityIndicator
 } from 'react-native';
 import { styles } from '../../../shared/styles/StreakStyles';
 import { useRouter } from 'expo-router';
@@ -75,7 +76,7 @@ export default function Streaks() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="Streaks" />
 

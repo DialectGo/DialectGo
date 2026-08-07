@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
-import { ActivityIndicator, Alert, Image, SafeAreaView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image,  Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router'; 
 import NetInfo from '@react-native-community/netinfo';
 
@@ -228,7 +229,7 @@ export default function Dictionary() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
       {isGuestMode && (

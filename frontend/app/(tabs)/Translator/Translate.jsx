@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
-  SafeAreaView,
+  
   ScrollView,
   Text,
   TextInput,
@@ -296,7 +297,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar style="dark" />
       <TopBar onMenuPress={() => { }} />
 

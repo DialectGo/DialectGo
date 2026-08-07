@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useCallback, useEffect, useState } from 'react';
 import { 
   ActivityIndicator, 
   Modal, 
-  SafeAreaView, 
+   
   StatusBar, 
   Text, 
   TouchableOpacity, 
@@ -352,7 +353,7 @@ export default function WordBridgeGame() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#FFFDF9' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#FFFDF9' }]} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
       
       {/* --- HUD HEADER --- */}

@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
-import { Image, Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Image, Modal,  StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { supabase } from '../../shared/lib/supabase';
 import { useRouter } from 'expo-router';
 import { handleLogout } from '../../app/Logout';
@@ -45,7 +46,7 @@ const TopBar = ({ onLogout, onProfile, onAbout, onSettings }) => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.topBar}>
           {/* Logo Section */}
           <View style={styles.leftSection}>
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   safeArea: {
-    backgroundColor: '#ffffff', // Ginawang Yellow para match sa container mo
+    backgroundColor: '#FFD54F', // Match container yellow to prevent white gap
   },
   topBar: {
     flexDirection: 'row',

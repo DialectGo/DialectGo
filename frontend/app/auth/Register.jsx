@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -5,7 +6,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
+  
   ScrollView,
   Text,
   TextInput,

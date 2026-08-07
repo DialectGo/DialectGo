@@ -1,8 +1,9 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Modal,
-  SafeAreaView,
+  
   ScrollView,
   StatusBar,
   Text,
@@ -124,7 +125,7 @@ export default function WordMatcherHome({ route }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFF9E1" barStyle="dark-content" />
 
       {/* HEADER AREA */}

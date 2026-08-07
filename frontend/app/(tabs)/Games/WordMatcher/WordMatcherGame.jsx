@@ -1,6 +1,7 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, SafeAreaView, StatusBar, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { ActivityIndicator, Modal,  StatusBar, Text, TouchableOpacity, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import { styles } from './WordMatcherStyles';
@@ -321,7 +322,7 @@ export default function WordMatcherGame() {
   );
 
   return (
-    <SafeAreaView style={styles.gameContainer}>
+    <SafeAreaView style={styles.gameContainer} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.gameHeader}>

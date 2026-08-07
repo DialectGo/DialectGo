@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import {
   Image,
@@ -5,7 +6,7 @@ import {
   StatusBar,
   Text,
   View,
-  SafeAreaView,
+  
   StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,7 +16,7 @@ export default function AboutDialectGo() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="About DialectGo" />
 

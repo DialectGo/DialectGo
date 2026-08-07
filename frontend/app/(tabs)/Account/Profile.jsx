@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Image, 
@@ -5,7 +6,7 @@ import {
   Text, 
   TouchableOpacity, 
   View, 
-  SafeAreaView, 
+   
   ActivityIndicator 
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -187,7 +188,7 @@ export default function Profile({ onNavigate }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
 
       <ProfileTopBar title="Profile" />

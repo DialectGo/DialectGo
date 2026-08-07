@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Image,
-  SafeAreaView,
+  
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -173,7 +174,7 @@ export default function History() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ProfileTopBar title="Recent History" />
 
       {/* LIST / LOADING SECTION WRAPPED IN THE REFRESH CONTAINER */}

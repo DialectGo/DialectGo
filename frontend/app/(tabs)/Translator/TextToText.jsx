@@ -177,7 +177,7 @@ export default function TextToText() {
   }, [animateTransition]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
 
       {/* HEADER */}
       <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>

@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { Image, SafeAreaView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { Image,  StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 // I-import ang styles dito
 import { styles } from '../../../shared/styles/ChatOnboardingStyles'; 
@@ -9,7 +10,7 @@ export default function DialectBot() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       <ProfileTopBar title="DialectBot" />
 

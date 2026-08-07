@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
@@ -10,8 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  SafeAreaView
-} from 'react-native';
+  } from 'react-native';
 import { styles } from '../../../shared/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
@@ -149,7 +149,7 @@ export default function AccountInformation() {
   if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
       
       <ProfileTopBar title="Account Information" />

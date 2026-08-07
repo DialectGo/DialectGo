@@ -1,7 +1,8 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Image,
-  SafeAreaView,
+  
   Text,
   TouchableOpacity,
   View,
@@ -228,10 +229,9 @@ export default function Home({ onNavigate, activeTab }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
-      <StatusBar style="dark" backgroundColor="#FFD54F" translucent={false} />
       <TopBar onLogout={() => { }} onProfile={() => { }} />
 
-      <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
+      <SafeAreaView style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]} edges={['bottom', 'left', 'right']}>
         {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}
         <RefreshContainer
           refreshing={refreshing}

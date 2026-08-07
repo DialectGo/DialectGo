@@ -1,9 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   Image,
-  SafeAreaView,
+  
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -216,7 +217,7 @@ export default function Learn() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ProfileTopBar title="DialectBot" />
 
       <KeyboardAvoidingView

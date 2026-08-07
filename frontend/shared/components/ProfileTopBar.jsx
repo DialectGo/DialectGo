@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image,  StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 /**
@@ -10,7 +11,7 @@ const ProfileTopBar = ({ title = "Profile" }) => {
 
   return (
     <View style={styles.transparentWrapper}>
-      <SafeAreaView>
+      <SafeAreaView edges={['top']}>
         <View style={styles.topBar}>
           
           {/* LEFT: Back Button */}
