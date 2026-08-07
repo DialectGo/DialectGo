@@ -1,7 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, Alert, Image,  Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router'; 
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router'; 
 import NetInfo from '@react-native-community/netinfo';
 
 import BottomNav from '../../../shared/components/BottomNav';
@@ -19,6 +19,8 @@ import { endpoints } from '../../../shared/config/apiConfig';
 const API_BASE_URL = endpoints.DICTIONARY_SEARCH;   
 
 export default function Dictionary() {
+  const { slide } = useLocalSearchParams();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -230,6 +232,7 @@ export default function Dictionary() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ animation: "fade" }} />
       <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
 
       {isGuestMode && (

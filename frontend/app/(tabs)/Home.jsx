@@ -16,7 +16,7 @@ import BottomNav from '../../shared/components/BottomNav';
 import TopBar from '../../shared/components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
 import { styles } from '../../shared/styles/HomeStyles';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../assets/avatars/maria_clara.png') },
@@ -31,6 +31,8 @@ const PROFILE_API = endpoints.USER_PROFILE;
 const STREAK_API = endpoints.USER_STREAK;
 
 export default function Home({ onNavigate, activeTab }) {
+  const { slide } = useLocalSearchParams();
+
   const router = useRouter();
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -229,6 +231,7 @@ export default function Home({ onNavigate, activeTab }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFD54F' }}>
+      <Stack.Screen options={{ animation: "fade" }} />
       <TopBar onLogout={() => { }} onProfile={() => { }} />
 
       <View style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>

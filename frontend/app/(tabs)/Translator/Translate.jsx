@@ -13,7 +13,7 @@ import {
   Dimensions,
   LayoutAnimation
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -49,6 +49,8 @@ const DIALECT_OPTIONS = {
 };
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
+  const { slide } = useLocalSearchParams();
+
   const router = useRouter();
 
   // UI State
@@ -298,6 +300,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ animation: "fade" }} />
       <StatusBar style="dark" />
       <TopBar onMenuPress={() => { }} />
 

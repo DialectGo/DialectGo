@@ -118,20 +118,22 @@ export default function BottomNav() {
     { name: 'Wiki', path: '/Wiki/WikiFeed', ioniconName: 'book', isGated: true },
   ];
 
-  const handleNavigationInterception = async (tab) => {
+  const handleNavigationInterception = async (tab, index) => {
     if (tab.isGated) {
       if (!isConnected || isGuestMode) {
         setGateVisible(true);
         return;
       }
     }
-    router.push(tab.path);
+    
+    // Use replace for true bottom tab behavior (prevents infinite stack)
+    router.replace(tab.path);
   };
 
   return (
     <View style={[styles.navContainer, { bottom: Math.max(insets.bottom, 15) }]}>
       <View style={styles.bottomTab}>
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const currentPath = pathname.toLowerCase();
           const isTabActive = currentPath.includes(tab.name.toLowerCase()) || (currentPath === '/' && tab.name === 'Home');
 
@@ -142,7 +144,7 @@ export default function BottomNav() {
               ioniconName={tab.ioniconName}
               label={tab.name}
               isActive={isTabActive}
-              onPress={() => handleNavigationInterception(tab)}
+              onPress={() => handleNavigationInterception(tab, index)}
             />
           );
         })}

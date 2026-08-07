@@ -4,7 +4,7 @@ import {
   StyleSheet, ActivityIndicator, StatusBar, Alert, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../../shared/lib/supabase';
 import TopBar from '../../../shared/components/TopBar';
 import BottomNav from '../../../shared/components/BottomNav';
@@ -22,6 +22,8 @@ const SORTS = [
 const TYPE_FILTERS = ['All', 'Term', 'Question'];
 
 export default function WikiFeed() {
+  const { slide } = useLocalSearchParams();
+
   const router = useRouter();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -211,6 +213,7 @@ export default function WikiFeed() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ animation: "fade" }} />
       <StatusBar barStyle="dark-content" />
       <TopBar title="Dialect Wiki" />
 
