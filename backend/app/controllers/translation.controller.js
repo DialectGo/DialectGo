@@ -3,7 +3,9 @@ import { TranslationModel } from '../models/translation.model.js';
 import { ReportModel } from '../models/report.model.js';
 import * as TranslationService from '../services/translation.service.js';
 import * as MetaLayerService from '../services/metaLayer.service.js';
+import * as FileService from '../services/file.service.js';
 import { synthesizeSpeech } from '../services/tts.service.js';
+import fs from 'fs';
 
 export const translateImage = async (req, res, next) => {
     try {
@@ -34,6 +36,98 @@ export const translateImage = async (req, res, next) => {
             preprocessing: result.preprocessing,
             dialectization: result.dialectization
         });
+    } catch (err) { next(err); }
+};
+
+export const translateDocument = async (req, res, next) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: "No document or image file uploaded" });
+
+        const { sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
+
+        // 1. Extract text based on file type
+        const extractedText = await FileService.extractTextFromFilepath(req.file.path, req.file.mimetype);
+
+        // 2. Clean up the uploaded file from the server immediately to save space
+        try {
+            fs.unlinkSync(req.file.path);
+        } catch (cleanupErr) {
+            console.warn('[translateDocument] Failed to delete temp file:', cleanupErr.message);
+        }
+
+        if (!extractedText || !extractedText.trim()) {
+            return res.status(400).json({ message: "No text could be extracted from the file." });
+        }
+
+        // 3. Process translation, utilizing LLM Meta-layer for breakdown if requested
+        let result;
+        if (withBreakdown === 'true' || withBreakdown === true) {
+            result = await TranslationService.performTranslationWithBreakdown(extractedText, sourceLang, targetLang, targetDialect || null, req.token);
+        } else {
+            result = await TranslationService.performPreprocessedTranslation(extractedText, sourceLang, targetLang, targetDialect || null, req.token);
+        }
+
+        let savedRecord = null;
+        if (req.user?.id) {
+            const { data, error } = await TranslationService.saveHistory(req.user.id, {
+                sourceText: extractedText,
+                translatedText: result.translatedText,
+                sourceLanguageId: source_language_id,
+                targetLanguageId: target_language_id
+            }, req.token);
+            if (!error) savedRecord = data?.[0];
+            
+            if ((withBreakdown === 'true' || withBreakdown === true) && result.breakdown) {
+                try {
+                    await ReportModel.saveReport(req.user.id, {
+                        translationId: savedRecord?.id || null,
+                        sourceText: extractedText,
+                        translatedText: result.translatedText,
+                        sourceLang,
+                        targetLang,
+                        targetDialect: targetDialect || null,
+                        breakdown: result.breakdown,
+                        sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
+                    }, req.token);
+                } catch (reportErr) {
+                    console.warn('[translateDocument] Failed to save breakdown report:', reportErr.message);
+                }
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            translatedText: result.translatedText,
+            sourceText: extractedText,
+            historyRecord: savedRecord,
+            preprocessing: result.preprocessing,
+            dialectization: result.dialectization,
+            breakdown: result.breakdown || null,
+        });
+    } catch (err) { next(err); }
+};
+
+export const downloadDocument = async (req, res, next) => {
+    try {
+        const { text, format } = req.body;
+        
+        if (!text) {
+            return res.status(400).json({ message: "Text content is required for download." });
+        }
+
+        if (format === 'pdf') {
+            const pdfBuffer = await FileService.generatePdfFromText(text);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename=translation.pdf');
+            return res.send(pdfBuffer);
+        } else if (format === 'docx') {
+            const docxBuffer = await FileService.generateDocxFromText(text);
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            res.setHeader('Content-Disposition', 'attachment; filename=translation.docx');
+            return res.send(docxBuffer);
+        } else {
+            return res.status(400).json({ message: "Invalid format requested. Use 'pdf' or 'docx'." });
+        }
     } catch (err) { next(err); }
 };
 

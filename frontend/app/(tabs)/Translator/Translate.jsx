@@ -23,8 +23,11 @@ import LanguageSelector from '../../../shared/components/LanguageSelector';
 import ContributionModal from '../../../shared/components/ContributionModal'; // Added Shared Component
 import BreakdownPanel from '../../../shared/components/BreakdownPanel';
 import CustomizeModal from '../../../shared/components/CustomizeModal';
+import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
+import TranslationResultModal from '../../../shared/components/TranslationResultModal';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
+import * as FileSystem from 'expo-file-system';
 
 // Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
@@ -78,6 +81,13 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [isCustomizeLoading, setIsCustomizeLoading] = useState(false);
+
+  // Document Upload State
+  const [docUploadVisible, setDocUploadVisible] = useState(false);
+  const [docResultVisible, setDocResultVisible] = useState(false);
+  const [isDocTranslating, setIsDocTranslating] = useState(false);
+  const [docResult, setDocResult] = useState(null);
+  const [docError, setDocError] = useState(false);
 
   // --- API HANDLERS ---
 
@@ -276,6 +286,62 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     }
   };
 
+  const handleDocumentSelected = async (fileAsset) => {
+    setDocResultVisible(true);
+    setIsDocTranslating(true);
+    setDocError(false);
+    setDocResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: fileAsset.uri,
+        name: fileAsset.name || 'upload',
+        type: fileAsset.mimeType || 'application/octet-stream',
+      });
+      formData.append('sourceLang', sourceLang);
+      formData.append('targetLang', targetLang);
+      if (targetDialect) formData.append('targetDialect', targetDialect);
+      
+      const srcId = LANGUAGES.find(l => l.name === sourceLang)?.id;
+      const tgtId = LANGUAGES.find(l => l.name === targetLang)?.id;
+      if (srcId) formData.append('source_language_id', srcId);
+      if (tgtId) formData.append('target_language_id', tgtId);
+      
+      // Request breakdown from meta-layer for large text
+      formData.append('withBreakdown', 'true');
+
+      const response = await fetch(`${API_URL}/document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setDocResult(data);
+      } else {
+        setDocError(true);
+      }
+    } catch (err) {
+      console.error("Document upload error:", err);
+      setDocError(true);
+    } finally {
+      setIsDocTranslating(false);
+      try {
+        await FileSystem.deleteAsync(fileAsset.uri, { idempotent: true });
+      } catch (e) {
+        console.warn("Failed to delete temp file:", e);
+      }
+    }
+  };
+
   // Debounce Effect
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -396,8 +462,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             />
             <View style={styles.cardFooter}>
               <View style={styles.shortcutIcons}>
-                <TouchableOpacity onPress={() => router.push('/Translator/LiveCamera')} style={styles.iconBtn}>
-                  <Ionicons name="camera" size={22} color="#1F2937" />
+                <TouchableOpacity onPress={() => setDocUploadVisible(true)} style={styles.iconBtn}>
+                  <Ionicons name="document-text" size={22} color="#1F2937" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')} style={styles.iconBtn}>
                   <Ionicons name="mic" size={22} color="#1F2937" />
@@ -522,6 +588,22 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         onClose={() => setShowCustomize(false)}
         onSubmit={handleCustomizeSubmit}
         isLoading={isCustomizeLoading}
+      />
+
+      {/* DOCUMENT UPLOAD MODAL */}
+      <DocumentUploadModal 
+        visible={docUploadVisible} 
+        onClose={() => setDocUploadVisible(false)} 
+        onFileSelected={handleDocumentSelected}
+      />
+
+      {/* DOCUMENT TRANSLATION RESULT MODAL */}
+      <TranslationResultModal
+        visible={docResultVisible}
+        onClose={() => setDocResultVisible(false)}
+        isLoading={isDocTranslating}
+        result={docResult}
+        error={docError}
       />
 
       {/* LANGUAGE PICKER MODAL */}

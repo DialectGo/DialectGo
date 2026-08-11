@@ -6,6 +6,8 @@ import {
     submitFeedback, 
     translateImage, 
     translateAudio, 
+    translateDocument,
+    downloadDocument,
     submitUserTranslation, 
     customizeTranslation,
     adminGetAllHistory, 
@@ -25,6 +27,8 @@ translateRouter.post('/', verifyToken, validateTranslateText, translateText);
 translateRouter.post('/contribute', verifyToken, validateUserTranslationSubmit, submitUserTranslation);
 translateRouter.post('/image', verifyToken, validateTranslateImage, translateImage);
 translateRouter.post('/audio', verifyToken, upload.single('audio'), translateAudio);
+translateRouter.post('/document', verifyToken, upload.single('file'), translateDocument);
+translateRouter.post('/download', verifyToken, downloadDocument);
 translateRouter.post('/customize', verifyToken, validateCustomizeRequest, customizeTranslation);
 
 // Mount the translate router under /translate

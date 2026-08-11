@@ -161,28 +161,67 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
  * @param {string|null} token - Optional user session token
  * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing, dialectization}>}
  */
+const chunkText = (text, maxLength = 800) => {
+    if (!text) return [];
+    const paragraphs = text.split('\n');
+    const chunks = [];
+    let currentChunk = '';
+    
+    for (const p of paragraphs) {
+        if ((currentChunk.length + p.length) > maxLength && currentChunk.length > 0) {
+            chunks.push(currentChunk.trim());
+            currentChunk = '';
+        }
+        currentChunk += p + '\n';
+    }
+    if (currentChunk.trim().length > 0) chunks.push(currentChunk.trim());
+    return chunks.length > 0 ? chunks : [text];
+};
+
 export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null) => {
-    // Step 1: Run the input pre-processing pipeline
+    // Step 1: Run the input pre-processing pipeline on the full text
     const preprocessResult = await preprocessText(text, sourceLang, token);
 
-    // Step 2: Send the canonicalized text (or original if unchanged) to NLLB
+    // Step 2: Chunk the canonicalized text to prevent NLLB from hallucinating
     const textForTranslation = preprocessResult.canonicalizedText;
-    const nllbOutput = await performTranslation(textForTranslation, sourceLang, targetLang);
+    const chunks = chunkText(textForTranslation, 800);
+    
+    let finalTranslatedText = '';
+    let wasDialectModified = false;
+    let allDialectReplacements = [];
+    let rawNllbOutputs = [];
 
-    // Step 3: If a dialect is selected, run reverse canonicalization on the output
-    let finalText = nllbOutput;
-    let dialectMeta = null;
+    // Step 3: Process each chunk
+    for (const chunk of chunks) {
+        if (!chunk.trim()) continue;
+        
+        const nllbOutput = await performTranslation(chunk, sourceLang, targetLang);
+        rawNllbOutputs.push(nllbOutput);
 
-    if (targetDialect) {
-        const dialectResult = await dialectize(nllbOutput, targetDialect, token);
-        if (dialectResult.wasModified) {
-            finalText = dialectResult.dialectText;
+        if (targetDialect) {
+            const dialectResult = await dialectize(nllbOutput, targetDialect, token);
+            if (dialectResult.wasModified) {
+                wasDialectModified = true;
+                if (dialectResult.replacements) {
+                    allDialectReplacements.push(...dialectResult.replacements);
+                }
+            }
+            finalTranslatedText += dialectResult.dialectText + '\n';
+        } else {
+            finalTranslatedText += nllbOutput + '\n';
         }
+    }
+    
+    finalTranslatedText = finalTranslatedText.trim();
+    const joinedNllbOutput = rawNllbOutputs.join('\n').trim();
+
+    let dialectMeta = null;
+    if (targetDialect) {
         dialectMeta = {
-            wasModified: dialectResult.wasModified,
-            replacements: dialectResult.replacements,
+            wasModified: wasDialectModified,
+            replacements: allDialectReplacements,
             targetDialect,
-            metadata: dialectResult.metadata
+            metadata: { pipelineMs: 0 } // aggregate if needed
         };
     }
 
@@ -191,15 +230,16 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
         replacements: preprocessResult.replacements.length,
         sentimentScore: preprocessResult.sentimentAnalysis?.overallScore ?? 'N/A',
         pipelineMs: preprocessResult.metadata.pipelineMs,
-        dialectized: dialectMeta?.wasModified ?? false,
-        targetDialect: targetDialect || 'Standard'
+        dialectized: wasDialectModified,
+        targetDialect: targetDialect || 'Standard',
+        chunksProcessed: chunks.length
     });
 
     return {
         originalText: preprocessResult.originalText,
         canonicalizedText: preprocessResult.canonicalizedText,
-        translatedText: finalText,
-        nllbRawOutput: targetDialect ? nllbOutput : undefined,
+        translatedText: finalTranslatedText,
+        nllbRawOutput: targetDialect ? joinedNllbOutput : undefined,
         preprocessing: {
             wasModified: preprocessResult.wasModified,
             replacements: preprocessResult.replacements,
