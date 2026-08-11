@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, StyleSheet, TouchableOpacity, Text, ScrollView,
   LayoutAnimation, Alert, Animated, StatusBar, ActivityIndicator, Modal
@@ -34,6 +35,7 @@ const LANGUAGE_MAP = [
 
 export default function SpeechToText() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // Language & UI State
   const [sourceLang, setSourceLang] = useState('English');
@@ -278,15 +280,19 @@ export default function SpeechToText() {
   return (
     <View style={styles.mainWrapper}>
       <StatusBar barStyle="dark-content" />
-      <TopBar title="DialectoGo" />
+      <TopBar 
+        titlePrimary="DialectGo" 
+        titleSecondary="Translator" 
+        screenType="translator"
+        onHistoryPress={() => router.push('/History/History')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 120, paddingTop: insets.top + 70 }]}>
         <View style={styles.headerSection}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#1F2937" />
           </TouchableOpacity>
           <View style={styles.introContainer}>
-            <Text style={styles.introTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
             <View style={styles.statusBadge}>
               <View style={[styles.statusDot, (isListening || isLoading) && { backgroundColor: '#EF4444' }]} />
               <Text style={styles.statusText}>{isLoading ? 'Processing' : isListening ? 'Recording' : 'Voice Mode'}</Text>

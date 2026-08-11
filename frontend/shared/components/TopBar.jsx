@@ -92,6 +92,22 @@ const TopBar = ({
                   <Image source={require('../../assets/icons/star.png')} style={styles.topIcon} />
                 </TouchableOpacity>
               </>
+            ) : screenType === 'translator' ? (
+              <>
+                <TouchableOpacity 
+                  style={styles.iconCircle}
+                  onPress={onHistoryPress}
+                >
+                  <Image source={require('../../assets/images/history.png')} style={styles.topIcon} />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.glassBtn}
+                  onPress={() => handleNavigation('/Account/Profile')}
+                >
+                  <Image source={userAvatar} style={styles.avatarIcon} />
+                </TouchableOpacity>
+              </>
             ) : (
               <>
                 <TouchableOpacity 

@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -50,8 +50,8 @@ const DIALECT_OPTIONS = {
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
   const { slide } = useLocalSearchParams();
-
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // UI State
   const [modalVisible, setModalVisible] = useState(false);
@@ -302,16 +302,15 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     <View style={styles.container}>
       <Stack.Screen options={{ animation: "fade" }} />
       <StatusBar style="dark" />
-      <TopBar onMenuPress={() => { }} />
+      <TopBar 
+        titlePrimary="DialectGo" 
+        titleSecondary="Translator" 
+        screenType="translator"
+        onHistoryPress={() => router.push('/History/History')}
+      />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 70 }}>
         <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <Text style={styles.headerTitle}>Translate <Text style={styles.yellowText}>Now!</Text></Text>
-            <TouchableOpacity onPress={() => router.push('/History/History')} style={{ padding: 8 }}>
-              <Ionicons name="time-outline" size={26} color="#FBBF24" />
-            </TouchableOpacity>
-          </View>
           <Text style={styles.subHeader}>TEXT MODE</Text>
 
           <LanguageSelector
