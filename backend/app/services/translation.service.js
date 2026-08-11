@@ -1,6 +1,6 @@
 import fs from 'fs';
 import axios from 'axios';
-import Tesseract from 'tesseract.js';
+import { extractTextFromBase64 } from './ocr.service.js';
 import { TranslationModel } from '../models/translation.model.js';
 import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
@@ -93,8 +93,12 @@ export const performTranslation = async (text, sourceLang, targetLang) => {
     }
 };
 
+/**
+ * Extracts text from a base64-encoded image using the PaddleOCR microservice.
+ * The base64 string must have the data URI prefix already stripped.
+ */
 export const performOCR = async (base64Image) => {
-    const { data: { text } } = await Tesseract.recognize(Buffer.from(base64Image, 'base64'), 'eng');
+    const text = await extractTextFromBase64(base64Image);
     return text;
 };
 

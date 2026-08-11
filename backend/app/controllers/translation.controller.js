@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Tesseract from 'tesseract.js';
 import { TranslationModel } from '../models/translation.model.js';
 import { ReportModel } from '../models/report.model.js';
 import * as TranslationService from '../services/translation.service.js';
