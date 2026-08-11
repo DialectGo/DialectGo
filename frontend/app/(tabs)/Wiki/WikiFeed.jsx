@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator, StatusBar, Alert, RefreshControl
@@ -25,6 +26,7 @@ export default function WikiFeed() {
   const { slide } = useLocalSearchParams();
 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -215,10 +217,10 @@ export default function WikiFeed() {
     <View style={styles.container}>
       <Stack.Screen options={{ animation: "fade" }} />
       <StatusBar barStyle="dark-content" />
-      <TopBar title="Dialect Wiki" />
+      <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
 
       {/* Type filter tabs */}
-      <View style={styles.typeFilterRow}>
+      <View style={[styles.typeFilterRow, { paddingTop: insets.top + 70 }]}>
         {TYPE_FILTERS.map(t => (
           <TouchableOpacity
             key={t}

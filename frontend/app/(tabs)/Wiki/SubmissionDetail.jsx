@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   StatusBar, ActivityIndicator, Alert, TextInput, FlatList,
@@ -13,6 +14,7 @@ import { WIKI_API_BASE } from '../../../shared/config/apiConfig';
 export default function SubmissionDetail() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userVote, setUserVote] = useState(null);
@@ -170,8 +172,8 @@ export default function SubmissionDetail() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <TopBar title="Dialect Wiki" />
-        <View style={styles.loadingContainer}>
+        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
           <ActivityIndicator size="large" color="#FBBF24" />
         </View>
       </View>
@@ -182,8 +184,8 @@ export default function SubmissionDetail() {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <TopBar title="Dialect Wiki" />
-        <View style={styles.loadingContainer}>
+        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
           <Text style={styles.errorText}>Submission not found</Text>
         </View>
       </View>
@@ -199,9 +201,9 @@ export default function SubmissionDetail() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <TopBar title="Dialect Wiki" />
+      <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 70 }]}>
         {/* Back + Bookmark row */}
         <View style={styles.topRow}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
