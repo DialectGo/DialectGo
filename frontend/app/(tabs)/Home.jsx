@@ -248,7 +248,7 @@ export default function Home({ onNavigate, activeTab }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Stack.Screen options={{ animation: "fade" }} />
-      <TopBar onLogout={() => { }} onProfile={() => { }} />
+      <TopBar titleMode="brand" />
 
       <View style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         {/* ✅ SWAPPED ScrollView FOR OUR DYNAMIC REFRESH CONTAINER */}

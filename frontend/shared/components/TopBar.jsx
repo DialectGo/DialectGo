@@ -19,6 +19,7 @@ const TopBar = ({
   titlePrimary, 
   titleSecondary, 
   screenType = 'home',
+  titleMode = 'column',
   onHistoryPress,
   onSaveWordsPress
 }) => {
@@ -66,7 +67,12 @@ const TopBar = ({
         <View style={styles.topBar}>
           {/* Left Section (Dynamic Titles) */}
           <View style={styles.leftSection}>
-            {titlePrimary || titleSecondary ? (
+            {titleMode === 'brand' ? (
+              <View style={styles.titleWrapperRow}>
+                <Text style={styles.headerTitleBlack}>Dialect</Text>
+                <Text style={styles.headerTitleYellowRow}>Go</Text>
+              </View>
+            ) : titlePrimary || titleSecondary ? (
               <View style={styles.titleWrapper}>
                 {titlePrimary ? <Text style={styles.headerTitleYellow}>{titlePrimary}</Text> : null}
                 {titleSecondary ? <Text style={styles.headerTitleBlack}>{titleSecondary}</Text> : null}
@@ -220,15 +226,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: -5, 
   },
+  titleWrapperRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginLeft: -5,
+  },
   headerTitleYellow: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFD54F',
-    marginBottom: -4, 
+    marginBottom: -6, 
     letterSpacing: 0.5,
   },
+  headerTitleYellowRow: {
+    fontSize: 28,
+    color: '#FFD54F',
+    fontWeight: '900',
+  },
   headerTitleBlack: {
-    fontSize: 24,
+    fontSize: 28,
     color: '#421C00',
     fontWeight: '900',
   },
