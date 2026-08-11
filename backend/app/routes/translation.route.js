@@ -10,6 +10,7 @@ import {
     downloadDocument,
     submitUserTranslation, 
     customizeTranslation,
+    explainSegment,
     adminGetAllHistory, 
     adminGetAllRecommendations, 
     adminGetTranslationAnalytics 
@@ -30,6 +31,7 @@ translateRouter.post('/audio', verifyToken, upload.single('audio'), translateAud
 translateRouter.post('/document', verifyToken, upload.single('file'), translateDocument);
 translateRouter.post('/download', verifyToken, downloadDocument);
 translateRouter.post('/customize', verifyToken, validateCustomizeRequest, customizeTranslation);
+translateRouter.post('/explain-segment', verifyToken, explainSegment);
 
 // Mount the translate router under /translate
 router.use('/translate', translateRouter);

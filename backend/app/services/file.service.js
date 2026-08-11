@@ -11,7 +11,7 @@ import { extractTextFromFile } from './ocr.service.js';
  * Extracts text from a document or image file.
  * @param {string} filePath - Path to the uploaded file.
  * @param {string} mimeType - The mimetype of the uploaded file.
- * @returns {Promise<string>} - Extracted text.
+ * @returns {Promise<{text: string, ocrDetails: Array|null, layoutHints: Object|null}>} - Extracted text and optional OCR metadata.
  */
 export const extractTextFromFilepath = async (filePath, mimeType) => {
     if (!fs.existsSync(filePath)) {
@@ -22,18 +22,22 @@ export const extractTextFromFilepath = async (filePath, mimeType) => {
         if (mimeType === 'application/pdf') {
             const dataBuffer = fs.readFileSync(filePath);
             const data = await pdfParse(dataBuffer);
-            return data.text || '';
+            return { text: data.text || '', ocrDetails: null, layoutHints: null };
         } else if (
             mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
             mimeType === 'application/msword' || 
             filePath.endsWith('.docx')
         ) {
             const result = await mammoth.extractRawText({ path: filePath });
-            return result.value || '';
+            return { text: result.value || '', ocrDetails: null, layoutHints: null };
         } else if (mimeType.startsWith('image/')) {
-            // Use the PaddleOCR microservice for images
-            const text = await extractTextFromFile(filePath);
-            return text;
+            // Use the PaddleOCR microservice for images — returns spatial data
+            const ocrResult = await extractTextFromFile(filePath);
+            return {
+                text: ocrResult.text,
+                ocrDetails: ocrResult.details || null,
+                layoutHints: ocrResult.layoutHints || null,
+            };
         } else {
             throw new Error(`Unsupported file format: ${mimeType}`);
         }

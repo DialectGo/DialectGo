@@ -69,6 +69,7 @@ logger.info("PaddleOCR ready.")
 def run_ocr(img_array: np.ndarray) -> dict:
     """Run PaddleOCR on a decoded OpenCV image array and return structured results.
     Compatible with PaddleOCR 3.x API (uses predict() result structure).
+    Returns bounding boxes and layout hints for spatial-aware translation.
     """
     result = ocr_engine.ocr(img_array)
 
@@ -80,11 +81,27 @@ def run_ocr(img_array: np.ndarray) -> dict:
             if isinstance(page_result, dict) and "rec_texts" in page_result:
                 texts = page_result.get("rec_texts", [])
                 scores = page_result.get("rec_scores", [])
+                polys = page_result.get("rec_polys", [])
                 for i in range(len(texts)):
                     text = texts[i]
                     score = float(scores[i]) if i < len(scores) else 0.0
+                    # Extract bounding box as [x_min, y_min, x_max, y_max]
+                    bbox = None
+                    if i < len(polys):
+                        try:
+                            poly = polys[i]
+                            xs = [int(p[0]) for p in poly]
+                            ys = [int(p[1]) for p in poly]
+                            bbox = [min(xs), min(ys), max(xs), max(ys)]
+                        except Exception:
+                            pass
                     if text and str(text).strip():
-                        extracted_lines.append({"text": str(text), "confidence": score})
+                        extracted_lines.append({
+                            "text": str(text),
+                            "confidence": score,
+                            "bbox": bbox,
+                            "line_index": len(extracted_lines),
+                        })
                 continue
                 
             # Fallback for old PaddleOCR format
@@ -101,10 +118,75 @@ def run_ocr(img_array: np.ndarray) -> dict:
                     continue
 
                 if text and str(text).strip():
-                    extracted_lines.append({"text": str(text), "confidence": score})
+                    extracted_lines.append({
+                        "text": str(text),
+                        "confidence": score,
+                        "bbox": None,
+                        "line_index": len(extracted_lines),
+                    })
+
+    # Build layout hints by grouping lines into paragraphs based on vertical gaps
+    layout_hints = _compute_layout_hints(extracted_lines)
 
     full_text = " ".join(item["text"] for item in extracted_lines)
-    return {"full_text": full_text, "details": extracted_lines}
+    return {"full_text": full_text, "details": extracted_lines, "layout_hints": layout_hints}
+
+
+def _compute_layout_hints(lines: list) -> dict:
+    """Group OCR lines into logical paragraphs/sections based on Y-coordinate gaps."""
+    if not lines:
+        return {"paragraphs": [], "detected_headers": []}
+
+    # Sort by Y position (top of bounding box)
+    sortable = [(i, l) for i, l in enumerate(lines) if l.get("bbox")]
+    if not sortable:
+        # No bounding box data — treat everything as one paragraph
+        return {
+            "paragraphs": [{"line_indices": list(range(len(lines))), "text": " ".join(l["text"] for l in lines)}],
+            "detected_headers": [],
+        }
+
+    sortable.sort(key=lambda x: x[1]["bbox"][1])  # Sort by y_min
+
+    paragraphs = []
+    current_para_indices = [sortable[0][0]]
+    prev_y_max = sortable[0][1]["bbox"][3]
+
+    # Compute median line height for gap threshold
+    heights = [l["bbox"][3] - l["bbox"][1] for _, l in sortable if l["bbox"][3] > l["bbox"][1]]
+    median_height = sorted(heights)[len(heights) // 2] if heights else 30
+
+    for idx, line in sortable[1:]:
+        y_min = line["bbox"][1]
+        gap = y_min - prev_y_max
+
+        if gap > median_height * 1.2:
+            # Significant gap → new paragraph
+            para_text = " ".join(lines[i]["text"] for i in current_para_indices)
+            paragraphs.append({"line_indices": current_para_indices, "text": para_text})
+            current_para_indices = [idx]
+        else:
+            current_para_indices.append(idx)
+        prev_y_max = line["bbox"][3]
+
+    # Final paragraph
+    if current_para_indices:
+        para_text = " ".join(lines[i]["text"] for i in current_para_indices)
+        paragraphs.append({"line_indices": current_para_indices, "text": para_text})
+
+    # Detect headers: lines that are significantly shorter than median line width
+    # and appear at the top of a paragraph group
+    detected_headers = []
+    for para in paragraphs:
+        if para["line_indices"]:
+            first_line = lines[para["line_indices"][0]]
+            if first_line.get("bbox"):
+                line_width = first_line["bbox"][2] - first_line["bbox"][0]
+                # If line is short and has high confidence, likely a header
+                if len(para["line_indices"]) == 1 and len(first_line["text"].split()) <= 6:
+                    detected_headers.append(para["line_indices"][0])
+
+    return {"paragraphs": paragraphs, "detected_headers": detected_headers}
 
 
 # ---------------------------------------------------------------------------

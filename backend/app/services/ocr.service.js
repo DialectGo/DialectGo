@@ -37,7 +37,11 @@ export const extractTextFromBase64 = async (base64Image) => {
         );
 
         if (response.data?.success) {
-            return response.data.full_text || '';
+            return {
+                text: response.data.full_text || '',
+                details: response.data.details || [],
+                layoutHints: response.data.layout_hints || null,
+            };
         }
 
         throw new Error('PaddleOCR returned an unsuccessful response.');
@@ -83,7 +87,11 @@ export const extractTextFromFile = async (filePath) => {
         );
 
         if (response.data?.success) {
-            return response.data.full_text || '';
+            return {
+                text: response.data.full_text || '',
+                details: response.data.details || [],
+                layoutHints: response.data.layout_hints || null,
+            };
         }
 
         throw new Error('PaddleOCR returned an unsuccessful response.');

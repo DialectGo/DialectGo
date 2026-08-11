@@ -46,8 +46,11 @@ export const translateDocument = async (req, res, next) => {
 
         const { sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
 
-        // 1. Extract text based on file type
-        const extractedText = await FileService.extractTextFromFilepath(req.file.path, req.file.mimetype);
+        // 1. Extract text based on file type — now returns { text, ocrDetails, layoutHints }
+        const extraction = await FileService.extractTextFromFilepath(req.file.path, req.file.mimetype);
+        const extractedText = extraction.text;
+        const ocrDetails = extraction.ocrDetails;
+        const layoutHints = extraction.layoutHints;
 
         // 2. Clean up the uploaded file from the server immediately to save space
         try {
@@ -60,13 +63,12 @@ export const translateDocument = async (req, res, next) => {
             return res.status(400).json({ message: "No text could be extracted from the file." });
         }
 
-        // 3. Process translation, utilizing LLM Meta-layer for breakdown if requested
-        let result;
-        if (withBreakdown === 'true' || withBreakdown === true) {
-            result = await TranslationService.performTranslationWithBreakdown(extractedText, sourceLang, targetLang, targetDialect || null, req.token);
-        } else {
-            result = await TranslationService.performPreprocessedTranslation(extractedText, sourceLang, targetLang, targetDialect || null, req.token);
-        }
+        // 3. Use the enhanced document translation pipeline
+        const shouldBreakdown = withBreakdown === 'true' || withBreakdown === true;
+        const result = await TranslationService.performDocumentTranslation(
+            extractedText, sourceLang, targetLang, targetDialect || null, req.token,
+            ocrDetails, layoutHints, shouldBreakdown
+        );
 
         let savedRecord = null;
         if (req.user?.id) {
@@ -78,7 +80,7 @@ export const translateDocument = async (req, res, next) => {
             }, req.token);
             if (!error) savedRecord = data?.[0];
             
-            if ((withBreakdown === 'true' || withBreakdown === true) && result.breakdown) {
+            if (shouldBreakdown && result.breakdown) {
                 try {
                     await ReportModel.saveReport(req.user.id, {
                         translationId: savedRecord?.id || null,
@@ -104,6 +106,34 @@ export const translateDocument = async (req, res, next) => {
             preprocessing: result.preprocessing,
             dialectization: result.dialectization,
             breakdown: result.breakdown || null,
+            // New enhanced fields
+            documentType: result.documentType || null,
+            formattedSourceText: result.formattedSourceText || null,
+            segments: result.segments || null,
+        });
+    } catch (err) { next(err); }
+};
+
+// LLM Meta-Layer: Explain a specific paragraph/segment the user tapped on
+export const explainSegment = async (req, res, next) => {
+    try {
+        const { segment, fullSourceText, fullTranslatedText, sourceLang, targetLang } = req.body;
+
+        if (!segment || !segment.trim()) {
+            return res.status(400).json({ success: false, message: 'segment is required' });
+        }
+
+        const explanation = await MetaLayerService.explainSegment({
+            segment,
+            fullSourceText: fullSourceText || '',
+            fullTranslatedText: fullTranslatedText || '',
+            sourceLang: sourceLang || 'English',
+            targetLang: targetLang || 'Cebuano',
+        });
+
+        res.status(200).json({
+            success: true,
+            ...explanation,
         });
     } catch (err) { next(err); }
 };

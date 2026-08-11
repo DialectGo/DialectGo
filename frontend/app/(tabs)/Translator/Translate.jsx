@@ -331,13 +331,9 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         body: formData,
       });
 
-      console.log('[Translate] fetch response status:', response.status);
-      
-      const responseText = await response.text();
-      console.log('[Translate] fetch response text:', responseText);
-
       if (response.ok) {
-        setDocResult(JSON.parse(responseText));
+        const data = await response.json();
+        setDocResult(data);
       } else {
         setDocError(true);
       }

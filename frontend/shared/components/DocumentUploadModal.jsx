@@ -36,7 +36,7 @@ export default function DocumentUploadModal({ visible, onClose, onFileSelected }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 1,
       });
 

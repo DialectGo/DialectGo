@@ -6,7 +6,7 @@ import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
 import { preprocessText } from './preprocessor.service.js';
 import { dialectize } from './reverseCanonicalizer.service.js';
-import { analyzeTranslation } from './metaLayer.service.js';
+import { analyzeTranslation, analyzeDocumentType, reconstructLayout, normalizeInformalText } from './metaLayer.service.js';
 
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
@@ -98,8 +98,9 @@ export const performTranslation = async (text, sourceLang, targetLang) => {
  * The base64 string must have the data URI prefix already stripped.
  */
 export const performOCR = async (base64Image) => {
-    const text = await extractTextFromBase64(base64Image);
-    return text;
+    const result = await extractTextFromBase64(base64Image);
+    // extractTextFromBase64 now returns { text, details, layoutHints }
+    return typeof result === 'string' ? result : result.text;
 };
 
 export const performSpeechToText = async (audioPath, targetLang, sourceLang) => {
@@ -178,13 +179,21 @@ const chunkText = (text, maxLength = 800) => {
     return chunks.length > 0 ? chunks : [text];
 };
 
-export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null) => {
+export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null, isDocument = false) => {
     // Step 1: Run the input pre-processing pipeline on the full text
     const preprocessResult = await preprocessText(text, sourceLang, token);
 
     // Step 2: Chunk the canonicalized text to prevent NLLB from hallucinating
     const textForTranslation = preprocessResult.canonicalizedText;
-    const chunks = chunkText(textForTranslation, 800);
+    
+    let chunks = [];
+    if (isDocument) {
+        // For documents, strictly preserve paragraph boundaries so NLLB doesn't collapse them
+        // ReconstructLayout uses \n\n, but we split by \n and filter empty to be safe
+        chunks = textForTranslation.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+    } else {
+        chunks = chunkText(textForTranslation, 800);
+    }
     
     let finalTranslatedText = '';
     let wasDialectModified = false;
@@ -289,6 +298,157 @@ export const performTranslationWithBreakdown = async (text, sourceLang, targetLa
         breakdown,
     };
 };
+
+/**
+ * Enhanced document translation pipeline — runs the full set of LLM meta-layers:
+ *   1. Document Type Detection → classify content type, set tone context
+ *   2. Layout Reconstruction → if OCR data exists, restructure into Markdown with segments
+ *   3. Preprocessed Translation → tokenize/corpus/canonicalize + chunked NLLB
+ *   4. Breakdown Analysis → word-by-word + sentiment (opt-in)
+ *
+ * @param {string} text - Raw extracted text
+ * @param {string} sourceLang - Source language
+ * @param {string} targetLang - Target language
+ * @param {string|null} targetDialect - Optional dialect variant
+ * @param {string|null} token - Auth token
+ * @param {Array|null} ocrDetails - OCR per-line details with bounding boxes
+ * @param {Object|null} layoutHints - Paragraph groupings from OCR spatial analysis
+ * @param {boolean} withBreakdown - Whether to run breakdown analysis
+ * @returns {Promise<Object>} Enriched translation result
+ */
+export const performDocumentTranslation = async (
+    text, sourceLang, targetLang, targetDialect = null, token = null,
+    ocrDetails = null, layoutHints = null, withBreakdown = false
+) => {
+    const pipelineStart = Date.now();
+
+    // Step 1: Document Type Detection (parallel-safe, runs concurrently with layout)
+    console.log('[DocPipeline] Step 1 — Detecting document type...');
+    const docTypePromise = analyzeDocumentType(text);
+
+    // Step 2: Layout Reconstruction (only for OCR images with spatial data)
+    let layoutResult = null;
+    let segmentedSourceText = text;
+    let segments = [{ index: 0, text: text, isHeader: false, type: 'paragraph' }];
+
+    if (ocrDetails && ocrDetails.length > 0) {
+        console.log('[DocPipeline] Step 2 — Reconstructing layout from OCR spatial data...');
+        const layoutPromise = reconstructLayout(text, ocrDetails, layoutHints);
+        
+        // Wait for both concurrent operations
+        const [docType, layout] = await Promise.all([docTypePromise, layoutPromise]);
+        layoutResult = layout;
+        
+        if (layout.success && layout.segments?.length > 0) {
+            segments = layout.segments;
+            segmentedSourceText = layout.formattedText || text;
+        }
+
+        // Step 2.5: Normalize Chat Slang (if applicable)
+        if (docType.documentType === 'casual_chat' || 
+            docType.toneGuidance?.formality === 'informal' || 
+            docType.toneGuidance?.formality === 'colloquial') {
+            console.log('[DocPipeline] Step 2.5 — Normalizing informal chat text...');
+            segmentedSourceText = await normalizeInformalText(segmentedSourceText, sourceLang);
+        }
+
+        // Step 3: Translate the reconstructed text
+        console.log('[DocPipeline] Step 3 — Translating with tone context...');
+        const translationResult = await performPreprocessedTranslation(
+            segmentedSourceText, sourceLang, targetLang, targetDialect, token, true
+        );
+
+        // Step 4: Build translated segments by splitting on paragraph breaks
+        const translatedSegments = buildTranslatedSegments(segments, translationResult.translatedText);
+
+        // Step 5: Optional breakdown
+        let breakdown = null;
+        if (withBreakdown) {
+            console.log('[DocPipeline] Step 4 — Running breakdown analysis...');
+            breakdown = await analyzeTranslation({
+                sourceText: text,
+                translatedText: translationResult.translatedText,
+                sourceLang, targetLang, targetDialect,
+                preprocessingMeta: translationResult.preprocessing,
+            });
+            console.log('[MetaLayer] Breakdown generated:', {
+                success: breakdown.success,
+                wordCount: breakdown.wordByWord?.length ?? 0,
+                tone: breakdown.sentimentEvaluation?.detectedTone ?? 'N/A',
+                analysisMs: breakdown.metadata?.analysisMs ?? 'N/A',
+            });
+        }
+
+        console.log(`[DocPipeline] Complete in ${Date.now() - pipelineStart}ms`);
+
+        return {
+            ...translationResult,
+            documentType: docType,
+            formattedSourceText: segmentedSourceText,
+            segments: translatedSegments,
+            layoutReconstruction: layoutResult,
+            breakdown,
+        };
+    } else {
+        // No OCR spatial data (PDF/DOCX) — skip layout reconstruction
+        const docType = await docTypePromise;
+
+        console.log('[DocPipeline] Step 2 — No spatial data, skipping layout reconstruction');
+        console.log('[DocPipeline] Step 3 — Translating...');
+
+        let result;
+        let textToTranslate = text;
+
+        if (docType.documentType === 'casual_chat' || 
+            docType.toneGuidance?.formality === 'informal' || 
+            docType.toneGuidance?.formality === 'colloquial') {
+            console.log('[DocPipeline] Step 2.5 — Normalizing informal chat text...');
+            textToTranslate = await normalizeInformalText(textToTranslate, sourceLang);
+        }
+
+        if (withBreakdown) {
+            result = await performTranslationWithBreakdown(textToTranslate, sourceLang, targetLang, targetDialect, token);
+        } else {
+            result = await performPreprocessedTranslation(textToTranslate, sourceLang, targetLang, targetDialect, token, true);
+        }
+
+        // Build segments from paragraph breaks in the translated text
+        const translatedParagraphs = result.translatedText.split('\n').filter(p => p.trim());
+        const translatedSegments = translatedParagraphs.map((para, i) => ({
+            index: i,
+            sourceText: '', // Can't map back without layout data
+            translatedText: para.trim(),
+            isHeader: false,
+            type: 'paragraph',
+        }));
+
+        console.log(`[DocPipeline] Complete in ${Date.now() - pipelineStart}ms`);
+
+        return {
+            ...result,
+            documentType: docType,
+            formattedSourceText: text,
+            segments: translatedSegments,
+            layoutReconstruction: null,
+        };
+    }
+};
+
+/**
+ * Build translated segments by mapping source segments to translated text.
+ */
+function buildTranslatedSegments(sourceSegments, fullTranslatedText) {
+    // Split translated text by paragraph breaks
+    const translatedParagraphs = fullTranslatedText.split('\n').filter(p => p.trim());
+    
+    return sourceSegments.map((seg, i) => ({
+        index: seg.index ?? i,
+        sourceText: seg.text,
+        translatedText: i < translatedParagraphs.length ? translatedParagraphs[i].trim() : '',
+        isHeader: seg.isHeader || false,
+        type: seg.type || 'paragraph',
+    }));
+}
 
 export const saveHistory = async (userId, data, token) => await TranslationModel.saveHistory(userId, data, token);
 export const getHistory = async (userId, token) => await TranslationModel.getHistory(userId, token);

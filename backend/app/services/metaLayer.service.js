@@ -312,6 +312,300 @@ export async function customizeTranslation({ sourceText, translatedText, sourceL
     }
 }
 
+// ─── Document Type Detection ────────────────────────────────────────────────
+
+/**
+ * Classify the document type and recommend translation tone/register.
+ * Runs BEFORE translation to influence the pipeline's behavior.
+ *
+ * @param {string} sourceText - Raw extracted text from the document/image
+ * @returns {Promise<Object>} Document type classification and tone guidance
+ */
+export async function analyzeDocumentType(sourceText) {
+    const startTime = Date.now();
+
+    try {
+        const client = getGroqClient();
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 500,
+            temperature: 0.2,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are a document classification expert. Analyze the given text and classify its document type. Respond with ONLY valid JSON:
+{
+  "documentType": "string (one of: academic, legal, medical, culinary, personal_letter, news, technical, casual_chat, religious, government_form, literary, advertisement, other)",
+  "displayLabel": "string (human-readable label, e.g., '📄 Academic', '📋 Legal Notice', '💌 Personal Letter', '🍳 Recipe', '📰 News Article')",
+  "confidence": "number 0-1",
+  "toneGuidance": {
+    "formality": "string (formal, semi-formal, informal, colloquial)",
+    "register": "string (brief description of the language register to use)",
+    "vocabularyNotes": "string (specific vocabulary considerations for this document type)"
+  },
+  "summary": "string (1-2 sentence summary of what this document appears to be about)"
+}`
+                },
+                {
+                    role: 'user',
+                    content: `Classify this document:\n\n"${sourceText.slice(0, 2000)}"\n\nRespond with JSON only.`
+                }
+            ],
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+        if (!rawContent) throw new Error('Empty response from Groq');
+
+        const jsonStr = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(jsonStr);
+
+        console.log(`[MetaLayer] Document type detected: ${result.documentType} (${result.confidence}) in ${Date.now() - startTime}ms`);
+
+        return { success: true, ...result, metadata: { model: GROQ_MODEL, analysisMs: Date.now() - startTime } };
+    } catch (error) {
+        console.error('[MetaLayer] Document type detection failed:', error.message);
+        return {
+            success: false,
+            documentType: 'other',
+            displayLabel: '📄 Document',
+            confidence: 0,
+            toneGuidance: { formality: 'neutral', register: 'standard', vocabularyNotes: '' },
+            summary: '',
+            metadata: { model: GROQ_MODEL, analysisMs: Date.now() - startTime, error: error.message },
+        };
+    }
+}
+
+// ─── Informal Text Normalization (For Chat/Slang) ──────────────────────────
+
+/**
+ * Normalizes highly informal chat text (abbreviations, elongated words, extreme slang)
+ * into standard spelling before passing it to the NLLB translation model.
+ * 
+ * @param {string} sourceText - Raw chat text
+ * @param {string} sourceLang - The source language (e.g., 'Tagalog')
+ * @returns {Promise<string>} Normalized text
+ */
+export async function normalizeInformalText(sourceText, sourceLang) {
+    const startTime = Date.now();
+    try {
+        const client = getGroqClient();
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 1500,
+            temperature: 0.1,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are a linguistics expert specializing in ${sourceLang} chat slang and abbreviations.
+Your task is to take highly informal chat text and normalize the spelling so a standard machine translation model can understand it.
+
+Rules:
+1. Fix elongated words (e.g., "preee" -> "pare", "ayunnn" -> "ayun", "sigeee" -> "sige").
+2. Expand common chat abbreviations (e.g., "dq" -> "di ko" or "hindi ko", "slmt" -> "salamat").
+3. Correct intentional misspellings used in texting.
+4. DO NOT translate the text to another language. Keep it in ${sourceLang}.
+5. Preserve the exact paragraph spacing, punctuation, and emojis.
+6. Return ONLY the normalized text, nothing else. No introductions or explanations.`
+                },
+                {
+                    role: 'user',
+                    content: sourceText
+                }
+            ],
+        });
+
+        const normalized = completion.choices?.[0]?.message?.content?.trim();
+        console.log(`[MetaLayer] Text normalized in ${Date.now() - startTime}ms`);
+        return normalized || sourceText;
+    } catch (error) {
+        console.error('[MetaLayer] Text normalization failed:', error.message);
+        return sourceText; // Fallback to original text
+    }
+}
+
+// ─── Layout Reconstruction ──────────────────────────────────────────────────
+
+/**
+ * Reconstruct document layout from flat OCR text using spatial hints.
+ * Converts a wall-of-text into clean Markdown with headers, paragraphs, and lists.
+ *
+ * @param {string} sourceText - Full extracted text
+ * @param {Array} ocrDetails - Per-line OCR detail objects with bounding boxes
+ * @param {Object} layoutHints - Paragraph groupings and detected headers from OCR
+ * @returns {Promise<Object>} Reconstructed Markdown text and paragraph segments
+ */
+export async function reconstructLayout(sourceText, ocrDetails, layoutHints) {
+    const startTime = Date.now();
+
+    try {
+        const client = getGroqClient();
+
+        // Build spatial context for the LLM
+        let spatialContext = '';
+        if (layoutHints?.paragraphs?.length > 0) {
+            spatialContext = '\n\nSpatial layout from OCR (paragraphs detected by vertical gaps):\n';
+            layoutHints.paragraphs.forEach((para, i) => {
+                const isHeader = layoutHints.detected_headers?.some(h => para.line_indices.includes(h));
+                spatialContext += `\n[Paragraph ${i + 1}${isHeader ? ' — LIKELY HEADER' : ''}]: "${para.text}"`;
+            });
+        }
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 2000,
+            temperature: 0.2,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are a document formatting expert. Given raw OCR text and spatial layout hints, reconstruct the text into clean Markdown format. 
+
+Rules:
+- Preserve ALL original text content exactly — do not add, remove, or rephrase words
+- Use # for main headers, ## for subheaders based on spatial hints
+- Group text into logical paragraphs separated by blank lines
+- Detect and format bullet/numbered lists if present
+- Remove OCR artifacts like stray characters or broken words if obvious
+- Return ONLY the formatted Markdown text, nothing else
+- Also return a JSON array of paragraph segments that can be individually translated
+
+Respond with ONLY valid JSON:
+{
+  "formattedText": "string (the reconstructed Markdown text)",
+  "segments": [
+    {
+      "index": "number",
+      "text": "string (one logical paragraph/section)",
+      "isHeader": "boolean",
+      "type": "string (header, paragraph, list_item, caption)"
+    }
+  ]
+}`
+                },
+                {
+                    role: 'user',
+                    content: `Reconstruct this OCR text into structured Markdown:\n\nRaw text: "${sourceText}"${spatialContext}\n\nRespond with JSON only.`
+                }
+            ],
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+        if (!rawContent) throw new Error('Empty response from Groq');
+
+        const jsonStr = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(jsonStr);
+
+        console.log(`[MetaLayer] Layout reconstructed: ${result.segments?.length || 0} segments in ${Date.now() - startTime}ms`);
+
+        return {
+            success: true,
+            formattedText: result.formattedText || sourceText,
+            segments: result.segments || [{ index: 0, text: sourceText, isHeader: false, type: 'paragraph' }],
+            metadata: { model: GROQ_MODEL, reconstructionMs: Date.now() - startTime },
+        };
+    } catch (error) {
+        console.error('[MetaLayer] Layout reconstruction failed:', error.message);
+        // Fallback: treat entire text as a single paragraph
+        return {
+            success: false,
+            formattedText: sourceText,
+            segments: [{ index: 0, text: sourceText, isHeader: false, type: 'paragraph' }],
+            metadata: { model: GROQ_MODEL, reconstructionMs: Date.now() - startTime, error: error.message },
+        };
+    }
+}
+
+// ─── Highlight & Ask — Segment Explanation ──────────────────────────────────
+
+/**
+ * Generate an on-demand micro-explanation for a specific translated paragraph
+ * that the user tapped on in the result modal.
+ *
+ * @param {Object} params
+ * @param {string} params.segment - The specific translated sentence/paragraph the user tapped
+ * @param {string} params.fullSourceText - The complete original source text
+ * @param {string} params.fullTranslatedText - The complete translated text
+ * @param {string} params.sourceLang - Source language
+ * @param {string} params.targetLang - Target language
+ * @returns {Promise<Object>} Explanation with grammar, roots, and cultural context
+ */
+export async function explainSegment({ segment, fullSourceText, fullTranslatedText, sourceLang, targetLang }) {
+    const startTime = Date.now();
+
+    try {
+        const client = getGroqClient();
+
+        const completion = await client.chat.completions.create({
+            model: GROQ_MODEL,
+            max_tokens: 1000,
+            temperature: 0.4,
+            messages: [
+                {
+                    role: 'system',
+                    content: `You are a Filipino linguistics tutor helping a language learner understand a specific part of a translated document.
+
+The user has tapped on a specific paragraph/sentence in their translated document and wants to understand it better.
+
+Respond with ONLY valid JSON:
+{
+  "explanation": "string (2-3 paragraph plain-text explanation covering grammar, meaning, and context)",
+  "keyTerms": [
+    {
+      "term": "string (a key word/phrase from the segment)",
+      "meaning": "string (what it means)",
+      "rootWord": "string or null (linguistic root if applicable)",
+      "regionalNote": "string or null (regional usage note)"
+    }
+  ],
+  "grammarNotes": "string (brief grammar breakdown: sentence structure, verb forms, particles)",
+  "culturalContext": "string or null (any cultural significance or etiquette notes)",
+  "simplifiedVersion": "string (a simpler, more conversational way to say the same thing)"
+}`
+                },
+                {
+                    role: 'user',
+                    content: `I'm reading a translated document and I tapped on this part to understand it better:
+
+Tapped segment (${targetLang}): "${segment}"
+
+Full original document (${sourceLang}): "${fullSourceText.slice(0, 1500)}"
+
+Full translation (${targetLang}): "${fullTranslatedText.slice(0, 1500)}"
+
+Explain this segment to me like a tutor would. Respond with JSON only.`
+                }
+            ],
+        });
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+        if (!rawContent) throw new Error('Empty response from Groq');
+
+        const jsonStr = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const result = JSON.parse(jsonStr);
+
+        console.log(`[MetaLayer] Segment explanation generated in ${Date.now() - startTime}ms`);
+
+        return {
+            success: true,
+            ...result,
+            metadata: { model: GROQ_MODEL, explanationMs: Date.now() - startTime },
+        };
+    } catch (error) {
+        console.error('[MetaLayer] Segment explanation failed:', error.message);
+        return {
+            success: false,
+            explanation: 'Could not generate an explanation for this segment. Please try again.',
+            keyTerms: [],
+            grammarNotes: '',
+            culturalContext: null,
+            simplifiedVersion: '',
+            metadata: { model: GROQ_MODEL, explanationMs: Date.now() - startTime, error: error.message },
+        };
+    }
+}
+
 // ─── Wiki Assistant Prompt Builder ──────────────────────────────────────────
 
 function buildWikiAssistantSystemPrompt(submission) {
