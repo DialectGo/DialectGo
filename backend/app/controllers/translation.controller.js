@@ -41,6 +41,7 @@ export const translateImage = async (req, res, next) => {
 
 export const translateDocument = async (req, res, next) => {
     try {
+        console.log('[translateDocument] Hit endpoint. req.file:', req.file ? req.file.originalname : 'undefined');
         if (!req.file) return res.status(400).json({ message: "No document or image file uploaded" });
 
         const { sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
@@ -223,25 +224,31 @@ export const translateText = async (req, res, next) => {
             console.log("Pre-processed Input:", result.canonicalizedText);
         }
 
-        const { data, error } = await TranslationService.saveHistory(req.user.id, {
-            sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
-        }, req.token);
+        let savedRecord = null;
+        if (req.user?.id) {
+            const { data, error } = await TranslationService.saveHistory(req.user.id, {
+                sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
+            }, req.token);
 
-        if (error) throw error;
+            if (error) throw error;
+            savedRecord = data?.[0];
+        }
 
         // If breakdown was requested, save the report to Supabase
         if (withBreakdown && result.breakdown) {
             try {
-                await ReportModel.saveReport(req.user.id, {
-                    translationId: data?.[0]?.id || null,
-                    sourceText,
-                    translatedText: result.translatedText,
-                    sourceLang,
-                    targetLang,
-                    targetDialect: targetDialect || null,
-                    breakdown: result.breakdown,
-                    sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
-                }, req.token);
+                if (req.user?.id) {
+                    await ReportModel.saveReport(req.user.id, {
+                        translationId: savedRecord?.id || null,
+                        sourceText,
+                        translatedText: result.translatedText,
+                        sourceLang,
+                        targetLang,
+                        targetDialect: targetDialect || null,
+                        breakdown: result.breakdown,
+                        sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
+                    }, req.token);
+                }
             } catch (reportErr) {
                 console.warn('[translateText] Failed to save breakdown report:', reportErr.message);
                 // Non-fatal — continue with the response
@@ -251,7 +258,7 @@ export const translateText = async (req, res, next) => {
         res.status(200).json({
             success: true,
             translatedText: result.translatedText,
-            historyRecord: data?.[0],
+            historyRecord: savedRecord,
             preprocessing: result.preprocessing,
             dialectization: result.dialectization,
             breakdown: result.breakdown || null,

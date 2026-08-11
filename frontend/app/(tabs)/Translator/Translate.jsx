@@ -27,7 +27,7 @@ import DocumentUploadModal from '../../../shared/components/DocumentUploadModal'
 import TranslationResultModal from '../../../shared/components/TranslationResultModal';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
@@ -287,6 +287,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   };
 
   const handleDocumentSelected = async (fileAsset) => {
+    console.log('[Translate] handleDocumentSelected fileAsset:', fileAsset);
     setDocResultVisible(true);
     setIsDocTranslating(true);
     setDocError(false);
@@ -297,10 +298,18 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       if (!session) return;
 
       const formData = new FormData();
+      const getMimeType = (asset) => {
+        if (asset.mimeType) return asset.mimeType;
+        if (asset.uri?.toLowerCase().endsWith('.pdf')) return 'application/pdf';
+        if (asset.uri?.toLowerCase().endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        // If no mime type, assume image for ImagePicker
+        return 'image/jpeg';
+      };
+
       formData.append('file', {
         uri: fileAsset.uri,
-        name: fileAsset.name || 'upload',
-        type: fileAsset.mimeType || 'application/octet-stream',
+        name: fileAsset.fileName || fileAsset.name || 'upload.jpg',
+        type: getMimeType(fileAsset),
       });
       formData.append('sourceLang', sourceLang);
       formData.append('targetLang', targetLang);
@@ -322,15 +331,18 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         body: formData,
       });
 
-      const data = await response.json();
+      console.log('[Translate] fetch response status:', response.status);
       
+      const responseText = await response.text();
+      console.log('[Translate] fetch response text:', responseText);
+
       if (response.ok) {
-        setDocResult(data);
+        setDocResult(JSON.parse(responseText));
       } else {
         setDocError(true);
       }
     } catch (err) {
-      console.error("Document upload error:", err);
+      console.error("[Translate] Document upload error:", err.message || err);
       setDocError(true);
     } finally {
       setIsDocTranslating(false);

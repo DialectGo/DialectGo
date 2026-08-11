@@ -22,6 +22,12 @@ from paddleocr import PaddleOCR
 from PIL import Image
 from pydantic import BaseModel
 
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -68,15 +74,22 @@ def run_ocr(img_array: np.ndarray) -> dict:
 
     extracted_lines = []
 
-    # PaddleOCR 3.x returns a list of result objects (one per page/image).
-    # Each result object can be iterated to yield prediction dicts.
     if result:
         for page_result in result:
-            # page_result may be a list of dicts or a single result object
+            # Handle new PaddleX/PaddleOCR 3.x dictionary structure
+            if isinstance(page_result, dict) and "rec_texts" in page_result:
+                texts = page_result.get("rec_texts", [])
+                scores = page_result.get("rec_scores", [])
+                for i in range(len(texts)):
+                    text = texts[i]
+                    score = float(scores[i]) if i < len(scores) else 0.0
+                    if text and str(text).strip():
+                        extracted_lines.append({"text": str(text), "confidence": score})
+                continue
+                
+            # Fallback for old PaddleOCR format
             items = page_result if isinstance(page_result, list) else [page_result]
             for item in items:
-                # PaddleOCR 3.x: item is a dict with 'rec_text' and 'rec_score'
-                # PaddleOCR 2.x compat: item[1] == (text, score)
                 if isinstance(item, dict):
                     text = item.get("rec_text", "")
                     score = float(item.get("rec_score", 0.0))
@@ -87,8 +100,8 @@ def run_ocr(img_array: np.ndarray) -> dict:
                 else:
                     continue
 
-                if text.strip():
-                    extracted_lines.append({"text": text, "confidence": score})
+                if text and str(text).strip():
+                    extracted_lines.append({"text": str(text), "confidence": score})
 
     full_text = " ".join(item["text"] for item in extracted_lines)
     return {"full_text": full_text, "details": extracted_lines}
@@ -117,7 +130,13 @@ async def extract_text(file: UploadFile = File(...)):
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if img is None:
-            raise HTTPException(status_code=400, detail="Invalid or unreadable image file.")
+            # Fallback for HEIC and other formats OpenCV misses natively
+            try:
+                pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
+                img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            except Exception as e:
+                logger.error(f"[extract-text] PIL fallback failed: {e}")
+                raise HTTPException(status_code=400, detail="Invalid or unreadable image file.")
 
         logger.info(f"[extract-text] Processing uploaded file: {file.filename}")
         ocr_result = run_ocr(img)

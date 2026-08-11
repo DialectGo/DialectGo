@@ -18,7 +18,9 @@ export default function DocumentUploadModal({ visible, onClose, onFileSelected }
 
       if (!result.canceled && result.assets.length > 0) {
         onClose();
-        onFileSelected(result.assets[0]);
+        setTimeout(() => {
+          onFileSelected(result.assets[0]);
+        }, 500);
       }
     } catch (err) {
       console.error('Document picking error:', err);
@@ -34,13 +36,15 @@ export default function DocumentUploadModal({ visible, onClose, onFileSelected }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 1,
       });
 
       if (!result.canceled && result.assets.length > 0) {
         onClose();
-        onFileSelected(result.assets[0]);
+        setTimeout(() => {
+          onFileSelected(result.assets[0]);
+        }, 500);
       }
     } catch (err) {
       console.error('Image picking error:', err);
