@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, Alert, Image,  Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router'; 
@@ -24,6 +24,7 @@ export default function Dictionary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
   const [error, setError] = useState(null);
   const router = useRouter(); 
@@ -233,7 +234,25 @@ export default function Dictionary() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ animation: "fade" }} />
-      <TopBar onMenuPress={() => console.log("Menu Pressed!")} />
+      <TopBar 
+        titlePrimary="DialectGo" 
+        titleSecondary="Dictionary" 
+        screenType="dictionary"
+        onHistoryPress={() => {
+          if (isGuestMode) {
+            setShowFeatureModal(true);
+            return;
+          }
+          router.push('/Dictionary/History');
+        }}
+        onSaveWordsPress={() => {
+          if (isGuestMode) {
+            setShowFeatureModal(true);
+            return;
+          }
+          router.push('/Dictionary/SaveWords');
+        }}
+      />
 
       {isGuestMode && (
         <View style={{ backgroundColor: '#421C00', padding: 5, alignItems: 'center' }}>
@@ -247,44 +266,11 @@ export default function Dictionary() {
       <RefreshContainer
         refreshing={refreshing}
         onRefresh={handleRefresh}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20, paddingTop: insets.top + 70 }}
         onScroll={handleScroll}
         scrollEventThrottle={16} // Evaluates scroll calculations smoothly
       >
         <View style={{ flex: 1 }}>
-          {/* Header section */}
-          <View style={[styles.header, { marginTop: 10 }]}>
-            <View>
-              <Text style={styles.headerTitleYellow}>DialectGo</Text>
-              <Text style={styles.headerTitleBlack}>Dictionary</Text>
-            </View>
-            <View style={styles.headerIcons}>
-              <TouchableOpacity 
-                style={styles.iconCircle}
-                onPress={() => {
-                  if (isGuestMode) {
-                    setShowFeatureModal(true);
-                    return;
-                  }
-                  router.push('/Dictionary/History');
-                }}
-              >
-                <Image source={require('../../../assets/images/history.png')} style={styles.topIcon} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.iconCircle}
-                onPress={() => {
-                  if (isGuestMode) {
-                    setShowFeatureModal(true);
-                    return;
-                  }
-                  router.push('/Dictionary/SaveWords');
-                }}
-              >
-                <Image source={require('../../../assets/icons/star.png')} style={styles.topIcon} />
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>

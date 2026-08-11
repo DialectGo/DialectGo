@@ -15,7 +15,13 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-const TopBar = () => {
+const TopBar = ({ 
+  titlePrimary, 
+  titleSecondary, 
+  screenType = 'home',
+  onHistoryPress,
+  onSaveWordsPress
+}) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
@@ -58,34 +64,59 @@ const TopBar = () => {
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.topBar}>
-          {/* Logo Section (Removed per request) */}
+          {/* Left Section (Dynamic Titles) */}
           <View style={styles.leftSection}>
+            {titlePrimary || titleSecondary ? (
+              <View style={styles.titleWrapper}>
+                {titlePrimary ? <Text style={styles.headerTitleYellow}>{titlePrimary}</Text> : null}
+                {titleSecondary ? <Text style={styles.headerTitleBlack}>{titleSecondary}</Text> : null}
+              </View>
+            ) : null}
           </View>
 
           {/* Right Section (Glassmorphism Pill Buttons) */}
           <View style={styles.rightSection}>
             
-            <TouchableOpacity 
-              style={styles.glassBtn} 
-              onPress={() => {
-                setNotificationsVisible(true);
-                setUnreadCount(0); // Optimistic clear
-              }}
-            >
-              <Ionicons name="notifications-outline" size={20} color="#1F2937" />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            {screenType === 'dictionary' ? (
+              <>
+                <TouchableOpacity 
+                  style={styles.iconCircle}
+                  onPress={onHistoryPress}
+                >
+                  <Image source={require('../../assets/images/history.png')} style={styles.topIcon} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.iconCircle}
+                  onPress={onSaveWordsPress}
+                >
+                  <Image source={require('../../assets/icons/star.png')} style={styles.topIcon} />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity 
+                  style={styles.glassBtn} 
+                  onPress={() => {
+                    setNotificationsVisible(true);
+                    setUnreadCount(0); // Optimistic clear
+                  }}
+                >
+                  <Ionicons name="notifications-outline" size={20} color="#1F2937" />
+                  {unreadCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.glassBtn}
-              onPress={() => handleNavigation('/Account/Profile')}
-            >
-              <Image source={userAvatar} style={styles.avatarIcon} />
-            </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.glassBtn}
+                  onPress={() => handleNavigation('/Account/Profile')}
+                >
+                  <Image source={userAvatar} style={styles.avatarIcon} />
+                </TouchableOpacity>
+              </>
+            )}
 
           </View>
         </View>
@@ -167,6 +198,36 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     paddingHorizontal: 4,
+  },
+  titleWrapper: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    marginLeft: -5, 
+  },
+  headerTitleYellow: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFD54F',
+    marginBottom: -4, 
+    letterSpacing: 0.5,
+  },
+  headerTitleBlack: {
+    fontSize: 24,
+    color: '#421C00',
+    fontWeight: '900',
+  },
+  iconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)', // Match glassmorphism of default buttons
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topIcon: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
   },
 });
 
