@@ -531,3 +531,22 @@ export const adminGetTranslationAnalytics = async (req, res, next) => {
         });
     } catch (err) { next(err); }
 };
+
+/**
+ * Synthesize speech from translated text (for the text-to-speech button in the output card).
+ * POST /translate/tts
+ * Body: { text: string, lang: string }
+ */
+export const textToSpeech = async (req, res, next) => {
+    try {
+        const { text, lang } = req.body;
+        if (!text || typeof text !== 'string') {
+            return res.status(400).json({ success: false, message: 'Text is required.' });
+        }
+        const audioBase64 = await synthesizeSpeech(text, lang || 'English');
+        if (!audioBase64) {
+            return res.status(500).json({ success: false, message: 'TTS synthesis returned no audio.' });
+        }
+        res.status(200).json({ success: true, audioBase64 });
+    } catch (err) { next(err); }
+};
