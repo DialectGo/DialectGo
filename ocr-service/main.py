@@ -59,7 +59,8 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 logger.info("Initializing PaddleOCR model (this may take a moment on first run)...")
 # PaddleOCR 3.x API: use_textline_orientation replaces use_angle_cls
-ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en")
+# use_mkldnn=False prevents 'ConvertPirAttribute2RuntimeAttribute' crashes on Windows
+ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en", use_mkldnn=False)
 logger.info("PaddleOCR ready.")
 
 
