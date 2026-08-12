@@ -7,10 +7,20 @@ The frontend is built with a modern React Native stack:
 - **Core Framework:** React Native (0.81.5) with Expo (v54)
 - **Routing:** Expo Router (File-based routing)
 - **Styling:** NativeWind (v4) with Tailwind CSS
-- **Backend & Auth:** Supabase JS
-- **UI Components:** React Native Paper & Lucide React Native (Icons)
-- **Camera/Media:** Expo Camera, React Native Vision Camera, & Nitro Modules
+- **Backend & Auth:** Supabase JS (`@supabase/supabase-js`)
+- **UI Components:** React Native Paper & Lucide React Native (Icons), Bottom Sheets (`@gorhom/bottom-sheet` or built-in Modals)
+- **Camera/Media:** Expo Camera, React Native Vision Camera, Nitro Modules, Expo Image Picker, Expo Document Picker
 - **Networking:** Axios
+- **File Management:** Expo File System (Legacy imports for broad compatibility)
+
+## ✨ Key Features & Architecture
+The frontend is heavily integrated with the backend AI Meta-Layers and Supabase:
+- **Auth System:** Full authentication flow (Sign Up, Login, Password Reset, Profile Management) using Supabase Auth.
+- **Document & Image Translation:** Users can upload images/PDFs/DOCX files. The UI handles chunked layout reconstruction, segment-by-segment highlighting, and document type badges (e.g., 'Casual Chat', 'Academic').
+- **Highlight & Ask:** Tappable translated segments that open a bottom sheet offering deep linguistic breakdowns (grammar, roots, sentence structure) dynamically pulled from the LLM meta-layer.
+- **Wiki Feeds:** A community-driven feed allowing users to share, upvote, and tag translations and dialect terms.
+- **Admin Dashboard:** Specific `/admin` routes that allow administrators to manage the centralized dialect corpus (dictionary), review translation history, and manage users.
+- **UI Enhancements:** A persistent, modern top navigation bar, seamless modal transitions, and dynamic SVG icons.
 
 ## 📋 Prerequisites
 
