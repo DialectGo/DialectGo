@@ -25,6 +25,7 @@ import BreakdownPanel from '../../../shared/components/BreakdownPanel';
 import CustomizeModal from '../../../shared/components/CustomizeModal';
 import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
 import TranslationResultModal from '../../../shared/components/TranslationResultModal';
+import SwipeableBottomSheet from '../../../shared/components/SwipeableBottomSheet';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -383,7 +384,12 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         onHistoryPress={() => router.push('/History/History')}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 55 }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 55 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <View style={styles.content}>
 
           <LanguageSelector
@@ -591,25 +597,17 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       />
 
       {/* LANGUAGE PICKER MODAL */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Select Language</Text>
-            {LANGUAGES.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
-                <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
-                  {item.name}
-                </Text>
-                {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeSheetText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <SwipeableBottomSheet visible={modalVisible} onClose={() => setModalVisible(false)}>
+        <Text style={styles.sheetTitle}>Select Language</Text>
+        {LANGUAGES.map((item) => (
+          <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
+            <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
+              {item.name}
+            </Text>
+            {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
+          </TouchableOpacity>
+        ))}
+      </SwipeableBottomSheet>
 
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>
