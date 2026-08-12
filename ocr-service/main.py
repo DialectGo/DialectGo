@@ -56,11 +56,13 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # use_angle_cls=True  – handles rotated / skewed text from mobile photos
 # lang='en'          – optimized for English; swap to 'ch' for Chinese, etc.
-# ---------------------------------------------------------------------------
+import os
+os.environ["FLAGS_use_mkldnn"] = "0"
+os.environ["FLAGS_enable_pir_api"] = "0"
+
 logger.info("Initializing PaddleOCR model (this may take a moment on first run)...")
 # PaddleOCR 3.x API: use_textline_orientation replaces use_angle_cls
-# use_mkldnn=False prevents 'ConvertPirAttribute2RuntimeAttribute' crashes on Windows
-ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en", use_mkldnn=False)
+ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en")
 logger.info("PaddleOCR ready.")
 
 
