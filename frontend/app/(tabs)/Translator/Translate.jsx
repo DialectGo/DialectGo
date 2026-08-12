@@ -27,6 +27,7 @@ import CustomizeModal from '../../../shared/components/CustomizeModal';
 import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
 import TranslationResultModal from '../../../shared/components/TranslationResultModal';
 import SwipeableBottomSheet from '../../../shared/components/SwipeableBottomSheet';
+import SpeechModal from '../../../shared/components/SpeechModal';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
 
@@ -62,6 +63,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
   const [rateModalVisible, setRateModalVisible] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [speechModalVisible, setSpeechModalVisible] = useState(false);
   const [selectingFor, setSelectingFor] = useState('source');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -88,6 +90,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   // TTS State
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const soundRef = useRef(null);
+  // When the speech modal delivers results directly, skip the debounce re-translation
+  const skipDebounceRef = useRef(false);
 
   // Document Upload State
   const [docUploadVisible, setDocUploadVisible] = useState(false);
@@ -157,6 +161,45 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       console.error('[TTS Error]:', err);
       setIsPlayingAudio(false);
       Alert.alert('Playback Error', 'Could not generate audio for this translation.');
+    }
+  };
+
+  /**
+   * Plays a raw base64 audio string directly (used for speech-to-text auto-playback).
+   * This is different from playTranslatedAudio which calls the TTS endpoint first.
+   */
+  const playBase64Audio = async (rawBase64) => {
+    if (!rawBase64) return;
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+
+      setIsPlayingAudio(true);
+
+      const cleanBase64 = rawBase64
+        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
+        .replace(/(\r\n|\n|\r)/gm, '');
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false, playsInSilentModeIOS: true,
+        staysActiveInBackground: false, shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+      });
+
+      const fileUri = `${FileSystem.cacheDirectory}speech_result.mp3`;
+      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, { encoding: FileSystem.EncodingType.Base64 });
+
+      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true, volume: 1.0 });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) setIsPlayingAudio(false);
+      });
+    } catch (err) {
+      console.error('[Base64 Audio Playback Error]:', err);
+      setIsPlayingAudio(false);
     }
   };
 
@@ -430,6 +473,11 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
   // Debounce Effect
   useEffect(() => {
+    // Skip re-translation if speech modal already provided the result directly
+    if (skipDebounceRef.current) {
+      skipDebounceRef.current = false;
+      return;
+    }
     const delayDebounceFn = setTimeout(() => {
       if (inputText) handleTranslate(inputText);
     }, 1000);
@@ -501,7 +549,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
                 <TouchableOpacity onPress={() => setDocUploadVisible(true)} style={styles.iconBtn}>
                   <Ionicons name="document-text" size={22} color="#1F2937" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')} style={styles.iconBtn}>
+                <TouchableOpacity onPress={() => setSpeechModalVisible(true)} style={styles.iconBtn}>
                   <Ionicons name="mic" size={22} color="#1F2937" />
                 </TouchableOpacity>
               </View>
@@ -711,6 +759,30 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           </TouchableOpacity>
         ))}
       </SwipeableBottomSheet>
+
+      {/* SPEECH MODAL */}
+      <SpeechModal
+        visible={speechModalVisible}
+        onClose={() => setSpeechModalVisible(false)}
+        sourceLang={sourceLang}
+        targetLang={targetLang}
+        onTranscript={(transcript) => {
+          // Flag the debounce to skip — we already have the translation
+          skipDebounceRef.current = true;
+          setInputText(transcript);
+        }}
+        onTranslation={(translatedText) => {
+          // Set the translation directly so it displays simultaneously with audio
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setTranslation(translatedText.trim());
+        }}
+        onAudioResult={(audioBase64) => {
+          // Delay one frame so React can render the translation text first
+          requestAnimationFrame(() => {
+            playBase64Audio(audioBase64);
+          });
+        }}
+      />
 
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>
