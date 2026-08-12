@@ -383,9 +383,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         onHistoryPress={() => router.push('/History/History')}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 70 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 55 }}>
         <View style={styles.content}>
-          <Text style={styles.subHeader}>TEXT MODE</Text>
 
           <LanguageSelector
             sourceLang={sourceLang} targetLang={targetLang}
@@ -398,60 +397,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             translateIcon={translateIcon}
           />
 
-          {/* DIALECT VARIANT SELECTOR */}
-          {DIALECT_OPTIONS[targetLang] && (
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingHorizontal: 20,
-              marginBottom: 12,
-              gap: 12,
-            }}>
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600', marginRight: 4 }}>Output:</Text>
-              {DIALECT_OPTIONS[targetLang].map((option) => (
-                <TouchableOpacity
-                  key={option.label}
-                  onPress={() => setTargetDialect(option.value)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 6,
-                    paddingHorizontal: 14,
-                    borderRadius: 20,
-                    backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
-                    borderWidth: 1.5,
-                    borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
-                  }}
-                >
-                  <View style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: targetDialect === option.value ? '#1F2937' : '#9CA3AF',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: 6,
-                  }}>
-                    {targetDialect === option.value && (
-                      <View style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: '#1F2937',
-                      }} />
-                    )}
-                  </View>
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: targetDialect === option.value ? '700' : '500',
-                    color: targetDialect === option.value ? '#1F2937' : '#6B7280',
-                  }}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
 
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
@@ -469,7 +414,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               onChangeText={setInputText}
             />
             <View style={styles.cardFooter}>
-              <View style={styles.shortcutIcons}>
+              <View style={[styles.shortcutIcons, { alignItems: 'center', gap: 8 }]}>
                 <TouchableOpacity onPress={() => setDocUploadVisible(true)} style={styles.iconBtn}>
                   <Ionicons name="document-text" size={22} color="#1F2937" />
                 </TouchableOpacity>
@@ -477,7 +422,38 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
                   <Ionicons name="mic" size={22} color="#1F2937" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.charCount}>{inputText.length} characters</Text>
+
+              {/* DIALECT VARIANT SELECTOR */}
+              {DIALECT_OPTIONS[targetLang] && (
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  {DIALECT_OPTIONS[targetLang].map((option) => (
+                    <TouchableOpacity
+                      key={option.label}
+                      onPress={() => setTargetDialect(option.value)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 16,
+                        backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
+                        borderWidth: 1,
+                        borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
+                      }}
+                    >
+                      <Text style={{
+                        fontSize: 11,
+                        fontWeight: targetDialect === option.value ? '700' : '500',
+                        color: targetDialect === option.value ? '#1F2937' : '#6B7280',
+                      }}>{option.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
 
