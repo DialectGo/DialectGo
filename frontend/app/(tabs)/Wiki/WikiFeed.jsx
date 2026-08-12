@@ -217,7 +217,7 @@ export default function WikiFeed() {
     <View style={styles.container}>
       <Stack.Screen options={{ animation: "fade" }} />
       <StatusBar barStyle="dark-content" />
-      <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+      <TopBar titlePrimary="DialectGo" titleSecondary="DialectWiki" />
 
       {/* Type filter tabs */}
       <View style={[styles.typeFilterRow, { paddingTop: insets.top + 70 }]}>

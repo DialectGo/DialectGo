@@ -50,6 +50,7 @@ pip install -r requirements.txt
 # Simple start (auto-reloads on file change)
 python main.py
 # Or if using conda: conda run -n dialectgo-ocr python main.py
+conda run -n dialectgo-ocr python main.py
 
 # Or with uvicorn directly
 uvicorn main:app --host 0.0.0.0 --port 8001 --reload
