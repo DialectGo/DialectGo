@@ -271,4 +271,53 @@ export const styles = StyleSheet.create({
     color: '#EF4444',
     fontWeight: '700',
   },
+
+  // OUTPUT TOOLBAR
+  outputToolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#F9FAFB',
+  },
+  outputToolbarBtn: {
+    backgroundColor: '#F3F4F6',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // RATE MODAL BUTTONS
+  rateBtn: {
+    flex: 1,
+    paddingVertical: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  rateBtnActive: {
+    borderColor: '#FBBF24',
+    backgroundColor: '#FEF3C7',
+  },
+
+  // MORE MENU ITEMS
+  moreMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  moreMenuText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+  },
 });

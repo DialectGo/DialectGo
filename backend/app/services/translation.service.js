@@ -162,49 +162,30 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
  * @param {string|null} token - Optional user session token
  * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing, dialectization}>}
  */
-const chunkText = (text, maxLength = 800) => {
-    if (!text) return [];
-    const paragraphs = text.split('\n');
-    const chunks = [];
-    let currentChunk = '';
-    
-    for (const p of paragraphs) {
-        if ((currentChunk.length + p.length) > maxLength && currentChunk.length > 0) {
-            chunks.push(currentChunk.trim());
-            currentChunk = '';
-        }
-        currentChunk += p + '\n';
-    }
-    if (currentChunk.trim().length > 0) chunks.push(currentChunk.trim());
-    return chunks.length > 0 ? chunks : [text];
-};
-
 export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null, isDocument = false) => {
     // Step 1: Run the input pre-processing pipeline on the full text
     const preprocessResult = await preprocessText(text, sourceLang, token);
 
-    // Step 2: Chunk the canonicalized text to prevent NLLB from hallucinating
+    // Step 2: Split by exact newline to strictly preserve structure
+    // We process line-by-line because sending \n characters confuses NLLB
     const textForTranslation = preprocessResult.canonicalizedText;
+    const lines = textForTranslation.split('\n');
     
-    let chunks = [];
-    if (isDocument) {
-        // For documents, strictly preserve paragraph boundaries so NLLB doesn't collapse them
-        // ReconstructLayout uses \n\n, but we split by \n and filter empty to be safe
-        chunks = textForTranslation.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-    } else {
-        chunks = chunkText(textForTranslation, 800);
-    }
-    
-    let finalTranslatedText = '';
+    let finalTranslatedLines = [];
     let wasDialectModified = false;
     let allDialectReplacements = [];
     let rawNllbOutputs = [];
 
-    // Step 3: Process each chunk
-    for (const chunk of chunks) {
-        if (!chunk.trim()) continue;
-        
-        const nllbOutput = await performTranslation(chunk, sourceLang, targetLang);
+    // Step 3: Process each line individually
+    for (const line of lines) {
+        // If it's an empty line or just spaces, preserve it exactly without translating
+        if (line.trim().length === 0) {
+            finalTranslatedLines.push(line);
+            continue;
+        }
+
+        // Translate the clean line
+        const nllbOutput = await performTranslation(line, sourceLang, targetLang);
         rawNllbOutputs.push(nllbOutput);
 
         if (targetDialect) {
@@ -215,14 +196,15 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
                     allDialectReplacements.push(...dialectResult.replacements);
                 }
             }
-            finalTranslatedText += dialectResult.dialectText + '\n';
+            finalTranslatedLines.push(dialectResult.dialectText);
         } else {
-            finalTranslatedText += nllbOutput + '\n';
+            finalTranslatedLines.push(nllbOutput);
         }
     }
     
-    finalTranslatedText = finalTranslatedText.trim();
-    const joinedNllbOutput = rawNllbOutputs.join('\n').trim();
+    // Reconstruct the exact structure
+    const finalTranslatedText = finalTranslatedLines.join('\n');
+    const joinedNllbOutput = rawNllbOutputs.join('\n');
 
     let dialectMeta = null;
     if (targetDialect) {
@@ -241,7 +223,7 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
         pipelineMs: preprocessResult.metadata.pipelineMs,
         dialectized: wasDialectModified,
         targetDialect: targetDialect || 'Standard',
-        chunksProcessed: chunks.length
+        chunksProcessed: lines.length
     });
 
     return {

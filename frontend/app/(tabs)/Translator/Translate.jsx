@@ -1,9 +1,7 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
-  Modal,
-  
   ScrollView,
   Text,
   TextInput,
@@ -11,11 +9,14 @@ import {
   View,
   Alert,
   Dimensions,
-  LayoutAnimation
+  LayoutAnimation,
+  Clipboard,
 } from 'react-native';
+import { Audio, InterruptionModeAndroid } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 import BottomNav from '../../../shared/components/BottomNav';
 import TopBar from '../../../shared/components/TopBar';
@@ -25,9 +26,10 @@ import BreakdownPanel from '../../../shared/components/BreakdownPanel';
 import CustomizeModal from '../../../shared/components/CustomizeModal';
 import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
 import TranslationResultModal from '../../../shared/components/TranslationResultModal';
+import SwipeableBottomSheet from '../../../shared/components/SwipeableBottomSheet';
+import SpeechModal from '../../../shared/components/SpeechModal';
 import { styles } from '../../../shared/styles/TranslateStyles';
 import { supabase } from '../../../shared/lib/supabase';
-import * as FileSystem from 'expo-file-system/legacy';
 
 // Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
@@ -59,6 +61,9 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   // UI State
   const [modalVisible, setModalVisible] = useState(false);
   const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+  const [rateModalVisible, setRateModalVisible] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [speechModalVisible, setSpeechModalVisible] = useState(false);
   const [selectingFor, setSelectingFor] = useState('source');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -82,12 +87,128 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [showCustomize, setShowCustomize] = useState(false);
   const [isCustomizeLoading, setIsCustomizeLoading] = useState(false);
 
+  // TTS State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const soundRef = useRef(null);
+  // When the speech modal delivers results directly, skip the debounce re-translation
+  const skipDebounceRef = useRef(false);
+
   // Document Upload State
   const [docUploadVisible, setDocUploadVisible] = useState(false);
   const [docResultVisible, setDocResultVisible] = useState(false);
   const [isDocTranslating, setIsDocTranslating] = useState(false);
   const [docResult, setDocResult] = useState(null);
   const [docError, setDocError] = useState(false);
+
+  // Cleanup sound on unmount
+  useEffect(() => {
+    return () => { soundRef.current?.unloadAsync().catch(() => {}); };
+  }, []);
+
+  // --- TTS ---
+  const playTranslatedAudio = async (text, lang) => {
+    if (!text) return;
+
+    // If already playing, stop
+    if (isPlayingAudio && soundRef.current) {
+      await soundRef.current.stopAsync().catch(() => {});
+      await soundRef.current.unloadAsync().catch(() => {});
+      soundRef.current = null;
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+
+      setIsPlayingAudio(true);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${TRANSLATION_API_BASE}/translate/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ text, lang }),
+      });
+
+      if (!response.ok) throw new Error('TTS request failed');
+      const data = await response.json();
+      const base64String = data.audioBase64;
+      if (!base64String) throw new Error('No audio returned');
+
+      const cleanBase64 = base64String
+        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
+        .replace(/(\r\n|\n|\r)/gm, '');
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false, playsInSilentModeIOS: true,
+        staysActiveInBackground: false, shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+      });
+
+      const fileUri = `${FileSystem.cacheDirectory}tts_output.mp3`;
+      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, { encoding: FileSystem.EncodingType.Base64 });
+
+      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true, volume: 1.0 });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) setIsPlayingAudio(false);
+      });
+    } catch (err) {
+      console.error('[TTS Error]:', err);
+      setIsPlayingAudio(false);
+      Alert.alert('Playback Error', 'Could not generate audio for this translation.');
+    }
+  };
+
+  /**
+   * Plays a raw base64 audio string directly (used for speech-to-text auto-playback).
+   * This is different from playTranslatedAudio which calls the TTS endpoint first.
+   */
+  const playBase64Audio = async (rawBase64) => {
+    if (!rawBase64) return;
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+
+      setIsPlayingAudio(true);
+
+      const cleanBase64 = rawBase64
+        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
+        .replace(/(\r\n|\n|\r)/gm, '');
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false, playsInSilentModeIOS: true,
+        staysActiveInBackground: false, shouldDuckAndroid: true,
+        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        playThroughEarpieceAndroid: false,
+      });
+
+      const fileUri = `${FileSystem.cacheDirectory}speech_result.mp3`;
+      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, { encoding: FileSystem.EncodingType.Base64 });
+
+      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true, volume: 1.0 });
+      soundRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) setIsPlayingAudio(false);
+      });
+    } catch (err) {
+      console.error('[Base64 Audio Playback Error]:', err);
+      setIsPlayingAudio(false);
+    }
+  };
+
+  // --- Copy ---
+  const handleCopy = () => {
+    if (!translation) return;
+    Clipboard.setString(translation);
+    Alert.alert('Copied!', 'Translation copied to clipboard.');
+  };
 
   // --- API HANDLERS ---
 
@@ -352,6 +473,11 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
   // Debounce Effect
   useEffect(() => {
+    // Skip re-translation if speech modal already provided the result directly
+    if (skipDebounceRef.current) {
+      skipDebounceRef.current = false;
+      return;
+    }
     const delayDebounceFn = setTimeout(() => {
       if (inputText) handleTranslate(inputText);
     }, 1000);
@@ -383,9 +509,13 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         onHistoryPress={() => router.push('/History/History')}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 70 }}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120, paddingTop: insets.top + 55 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <View style={styles.content}>
-          <Text style={styles.subHeader}>TEXT MODE</Text>
 
           <LanguageSelector
             sourceLang={sourceLang} targetLang={targetLang}
@@ -398,60 +528,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             translateIcon={translateIcon}
           />
 
-          {/* DIALECT VARIANT SELECTOR */}
-          {DIALECT_OPTIONS[targetLang] && (
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingHorizontal: 20,
-              marginBottom: 12,
-              gap: 12,
-            }}>
-              <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '600', marginRight: 4 }}>Output:</Text>
-              {DIALECT_OPTIONS[targetLang].map((option) => (
-                <TouchableOpacity
-                  key={option.label}
-                  onPress={() => setTargetDialect(option.value)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 6,
-                    paddingHorizontal: 14,
-                    borderRadius: 20,
-                    backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
-                    borderWidth: 1.5,
-                    borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
-                  }}
-                >
-                  <View style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    borderWidth: 2,
-                    borderColor: targetDialect === option.value ? '#1F2937' : '#9CA3AF',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginRight: 6,
-                  }}>
-                    {targetDialect === option.value && (
-                      <View style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: '#1F2937',
-                      }} />
-                    )}
-                  </View>
-                  <Text style={{
-                    fontSize: 13,
-                    fontWeight: targetDialect === option.value ? '700' : '500',
-                    color: targetDialect === option.value ? '#1F2937' : '#6B7280',
-                  }}>{option.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
 
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
@@ -469,15 +545,46 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               onChangeText={setInputText}
             />
             <View style={styles.cardFooter}>
-              <View style={styles.shortcutIcons}>
+              <View style={[styles.shortcutIcons, { alignItems: 'center', gap: 8 }]}>
                 <TouchableOpacity onPress={() => setDocUploadVisible(true)} style={styles.iconBtn}>
                   <Ionicons name="document-text" size={22} color="#1F2937" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push('/Translator/SpeechToText')} style={styles.iconBtn}>
+                <TouchableOpacity onPress={() => setSpeechModalVisible(true)} style={styles.iconBtn}>
                   <Ionicons name="mic" size={22} color="#1F2937" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.charCount}>{inputText.length} characters</Text>
+
+              {/* DIALECT VARIANT SELECTOR */}
+              {DIALECT_OPTIONS[targetLang] && (
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  {DIALECT_OPTIONS[targetLang].map((option) => (
+                    <TouchableOpacity
+                      key={option.label}
+                      onPress={() => setTargetDialect(option.value)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        borderRadius: 16,
+                        backgroundColor: targetDialect === option.value ? '#FBBF24' : '#F3F4F6',
+                        borderWidth: 1,
+                        borderColor: targetDialect === option.value ? '#F59E0B' : '#E5E7EB',
+                      }}
+                    >
+                      <Text style={{
+                        fontSize: 11,
+                        fontWeight: targetDialect === option.value ? '700' : '500',
+                        color: targetDialect === option.value ? '#1F2937' : '#6B7280',
+                      }}>{option.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
 
@@ -495,51 +602,45 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               ) : (
                 <View style={{ flex: 1 }}>
                   <Text style={styles.resultText}>{translation || "Waiting..."}</Text>
-                  {/* Meta-Layer Action Row */}
+                  {/* Output Toolbar */}
                   {translation ? (
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                    <View style={styles.outputToolbar}>
+                      {/* Left: Speaker */}
                       <TouchableOpacity
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: '#FEF3C7',
-                          paddingVertical: 6,
-                          paddingHorizontal: 12,
-                          borderRadius: 16,
-                          gap: 4,
-                          borderWidth: 1,
-                          borderColor: '#FDE68A',
-                        }}
-                        onPress={handleShowBreakdown}
-                        disabled={isBreakdownLoading}
+                        onPress={() => playTranslatedAudio(translation, targetLang)}
+                        style={styles.outputToolbarBtn}
                       >
-                        {isBreakdownLoading ? (
-                          <ActivityIndicator size="small" color="#D97706" />
-                        ) : (
-                          <Ionicons name="analytics-outline" size={16} color="#D97706" />
-                        )}
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>
-                          {isBreakdownLoading ? 'Analyzing...' : 'Breakdown'}
-                        </Text>
+                        <Ionicons
+                          name={isPlayingAudio ? 'volume-high' : 'volume-medium-outline'}
+                          size={20}
+                          color={isPlayingAudio ? '#FBBF24' : '#1F2937'}
+                        />
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor: '#F5F3FF',
-                          paddingVertical: 6,
-                          paddingHorizontal: 12,
-                          borderRadius: 16,
-                          gap: 4,
-                          borderWidth: 1,
-                          borderColor: '#E9D5FF',
-                        }}
-                        onPress={() => setShowCustomize(true)}
-                      >
-                        <Ionicons name="color-wand-outline" size={16} color="#7C3AED" />
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#7C3AED' }}>Customize</Text>
-                      </TouchableOpacity>
+                      {/* Right: Copy, Rate, More */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={handleCopy} style={[styles.outputToolbarBtn, { marginRight: 10 }]}>
+                          <Ionicons name="copy-outline" size={20} color="#1F2937" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => setRateModalVisible(true)}
+                          style={[styles.outputToolbarBtn, { marginRight: 10 }]}
+                        >
+                          <MaterialIcons
+                            name="thumbs-up-down"
+                            size={20}
+                            color={feedback ? '#FBBF24' : '#1F2937'}
+                          />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => setMoreMenuVisible(true)}
+                          style={styles.outputToolbarBtn}
+                        >
+                          <Ionicons name="ellipsis-horizontal" size={20} color="#1F2937" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ) : null}
                 </View>
@@ -560,22 +661,54 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             />
           )}
 
-          {/* FEEDBACK ICONS */}
-          {inputText.length > 0 && !isLoading && translation && (
-            <View style={styles.feedbackContainer}>
-              <View style={styles.feedbackIcons}>
-                <TouchableOpacity onPress={() => handleQuickRating(5)} style={styles.miniFeedbackBtn}>
-                  <Ionicons name="thumbs-up" size={18} color={feedback === 'like' ? "#FBBF24" : "#9CA3AF"} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleQuickRating(1)} style={styles.miniFeedbackBtn}>
-                  <Ionicons name="thumbs-down" size={18} color={feedback === 'unlike' ? "#FBBF24" : "#9CA3AF"} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setFeedbackModalVisible(true)} style={styles.miniFeedbackBtn}>
-                  <Ionicons name="create-outline" size={20} color="#FBBF24" />
-                </TouchableOpacity>
-              </View>
+          {/* RATE MODAL */}
+          <SwipeableBottomSheet visible={rateModalVisible} onClose={() => setRateModalVisible(false)}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 20 }}>Rate this translation</Text>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+              <TouchableOpacity
+                onPress={() => { handleQuickRating(5); setRateModalVisible(false); }}
+                style={[styles.rateBtn, feedback === 'like' && styles.rateBtnActive]}
+              >
+                <Ionicons name="thumbs-up" size={26} color={feedback === 'like' ? '#FBBF24' : '#6B7280'} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { handleQuickRating(1); setRateModalVisible(false); }}
+                style={[styles.rateBtn, feedback === 'unlike' && styles.rateBtnActive]}
+              >
+                <Ionicons name="thumbs-down" size={26} color={feedback === 'unlike' ? '#FBBF24' : '#6B7280'} />
+              </TouchableOpacity>
             </View>
-          )}
+            <Text style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center' }}>
+              Your feedback will be used to help improve the product
+            </Text>
+          </SwipeableBottomSheet>
+
+          {/* THREE-DOTS MORE MENU */}
+          <SwipeableBottomSheet visible={moreMenuVisible} onClose={() => setMoreMenuVisible(false)}>
+            <TouchableOpacity
+              style={styles.moreMenuItem}
+              onPress={() => { setMoreMenuVisible(false); setFeedbackModalVisible(true); }}
+            >
+              <Ionicons name="create-outline" size={22} color="#374151" />
+              <Text style={styles.moreMenuText}>Suggest Translation</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreMenuItem}
+              onPress={() => { setMoreMenuVisible(false); handleShowBreakdown(); }}
+            >
+              {isBreakdownLoading
+                ? <ActivityIndicator size="small" color="#D97706" />
+                : <Ionicons name="analytics-outline" size={22} color="#374151" />}
+              <Text style={styles.moreMenuText}>{isBreakdownLoading ? 'Analyzing...' : 'Breakdown'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreMenuItem}
+              onPress={() => { setMoreMenuVisible(false); setShowCustomize(true); }}
+            >
+              <Ionicons name="color-wand-outline" size={22} color="#374151" />
+              <Text style={styles.moreMenuText}>Customize</Text>
+            </TouchableOpacity>
+          </SwipeableBottomSheet>
         </View>
       </ScrollView>
 
@@ -615,25 +748,41 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       />
 
       {/* LANGUAGE PICKER MODAL */}
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Select Language</Text>
-            {LANGUAGES.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
-                <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
-                  {item.name}
-                </Text>
-                {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.closeSheet} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeSheetText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <SwipeableBottomSheet visible={modalVisible} onClose={() => setModalVisible(false)}>
+        <Text style={styles.sheetTitle}>Select Language</Text>
+        {LANGUAGES.map((item) => (
+          <TouchableOpacity key={item.id} style={styles.sheetItem} onPress={() => selectLanguage(item)}>
+            <Text style={[styles.sheetItemText, (selectingFor === 'source' ? sourceLang : targetLang) === item.name && styles.activeSheetText]}>
+              {item.name}
+            </Text>
+            {(selectingFor === 'source' ? sourceLang : targetLang) === item.name && <Ionicons name="checkmark-circle" size={22} color="#FBBF24" />}
+          </TouchableOpacity>
+        ))}
+      </SwipeableBottomSheet>
+
+      {/* SPEECH MODAL */}
+      <SpeechModal
+        visible={speechModalVisible}
+        onClose={() => setSpeechModalVisible(false)}
+        sourceLang={sourceLang}
+        targetLang={targetLang}
+        onTranscript={(transcript) => {
+          // Flag the debounce to skip — we already have the translation
+          skipDebounceRef.current = true;
+          setInputText(transcript);
+        }}
+        onTranslation={(translatedText) => {
+          // Set the translation directly so it displays simultaneously with audio
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setTranslation(translatedText.trim());
+        }}
+        onAudioResult={(audioBase64) => {
+          // Delay one frame so React can render the translation text first
+          requestAnimationFrame(() => {
+            playBase64Audio(audioBase64);
+          });
+        }}
+      />
 
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
     </View>

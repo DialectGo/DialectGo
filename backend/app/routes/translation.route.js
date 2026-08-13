@@ -11,6 +11,7 @@ import {
     submitUserTranslation, 
     customizeTranslation,
     explainSegment,
+    textToSpeech,
     adminGetAllHistory, 
     adminGetAllRecommendations, 
     adminGetTranslationAnalytics 
@@ -32,6 +33,7 @@ translateRouter.post('/document', verifyToken, upload.single('file'), translateD
 translateRouter.post('/download', verifyToken, downloadDocument);
 translateRouter.post('/customize', verifyToken, validateCustomizeRequest, customizeTranslation);
 translateRouter.post('/explain-segment', verifyToken, explainSegment);
+translateRouter.post('/tts', verifyToken, textToSpeech);
 
 // Mount the translate router under /translate
 router.use('/translate', translateRouter);
