@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -130,6 +131,11 @@ export default function SwipeableBottomSheet({ visible, onClose, children }) {
           
           {/* Inject content here */}
           {children}
+
+          {/* Scroll Indicator Hint */}
+          <View pointerEvents="none" style={styles.scrollHint}>
+            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -156,6 +162,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
+    maxHeight: '85%',
   },
   dragHandleContainer: {
     width: '100%',
@@ -164,8 +171,14 @@ const styles = StyleSheet.create({
   },
   dragHandle: {
     width: 40,
-    height: 5,
-    borderRadius: 3,
+    height: 4,
     backgroundColor: '#D1D5DB', // gray-300
+    borderRadius: 2,
   },
+  scrollHint: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+    opacity: 0.6,
+  }
 });

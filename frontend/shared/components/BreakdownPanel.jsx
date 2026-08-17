@@ -19,6 +19,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import SwipeableBottomSheet from './SwipeableBottomSheet';
 
 // ─── Tone Emoji Map ─────────────────────────────────────────────────────────
 const TONE_EMOJI = {
@@ -176,7 +177,7 @@ function AlternativesSection({ suggestions, onSelect }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function BreakdownPanel({ breakdown, isLoading, onSelectAlternative }) {
+export default function BreakdownPanel({ visible, onClose, breakdown, isLoading, onSelectAlternative }) {
     const [openSections, setOpenSections] = useState({
         words: true,
         sentiment: false,
@@ -211,9 +212,10 @@ export default function BreakdownPanel({ breakdown, isLoading, onSelectAlternati
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerBar}>
-                <Ionicons name="analytics-outline" size={18} color="#FBBF24" />
+        <SwipeableBottomSheet visible={visible} onClose={onClose}>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.headerBar}>
+                    <Ionicons name="analytics-outline" size={18} color="#FBBF24" />
                 <Text style={styles.headerTitle}>Translation Breakdown</Text>
             </View>
 
@@ -264,7 +266,8 @@ export default function BreakdownPanel({ breakdown, isLoading, onSelectAlternati
                     Analyzed in {breakdown.metadata.analysisMs}ms • {breakdown.metadata.model}
                 </Text>
             )}
-        </View>
+            </ScrollView>
+        </SwipeableBottomSheet>
     );
 }
 
@@ -276,6 +279,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         marginHorizontal: 15,
         marginTop: 12,
+        marginBottom: 30,
         padding: 16,
         borderWidth: 1,
         borderColor: '#FEF3C7',
