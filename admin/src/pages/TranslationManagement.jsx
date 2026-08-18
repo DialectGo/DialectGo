@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/apiService';
-import CardSkeleton from '../components/CardSkeleton';
+import CardSkeleton from '../components/fallbacks/CardSkeleton';
 
 const TranslationManagement = () => {
   const [recommendations, setRecommendations] = useState([]);

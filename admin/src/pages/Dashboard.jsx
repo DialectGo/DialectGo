@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/apiService';
-import CardSkeleton from '../components/CardSkeleton';
+import CardSkeleton from '../components/fallbacks/CardSkeleton';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
