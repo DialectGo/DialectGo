@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router'; // Para sa auto-redirect
-import { supabase } from '../shared/lib/supabase';
-import IntroSplash from '../shared/components/IntroSplash';
-import AutoSplash from '../shared/components/AutoSplash';
-import Onboarding from '../shared/components/Onboarding';
+import { supabase } from '../src/shared/api/supabase';
+import IntroSplash from '../src/components/IntroSplash';
+import AutoSplash from '../src/components/AutoSplash';
+import Onboarding from '../src/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
 
 export default function MainIndex() {

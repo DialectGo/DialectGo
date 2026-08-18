@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
-import { supabase } from '../../../shared/lib/supabase';
-import { API_API_BASE } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import { API_API_BASE } from '../../../src/shared/api/client';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native'; // Ensure you have React Navigation installed
 

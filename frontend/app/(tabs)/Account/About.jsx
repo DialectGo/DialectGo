@@ -10,7 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
 
 export default function AboutDialectGo() {
   const router = useRouter();

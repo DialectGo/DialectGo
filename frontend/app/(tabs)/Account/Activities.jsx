@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../../shared/lib/supabase';
-import { ACTIVITIES_API_BASE } from '../../../shared/config/apiConfig';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import { supabase } from '../../../src/shared/api/supabase';
+import { ACTIVITIES_API_BASE } from '../../../src/shared/api/client';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
 
 const TABS = ['Posts', 'Translations', 'Comments', 'Bookmarks'];
 

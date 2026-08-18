@@ -2,11 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, Text, ScrollView, LayoutAnimation, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '../../../shared/lib/supabase';
+import { supabase } from '../../../src/shared/api/supabase';
 
 // Components & Icons
-import LanguageSelector from '../../../shared/components/LanguageSelector';
-import ResultCard from '../../../shared/components/ResultCard';
+import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
+import ResultCard from '../../../src/features/dictionary/components/ResultCard';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import cameraIcon from '../../../assets/icons/cameraIcon.png'; 
 import galleryIcon from '../../../assets/icons/camera.png'; // Make sure you have this
@@ -14,7 +14,7 @@ import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
 const API_URL = `${TRANSLATION_API_BASE}/translate/image`;
 
 // --- Sub-components ---

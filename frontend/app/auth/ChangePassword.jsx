@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
-import AuthInput from '../../shared/components/AuthInput';
-import CustomButton from '../../shared/components/CustomButton';
+import AuthInput from '../../src/shared/components/AuthInput';
+import CustomButton from '../../src/shared/components/CustomButton';
 
 export default function ChangePassword() {
   const router = useRouter();

@@ -18,19 +18,19 @@ import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
-import BottomNav from '../../../shared/components/BottomNav';
-import TopBar from '../../../shared/components/TopBar';
-import LanguageSelector from '../../../shared/components/LanguageSelector';
-import ContributionModal from '../../../shared/components/ContributionModal'; // Added Shared Component
-import BreakdownPanel from '../../../shared/components/BreakdownPanel';
-import LoadingModal from '../../../shared/components/LoadingModal';
-import CustomizeModal from '../../../shared/components/CustomizeModal';
-import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
-import TranslationResultModal from '../../../shared/components/TranslationResultModal';
-import SwipeableBottomSheet from '../../../shared/components/SwipeableBottomSheet';
-import SpeechModal from '../../../shared/components/SpeechModal';
-import { styles } from '../../../shared/styles/TranslateStyles';
-import { supabase } from '../../../shared/lib/supabase';
+import BottomNav from '../../../src/components/BottomNav';
+import TopBar from '../../../src/components/TopBar';
+import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
+import ContributionModal from '../../../src/features/wiki/components/ContributionModal'; // Added Shared Component
+import BreakdownPanel from '../../../src/features/translator/components/BreakdownPanel';
+import LoadingModal from '../../../src/shared/components/LoadingModal';
+import CustomizeModal from '../../../src/shared/components/CustomizeModal';
+import DocumentUploadModal from '../../../src/features/translator/components/DocumentUploadModal';
+import TranslationResultModal from '../../../src/features/translator/components/TranslationResultModal';
+import SwipeableBottomSheet from '../../../src/shared/components/SwipeableBottomSheet';
+import SpeechModal from '../../../src/features/translator/components/SpeechModal';
+import { styles } from '../../../src/features/translator/styles/TranslateStyles';
+import { supabase } from '../../../src/shared/api/supabase';
 
 // Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
@@ -38,7 +38,7 @@ import translateIcon from '../../../assets/icons/translateIcon.png';
 const { width } = Dimensions.get('window');
 
 // API Endpoints
-import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
 const API_URL = `${TRANSLATION_API_BASE}/translate`;
 const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 
@@ -101,6 +101,9 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   const [isDocTranslating, setIsDocTranslating] = useState(false);
   const [docResult, setDocResult] = useState(null);
   const [docError, setDocError] = useState(false);
+  // Keep the file URI alive so we can show the original in the result modal
+  const [docFileUri, setDocFileUri] = useState(null);
+  const [docFileMimeType, setDocFileMimeType] = useState(null);
 
   // Cleanup sound on unmount
   useEffect(() => {
@@ -411,6 +414,18 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
   const handleDocumentSelected = async (fileAsset) => {
     console.log('[Translate] handleDocumentSelected fileAsset:', fileAsset);
+    const getMimeType = (asset) => {
+      if (asset.mimeType) return asset.mimeType;
+      if (asset.uri?.toLowerCase().endsWith('.pdf')) return 'application/pdf';
+      if (asset.uri?.toLowerCase().endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      return 'image/jpeg';
+    };
+
+    const mimeType = getMimeType(fileAsset);
+
+    // Store file URI before upload so we can show the original in the result modal
+    setDocFileUri(fileAsset.uri);
+    setDocFileMimeType(mimeType);
     setDocResultVisible(true);
     setIsDocTranslating(true);
     setDocError(false);
@@ -421,18 +436,10 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       if (!session) return;
 
       const formData = new FormData();
-      const getMimeType = (asset) => {
-        if (asset.mimeType) return asset.mimeType;
-        if (asset.uri?.toLowerCase().endsWith('.pdf')) return 'application/pdf';
-        if (asset.uri?.toLowerCase().endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        // If no mime type, assume image for ImagePicker
-        return 'image/jpeg';
-      };
-
       formData.append('file', {
         uri: fileAsset.uri,
         name: fileAsset.fileName || fileAsset.name || 'upload.jpg',
-        type: getMimeType(fileAsset),
+        type: mimeType,
       });
       formData.append('sourceLang', sourceLang);
       formData.append('targetLang', targetLang);
@@ -442,15 +449,11 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       const tgtId = LANGUAGES.find(l => l.name === targetLang)?.id;
       if (srcId) formData.append('source_language_id', srcId);
       if (tgtId) formData.append('target_language_id', tgtId);
-      
-      // Request breakdown from meta-layer for large text
       formData.append('withBreakdown', 'true');
 
       const response = await fetch(`${API_URL}/document`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
         body: formData,
       });
 
@@ -465,11 +468,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       setDocError(true);
     } finally {
       setIsDocTranslating(false);
-      try {
-        await FileSystem.deleteAsync(fileAsset.uri, { idempotent: true });
-      } catch (e) {
-        console.warn("Failed to delete temp file:", e);
-      }
+      // NOTE: We do NOT delete the file here — it stays alive so
+      // the result modal can display the original. Deleted when modal closes.
     }
   };
 
@@ -757,10 +757,20 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       {/* DOCUMENT TRANSLATION RESULT MODAL */}
       <TranslationResultModal
         visible={docResultVisible}
-        onClose={() => setDocResultVisible(false)}
+        onClose={async () => {
+          setDocResultVisible(false);
+          // Clean up the cached file now that the modal is closed
+          if (docFileUri) {
+            try { await FileSystem.deleteAsync(docFileUri, { idempotent: true }); } catch (_) {}
+            setDocFileUri(null);
+            setDocFileMimeType(null);
+          }
+        }}
         isLoading={isDocTranslating}
         result={docResult}
         error={docError}
+        fileUri={docFileUri}
+        fileMimeType={docFileMimeType}
       />
 
       {/* LANGUAGE PICKER MODAL */}

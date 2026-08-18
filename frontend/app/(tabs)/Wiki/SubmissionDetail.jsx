@@ -6,10 +6,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { supabase } from '../../../shared/lib/supabase';
-import TopBar from '../../../shared/components/TopBar';
-import WikiAssistantModal from '../../../shared/components/WikiAssistantModal';
-import { WIKI_API_BASE } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import TopBar from '../../../src/components/TopBar';
+import WikiAssistantModal from '../../../src/features/wiki/components/WikiAssistantModal';
+import { WIKI_API_BASE } from '../../../src/shared/api/client';
 
 export default function SubmissionDetail() {
   const router = useRouter();

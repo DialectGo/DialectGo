@@ -12,12 +12,12 @@ import {
   TouchableOpacity,
   View,
   } from 'react-native';
-import { styles } from '../../../shared/styles/AccountInformationStyles';
+import { styles } from '../../../src/features/account/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
-import { supabase } from '../../../shared/lib/supabase';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
-import { endpoints } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import { endpoints } from '../../../src/shared/api/client';
 
 const API_BASE_URL = endpoints.USER_PROFILE;
 

@@ -13,8 +13,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { styles } from '../../../shared/styles/ChatInterfaceStyles';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import { styles } from '../../../src/features/chat/styles/ChatInterfaceStyles';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
 import ChatBubble from './ChatBubble';
 
 // ==========================

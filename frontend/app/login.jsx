@@ -14,10 +14,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { styles } from '../shared/styles/LoginStyles';
+import { styles } from '../src/features/auth/styles/LoginStyles';
 import { useRouter } from 'expo-router'; 
-import { supabase } from '../shared/lib/supabase';
-import { endpoints } from '../shared/config/apiConfig';
+import { supabase } from '../src/shared/api/supabase';
+import { endpoints } from '../src/shared/api/client';
 import axios from 'axios';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';

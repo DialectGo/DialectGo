@@ -13,10 +13,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { styles } from '../../../shared/styles/ChatInterfaceStyles';
+import { styles } from '../../../src/features/chat/styles/ChatInterfaceStyles';
 import ChatBubble from './ChatBubble';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
-import { endpoints } from '../../../shared/config/apiConfig';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import { endpoints } from '../../../src/shared/api/client';
 
 // Import your custom JSON knowledge base file
 import APP_KNOWLEDGE_BASE from '../../../assets/data/appKnowledge.json'; 
