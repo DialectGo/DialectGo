@@ -20,16 +20,9 @@ export async function login(req, res, next) {
     // fingerprinting, impossible travel detection, and session recording
     const result = await adminLogin(email, password, req);
 
-    // Issue a JWT for the admin frontend to use on subsequent requests
-    const token = jwt.sign(
-      {
-        id: result.user.id,
-        email: result.user.email,
-        role: result.user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-    );
+    // Remove custom JWT generation
+    // Use the Supabase access token directly so that PostgREST accepts it on subsequent requests
+    const token = result.session.access_token;
 
     res.status(200).json({
       success: true,

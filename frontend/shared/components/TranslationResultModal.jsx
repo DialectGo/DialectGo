@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import BreakdownPanel from './BreakdownPanel';
+import LoadingModal from './LoadingModal';
 
 import { TRANSLATION_API_BASE } from '../config/apiConfig';
 import { supabase } from '../lib/supabase';
@@ -281,11 +282,7 @@ export default function TranslationResultModal({ visible, onClose, isLoading, re
           </View>
 
           {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FBBF24" />
-              <Text style={styles.loadingText}>Translating document...</Text>
-              <Text style={styles.loadingSubtext}>Analyzing layout, detecting type, translating...</Text>
-            </View>
+            <LoadingModal visible={true} message="Processing document..." />
           ) : error ? (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#EF4444" />
@@ -332,21 +329,21 @@ export default function TranslationResultModal({ visible, onClose, isLoading, re
                 {/* AI Breakdown Toggle */}
                 {result?.breakdown && (
                   <TouchableOpacity
-                    style={styles.breakdownToggle}
-                    onPress={() => {
-                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                      setShowBreakdown(!showBreakdown);
-                    }}
+                    style={styles.reviewBreakdownBtn}
+                    onPress={() => setShowBreakdown(true)}
                   >
-                    <Ionicons name="analytics-outline" size={16} color="#FBBF24" />
-                    <Text style={styles.breakdownToggleText}>
-                      {showBreakdown ? 'Hide AI Breakdown' : 'Show AI Breakdown'}
-                    </Text>
-                    <Ionicons name={showBreakdown ? 'chevron-up' : 'chevron-down'} size={16} color="#FBBF24" />
+                    <Ionicons name="bulb" size={20} color="#F59E0B" />
+                    <Text style={styles.reviewBreakdownText}>Review AI Breakdown</Text>
                   </TouchableOpacity>
                 )}
-                {showBreakdown && result?.breakdown && (
-                  <BreakdownPanel breakdown={result.breakdown} />
+
+                {/* BREAKDOWN PANEL MODAL */}
+                {result?.breakdown && (
+                  <BreakdownPanel 
+                    visible={showBreakdown} 
+                    onClose={() => setShowBreakdown(false)} 
+                    breakdown={result.breakdown} 
+                  />
                 )}
               </ScrollView>
 
@@ -787,4 +784,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  reviewBreakdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 12,
+    marginTop: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 8,
+  },
+  reviewBreakdownText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#B45309',
+  }
 });

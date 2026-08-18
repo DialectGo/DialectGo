@@ -320,4 +320,22 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#111827',
   },
+  reviewBreakdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 12,
+    marginHorizontal: 15,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 8,
+  },
+  reviewBreakdownText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#B45309',
+  },
 });

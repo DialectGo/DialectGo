@@ -36,4 +36,11 @@ router.put('/wiki/:id/reject', AdminController.rejectSubmission);
 router.get('/corpus', AdminController.getCorpus);
 router.delete('/corpus/:id', AdminController.deleteCorpusEntry);
 
+// Admin Notifications
+router.get('/notifications', AdminController.getNotifications);
+router.put('/notifications/read-all', AdminController.markAllNotificationsRead);
+router.put('/notifications/:id/read', AdminController.markNotificationRead);
+router.delete('/notifications/all', AdminController.deleteAllNotifications);
+router.delete('/notifications/:id', AdminController.deleteNotification);
+
 export default router;

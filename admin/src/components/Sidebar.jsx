@@ -7,6 +7,7 @@ const MENU = [
   { name: 'Dictionary',   icon: '📖' },
   { name: 'Translations', icon: '🌍' },
   { name: 'Wiki',         icon: '📝' },
+  { name: 'Notifications',icon: '🔔' },
 ];
 
 const Sidebar = ({ isOpen, activeTab, onTabChange, onLogout }) => {

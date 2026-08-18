@@ -23,6 +23,7 @@ import TopBar from '../../../shared/components/TopBar';
 import LanguageSelector from '../../../shared/components/LanguageSelector';
 import ContributionModal from '../../../shared/components/ContributionModal'; // Added Shared Component
 import BreakdownPanel from '../../../shared/components/BreakdownPanel';
+import LoadingModal from '../../../shared/components/LoadingModal';
 import CustomizeModal from '../../../shared/components/CustomizeModal';
 import DocumentUploadModal from '../../../shared/components/DocumentUploadModal';
 import TranslationResultModal from '../../../shared/components/TranslationResultModal';
@@ -84,6 +85,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
   // LLM Meta-Layer State
   const [breakdownData, setBreakdownData] = useState(null);
   const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
+  const [breakdownPanelVisible, setBreakdownPanelVisible] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [isCustomizeLoading, setIsCustomizeLoading] = useState(false);
 
@@ -533,7 +535,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           <View style={styles.translateCard}>
             <View style={styles.cardHeader}>
               <Text style={styles.inputLabel}>{sourceLang.toUpperCase()}</Text>
-              <TouchableOpacity onPress={() => setInputText('')}>
+              <TouchableOpacity onPress={() => { setInputText(''); setBreakdownData(null); }}>
                 <Ionicons name="close-circle" size={20} color="#D1D5DB" />
               </TouchableOpacity>
             </View>
@@ -648,18 +650,34 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             </View>
           )}
 
-          {/* BREAKDOWN PANEL */}
-          {breakdownData && !isLoading && (
+          {/* REVIEW BREAKDOWN BUTTON */}
+          {inputText.length > 0 && breakdownData && !isLoading && (
+            <TouchableOpacity 
+              style={styles.reviewBreakdownBtn} 
+              onPress={() => setBreakdownPanelVisible(true)}
+            >
+              <Ionicons name="bulb" size={20} color="#F59E0B" />
+              <Text style={styles.reviewBreakdownText}>Review AI Breakdown</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* BREAKDOWN PANEL MODAL */}
+          {breakdownData && (
             <BreakdownPanel
+              visible={breakdownPanelVisible}
+              onClose={() => setBreakdownPanelVisible(false)}
               breakdown={breakdownData}
               isLoading={isBreakdownLoading}
               onSelectAlternative={(text) => {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setTranslation(text);
                 setBreakdownData(null); // Clear breakdown since text changed
+                setBreakdownPanelVisible(false);
               }}
             />
           )}
+
+          <LoadingModal visible={isBreakdownLoading} message="Analyzing translation..." />
 
           {/* RATE MODAL */}
           <SwipeableBottomSheet visible={rateModalVisible} onClose={() => setRateModalVisible(false)}>
@@ -696,10 +714,8 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               style={styles.moreMenuItem}
               onPress={() => { setMoreMenuVisible(false); handleShowBreakdown(); }}
             >
-              {isBreakdownLoading
-                ? <ActivityIndicator size="small" color="#D97706" />
-                : <Ionicons name="analytics-outline" size={22} color="#374151" />}
-              <Text style={styles.moreMenuText}>{isBreakdownLoading ? 'Analyzing...' : 'Breakdown'}</Text>
+              <Ionicons name="analytics-outline" size={22} color="#374151" />
+              <Text style={styles.moreMenuText}>Breakdown</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.moreMenuItem}

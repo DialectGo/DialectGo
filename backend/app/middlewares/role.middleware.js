@@ -13,8 +13,8 @@ export const authorizeRole = (requiredRole) => {
       }
 
       // ── Strategy 1: JWT users already have role in token ──────────────────
-      // auth.middleware.js sets req.user.role when verifying a JWT
-      if (req.user?.role) {
+      // auth.middleware.js sets req.user.role when verifying a custom JWT
+      if (req.user?.role && req.user.role !== 'authenticated' && req.user.role !== 'anon') {
         if (req.user.role !== requiredRole) {
           return res.status(403).json({
             success: false,

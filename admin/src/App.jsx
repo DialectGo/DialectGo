@@ -5,6 +5,7 @@ import UserManagement from './pages/UserManagement';
 import DictionaryManagement from './pages/DictionaryManagement';
 import TranslationManagement from './pages/TranslationManagement';
 import WikiManagement from './pages/WikiManagement';
+import Notifications from './pages/Notifications';
 import Login from './pages/Login';
 import { authService } from './services/authService';
 import './index.css';
@@ -37,6 +38,7 @@ function App() {
       case 'Dictionary':      return <DictionaryManagement />;
       case 'Translations':    return <TranslationManagement />;
       case 'Wiki':            return <WikiManagement />;
+      case 'Notifications':   return <Notifications />;
       default:                return <Dashboard />;
     }
   };
