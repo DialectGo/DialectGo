@@ -24,13 +24,13 @@ const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
       toValue: isActive ? 1 : 0,
       duration: 300,
       easing: Easing.out(Easing.exp),
-      useNativeDriver: false, // Must be false for width/padding animation
+      useNativeDriver: false,
     }).start();
   }, [isActive]);
 
   const pillWidth = animatedWidth.interpolate({
     inputRange: [0, 1],
-    outputRange: [50, 110], // Approximate widths
+    outputRange: [50, 110],
   });
 
   const textOpacity = animatedWidth.interpolate({
@@ -40,7 +40,7 @@ const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
 
   const backgroundColor = animatedWidth.interpolate({
     inputRange: [0, 1],
-    outputRange: ['transparent', '#FFFFFF'],
+    outputRange: ['transparent', '#FFF9C4'], // ← light yellow
   });
 
   return (
@@ -115,8 +115,7 @@ export default function BottomNav() {
     { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false },
     { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
     { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
-    { name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/wikiIcon.png'), isGated: true },
-  ];
+{ name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/wikiIcon.png'), isGated: true },  ];
 
   const handleNavigationInterception = async (tab, index) => {
     if (tab.isGated) {
@@ -126,7 +125,6 @@ export default function BottomNav() {
       }
     }
     
-    // Use replace for true bottom tab behavior (prevents infinite stack)
     router.replace(tab.path);
   };
 

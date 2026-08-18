@@ -17,7 +17,7 @@ export default function DialectBot() {
       <View style={styles.content}>
         {/* CHARACTER IMAGE */}
         <Image 
-          source={require('../../../assets/images/avatar.png')} 
+          source={require('../../../assets/icons/chatbotIcon1.png')} 
           style={styles.characterImg}
           resizeMode="contain"
         />

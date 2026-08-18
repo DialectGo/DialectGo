@@ -1,130 +1,359 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Image, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-// Corrected Paths based on your folder structure
-import beeImg from '../../assets/logo/bee.png';
-import dialectTextImg from '../../assets/logo/dialectgo_text.png';
-import { styles } from '../styles/SplashStyles'; 
+import { styles } from '../styles/SplashStyles';
 
 const { width, height } = Dimensions.get('window');
 
+// ======================================================
+// BEE ANIMATION FRAMES
+// ======================================================
+
+const beeFrames = [
+  require('../../assets/beelogo/1bee_front.png'),
+  require('../../assets/beelogo/2bee_side.png'),
+  require('../../assets/beelogo/3bee_left.png'),
+  require('../../assets/beelogo/4bee_back.png'),
+  require('../../assets/beelogo/5bee_right.png'),
+  require('../../assets/beelogo/6bee_front.png'),
+];
+
 export default function IntroSplash({ onFinish }) {
-  // Animation References
-  const beePos = useRef(new Animated.ValueXY({ x: 0, y: -height / 1.2 })).current; 
-  const beeScale = useRef(new Animated.Value(1)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current; 
-  const textScale = useRef(new Animated.Value(0.8)).current;
-  const buttonOpacity = useRef(new Animated.Value(0)).current;
-  const buttonY = useRef(new Animated.Value(20)).current;
+
+  // ======================================================
+  // BEE FRAME
+  // ======================================================
+
+  const [beeFrame, setBeeFrame] = useState(0);
+
+  // ======================================================
+  // ANIMATION REFERENCES
+  // ======================================================
+
+  const beePos = useRef(
+    new Animated.ValueXY({
+      x: 0,
+      y: -height / 1.2,
+    })
+  ).current;
+
+  const beeScale = useRef(
+    new Animated.Value(1)
+  ).current;
+
+  const textOpacity = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  const textScale = useRef(
+    new Animated.Value(0.8)
+  ).current;
+
+  const buttonOpacity = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  const buttonY = useRef(
+    new Animated.Value(20)
+  ).current;
+
+
+  // ======================================================
+  // BEE FRAME LOOP
+  // ======================================================
 
   useEffect(() => {
-    const smoothFlight = (toX, toY, duration) => {
-      return Animated.timing(beePos, {
-        toValue: { x: toX, y: toY },
-        duration: duration,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+
+    const frameInterval = setInterval(() => {
+
+      setBeeFrame(prev => {
+
+        if (prev >= beeFrames.length - 1) {
+          return 0;
+        }
+
+        return prev + 1;
       });
-    };
 
-    // Main Animation Sequence
-    Animated.sequence([
-      Animated.delay(500),
-      smoothFlight(width * 0.3, -height * 0.1, 1500), 
-      smoothFlight(-width * 0.35, height * 0.15, 1800), 
-      smoothFlight(width * 0.35, height * 0.25, 1800),  
-      smoothFlight(-width * 0.2, -height * 0.05, 1500), 
+    }, 180);
 
-      // Landing Position
-      Animated.timing(beePos, {
-        toValue: { x: -140, y: 0 }, 
-        duration: 1500,
-        easing: Easing.out(Easing.back(1)),
-        useNativeDriver: true,
-      }),
-
-      // UI Text Entrance
-      Animated.parallel([
-        Animated.timing(textOpacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.spring(textScale, { toValue: 1, friction: 6, useNativeDriver: true }),
-      ]),
-
-      // Button Entrance
-      Animated.parallel([
-        Animated.timing(buttonOpacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(buttonY, { toValue: 0, duration: 800, useNativeDriver: true }),
-      ]),
-    ]).start();
-
-    // Constant Bee Hover Effect
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(beeScale, { toValue: 1.08, duration: 800, useNativeDriver: true }),
-        Animated.timing(beeScale, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ])
-    ).start();
+    return () => clearInterval(frameInterval);
 
   }, []);
 
+
+  // ======================================================
+  // MAIN SPLASH ANIMATION
+  // ======================================================
+
+  useEffect(() => {
+
+    const smoothFlight = (toX, toY, duration) => {
+
+      return Animated.timing(beePos, {
+        toValue: {
+          x: toX,
+          y: toY,
+        },
+        duration,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      });
+
+    };
+
+
+    // ====================================================
+    // BEE FLIGHT
+    // ====================================================
+
+    Animated.sequence([
+
+      // Start from top
+      Animated.delay(500),
+
+      // Fly down-right
+      smoothFlight(
+        width * 0.3,
+        -height * 0.1,
+        1500
+      ),
+
+      // Fly down-left
+      smoothFlight(
+        -width * 0.35,
+        height * 0.15,
+        1800
+      ),
+
+      // Fly down-right
+      smoothFlight(
+        width * 0.35,
+        height * 0.25,
+        1800
+      ),
+
+      // Fly back up-left
+      smoothFlight(
+        -width * 0.2,
+        -height * 0.05,
+        1500
+      ),
+
+      // ==================================================
+      // LANDING POSITION
+      // ==================================================
+
+      Animated.timing(beePos, {
+        toValue: {
+          x: -140,
+          y: 0,
+        },
+        duration: 1500,
+        easing: Easing.out(
+          Easing.back(1)
+        ),
+        useNativeDriver: true,
+      }),
+
+      // ==================================================
+      // TEXT ENTRANCE
+      // ==================================================
+
+      Animated.parallel([
+
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+
+        Animated.spring(textScale, {
+          toValue: 1,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+
+      ]),
+
+      // ==================================================
+      // BUTTON ENTRANCE
+      // ==================================================
+
+      Animated.parallel([
+
+        Animated.timing(buttonOpacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+
+        Animated.timing(buttonY, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+
+      ]),
+
+    ]).start();
+
+
+    // ====================================================
+    // BEE HOVER EFFECT
+    // ====================================================
+
+    const hoverAnimation = Animated.loop(
+
+      Animated.sequence([
+
+        Animated.timing(beeScale, {
+          toValue: 1.08,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+
+        Animated.timing(beeScale, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+
+      ])
+
+    );
+
+    hoverAnimation.start();
+
+
+    // ====================================================
+    // CLEANUP
+    // ====================================================
+
+    return () => {
+      hoverAnimation.stop();
+    };
+
+  }, []);
+
+
+  // ======================================================
+  // RENDER
+  // ======================================================
+
   return (
+
     <View style={styles.container}>
+
       <View style={styles.contentWrapper}>
+
         <View style={styles.logoWrapper}>
-          
-          {/* Animated Bee */}
+
+          {/* ==================================================
+              ANIMATED BEE
+          ================================================== */}
+
           <Animated.View
             style={[
               styles.beeContainer,
               {
                 transform: [
-                  { translateX: beePos.x },
-                  { translateY: beePos.y },
-                  { scale: beeScale },
+                  {
+                    translateX: beePos.x,
+                  },
+                  {
+                    translateY: beePos.y,
+                  },
+                  {
+                    scale: beeScale,
+                  },
                 ],
               },
             ]}
           >
-            <Image 
-              source={beeImg} 
-              style={styles.bee} 
-              resizeMode="contain" 
+
+            <Image
+              source={beeFrames[beeFrame]}
+              style={styles.bee}
+              resizeMode="contain"
             />
+
           </Animated.View>
 
-          {/* Animated Text Logo */}
-          <Animated.View 
-            style={{ 
+
+          {/* ==================================================
+              DIALECTGO TEXT LOGO
+          ================================================== */}
+
+          <Animated.View
+            style={{
               opacity: textOpacity,
-              transform: [{ scale: textScale }]
+              transform: [
+                {
+                  scale: textScale,
+                },
+              ],
             }}
           >
-            <Image 
-              source={dialectTextImg} 
-              style={styles.logoText} 
-              resizeMode="contain" 
+
+            <Image
+              source={require(
+                '../../assets/logo/dialectgo_text.png'
+              )}
+              style={styles.logoText}
+              resizeMode="contain"
             />
+
           </Animated.View>
+
         </View>
 
-        {/* Action Button */}
-        <Animated.View 
+
+        {/* ==================================================
+            GET STARTED BUTTON
+        ================================================== */}
+
+        <Animated.View
           style={[
-            styles.buttonWrapper, 
-            { 
+            styles.buttonWrapper,
+            {
               opacity: buttonOpacity,
-              transform: [{ translateY: buttonY }] 
-            }
+              transform: [
+                {
+                  translateY: buttonY,
+                },
+              ],
+            },
           ]}
         >
-          <TouchableOpacity 
-            style={styles.button} 
+
+          <TouchableOpacity
+            style={styles.button}
             activeOpacity={0.8}
-            onPress={onFinish} // This tells the app to move to Onboarding
+            onPress={onFinish}
           >
-            <Text style={styles.buttonText}>Get Started</Text>
+
+            <Text style={styles.buttonText}>
+              Get Started
+            </Text>
+
           </TouchableOpacity>
+
         </Animated.View>
+
       </View>
+
     </View>
+
   );
 }

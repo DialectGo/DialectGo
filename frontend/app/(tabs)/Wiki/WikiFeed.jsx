@@ -1,11 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, ActivityIndicator, StatusBar, Alert, RefreshControl
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  StatusBar,
+  Alert,
+  RefreshControl,
+  Image,  
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
+
 import { supabase } from '../../../shared/lib/supabase';
 import TopBar from '../../../shared/components/TopBar';
 import BottomNav from '../../../shared/components/BottomNav';
@@ -13,89 +23,169 @@ import SubmitTermModal from '../../../shared/components/SubmitTermModal';
 import GlobalWikiAssistantModal from '../../../shared/components/GlobalWikiAssistantModal';
 import { WIKI_API_BASE } from '../../../shared/config/apiConfig';
 
-const REGIONS = ['All', 'Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
-const CATEGORIES = ['All', 'Slang', 'Idiom', 'Colloquial', 'Literal'];
+const REGIONS = [
+  'All',
+  'Batangueño',
+  'Boholano',
+  'General Cebuano',
+  'General Tagalog',
+];
+
+const CATEGORIES = [
+  'All',
+  'Slang',
+  'Idiom',
+  'Colloquial',
+  'Literal',
+];
+
 const SORTS = [
   { label: 'Newest', value: 'newest' },
   { label: 'Most Voted', value: 'most_voted' },
   { label: 'Verified', value: 'verified' },
 ];
+
 const TYPE_FILTERS = ['All', 'Term', 'Question'];
 
 export default function WikiFeed() {
-  const { slide } = useLocalSearchParams();
-
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
-  // Filters
+  // ======================================================
+  // FILTER STATES
+  // ======================================================
+
   const [search, setSearch] = useState('');
   const [activeRegion, setActiveRegion] = useState('All');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeSort, setActiveSort] = useState('newest');
   const [activeType, setActiveType] = useState('All');
+
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  const fetchSubmissions = useCallback(async (pageNum = 1, append = false) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
 
-      const params = new URLSearchParams({
-        page: String(pageNum),
-        limit: '20',
-        sort: activeSort,
-      });
-      if (activeRegion !== 'All') params.append('region', activeRegion);
-      if (activeCategory !== 'All') params.append('category', activeCategory);
-      if (activeType !== 'All') params.append('type', activeType);
-      if (search.trim()) params.append('search', search.trim());
+  // ======================================================
+  // FETCH SUBMISSIONS
+  // ======================================================
 
-      const response = await fetch(`${WIKI_API_BASE}?${params}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const json = await response.json();
+  const fetchSubmissions = useCallback(
+    async (pageNum = 1, append = false) => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (json.success) {
-        if (append) {
-          setSubmissions(prev => [...prev, ...json.data]);
-        } else {
-          setSubmissions(json.data);
+        if (!session) return;
+
+        const params = new URLSearchParams({
+          page: String(pageNum),
+          limit: '20',
+          sort: activeSort,
+        });
+
+        if (activeRegion !== 'All') {
+          params.append('region', activeRegion);
         }
-        setTotal(json.pagination.total);
-        setHasMore(json.data.length === 20);
+
+        if (activeCategory !== 'All') {
+          params.append('category', activeCategory);
+        }
+
+        if (activeType !== 'All') {
+          params.append('type', activeType);
+        }
+
+        if (search.trim()) {
+          params.append('search', search.trim());
+        }
+
+        const response = await fetch(
+          `${WIKI_API_BASE}?${params}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+        const json = await response.json();
+
+        if (json.success) {
+          if (append) {
+            setSubmissions(prev => [
+              ...prev,
+              ...json.data,
+            ]);
+          } else {
+            setSubmissions(json.data);
+          }
+
+          setTotal(json.pagination.total);
+          setHasMore(json.data.length === 20);
+        }
+      } catch (err) {
+        console.error(
+          '[WikiFeed] Fetch error:',
+          err
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      console.error('[WikiFeed] Fetch error:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeRegion, activeCategory, activeSort, activeType, search]);
+    },
+    [
+      activeRegion,
+      activeCategory,
+      activeSort,
+      activeType,
+      search,
+    ]
+  );
+
+  // ======================================================
+  // FILTER CHANGE
+  // ======================================================
 
   useEffect(() => {
     setLoading(true);
     setPage(1);
-    fetchSubmissions(1);
-  }, [activeRegion, activeCategory, activeSort, activeType]);
 
-  // Debounced search
+    fetchSubmissions(1);
+  }, [
+    activeRegion,
+    activeCategory,
+    activeSort,
+    activeType,
+  ]);
+
+  // ======================================================
+  // SEARCH DEBOUNCE
+  // ======================================================
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(true);
       setPage(1);
+
       fetchSubmissions(1);
     }, 400);
+
     return () => clearTimeout(timer);
   }, [search]);
+
+  // ======================================================
+  // REFRESH
+  // ======================================================
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -103,44 +193,83 @@ export default function WikiFeed() {
     fetchSubmissions(1);
   };
 
+  // ======================================================
+  // LOAD MORE
+  // ======================================================
+
   const loadMore = () => {
     if (!hasMore || loading) return;
+
     const nextPage = page + 1;
+
     setPage(nextPage);
     fetchSubmissions(nextPage, true);
   };
 
-  const handleVote = async (submissionId, voteType) => {
+  // ======================================================
+  // VOTE
+  // ======================================================
+
+  const handleVote = async (
+    submissionId,
+    voteType
+  ) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session) return;
 
-      const response = await fetch(`${WIKI_API_BASE}/${submissionId}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ vote_type: voteType }),
-      });
+      const response = await fetch(
+        `${WIKI_API_BASE}/${submissionId}/vote`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            vote_type: voteType,
+          }),
+        }
+      );
+
       const json = await response.json();
 
       if (json.success) {
-        // Update the local card
         setSubmissions(prev =>
-          prev.map(s => s.id === submissionId
-            ? { ...s, upvotes: json.upvotes, status: json.promoted ? 'verified' : s.status }
-            : s
+          prev.map(s =>
+            s.id === submissionId
+              ? {
+                  ...s,
+                  upvotes: json.upvotes,
+                  status: json.promoted
+                    ? 'verified'
+                    : s.status,
+                }
+              : s
           )
         );
+
         if (json.promoted) {
-          Alert.alert('🎉 Verified!', 'This term has been added to the translation corpus!');
+          Alert.alert(
+            '🎉 Verified!',
+            'This term has been added to the translation corpus!'
+          );
         }
       }
     } catch (err) {
-      console.error('[WikiFeed] Vote error:', err);
+      console.error(
+        '[WikiFeed] Vote error:',
+        err
+      );
     }
   };
+
+  // ======================================================
+  // SUBMIT SUCCESS
+  // ======================================================
 
   const handleSubmitSuccess = () => {
     setShowSubmitModal(false);
@@ -148,557 +277,1226 @@ export default function WikiFeed() {
     fetchSubmissions(1);
   };
 
-  // --- RENDER ---
+  // ======================================================
+  // RENDER CARD
+  // ======================================================
 
   const renderCard = ({ item }) => {
-    const authorName = item.profiles?.username
-      || `${item.profiles?.first_name || ''} ${item.profiles?.last_name || ''}`.trim()
-      || 'Anonymous';
+    const authorName =
+      item.profiles?.username ||
+      `${item.profiles?.first_name || ''} ${
+        item.profiles?.last_name || ''
+      }`.trim() ||
+      'Anonymous';
 
     const isQuestion = item.type === 'Question';
 
     return (
       <TouchableOpacity
-        style={[styles.card, isQuestion && styles.questionCard]}
-        activeOpacity={0.7}
-        onPress={() => router.push({ pathname: '/(tabs)/Wiki/SubmissionDetail', params: { id: item.id } })}
+        style={[
+          styles.card,
+          isQuestion && styles.questionCard,
+        ]}
+        activeOpacity={0.75}
+        onPress={() =>
+          router.push({
+            pathname:
+              '/(tabs)/Wiki/SubmissionDetail',
+            params: {
+              id: item.id,
+            },
+          })
+        }
       >
-        {/* Header row */}
+        {/* =========================
+            CARD HEADER
+        ========================== */}
+
         <View style={styles.cardHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
+          <View style={styles.termContainer}>
             {isQuestion && (
-              <Ionicons name="help-circle" size={18} color="#7C3AED" />
+              <Ionicons
+                name="help-circle"
+                size={18}
+                color="#7C3AED"
+              />
             )}
-            <Text style={styles.sourceTerm} numberOfLines={2}>{item.source_term}</Text>
+
+            <Text
+              style={styles.sourceTerm}
+              numberOfLines={2}
+            >
+              {item.source_term}
+            </Text>
           </View>
-          <View style={[styles.regionBadge, item.status === 'verified' && styles.verifiedBadge]}>
-            <Text style={[styles.regionBadgeText, item.status === 'verified' && styles.verifiedBadgeText]}>
-              {item.status === 'verified' ? '✓ Verified' : item.region}
+
+          <View
+            style={[
+              styles.regionBadge,
+              item.status === 'verified' &&
+                styles.verifiedBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.regionBadgeText,
+                item.status === 'verified' &&
+                  styles.verifiedBadgeText,
+              ]}
+            >
+              {item.status === 'verified'
+                ? '✓ Verified'
+                : item.region}
             </Text>
           </View>
         </View>
 
-        {/* Translation */}
-        <Text style={styles.translation} numberOfLines={2}>{item.translation}</Text>
+        {/* =========================
+            TRANSLATION
+        ========================== */}
 
-        {/* Tags row */}
+        <Text
+          style={styles.translation}
+          numberOfLines={2}
+        >
+          {item.translation}
+        </Text>
+
+        {/* =========================
+            TAGS
+        ========================== */}
+
         <View style={styles.tagsRow}>
           {isQuestion && (
-            <View style={[styles.categoryChip, { backgroundColor: '#EDE9FE' }]}>
-              <Text style={[styles.categoryChipText, { color: '#7C3AED' }]}>Question</Text>
+            <View style={styles.questionChip}>
+              <Text style={styles.questionChipText}>
+                Question
+              </Text>
             </View>
           )}
+
           <View style={styles.categoryChip}>
-            <Text style={styles.categoryChipText}>{item.category}</Text>
+            <Text style={styles.categoryChipText}>
+              {item.category}
+            </Text>
           </View>
+
           {item.sentiment_tag && (
-            <View style={[styles.categoryChip, styles.sentimentChip]}>
-              <Text style={styles.sentimentChipText}>{item.sentiment_tag}</Text>
+            <View style={styles.sentimentChip}>
+              <Text style={styles.sentimentChipText}>
+                {item.sentiment_tag}
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Footer */}
+        {/* =========================
+            CARD FOOTER
+        ========================== */}
+
         <View style={styles.cardFooter}>
-          <TouchableOpacity style={styles.voteBtn} onPress={() => handleVote(item.id, 1)}>
-            <Ionicons name="arrow-up-circle-outline" size={22} color="#10B981" />
-            <Text style={styles.voteCount}>{item.upvotes || 0}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.voteBtn} onPress={() => handleVote(item.id, -1)}>
-            <Ionicons name="arrow-down-circle-outline" size={22} color="#EF4444" />
-          </TouchableOpacity>
-          <Text style={styles.authorText}>by @{authorName}</Text>
+          <View style={styles.voteSection}>
+            <TouchableOpacity
+              style={styles.voteBtn}
+              onPress={() =>
+                handleVote(item.id, 1)
+              }
+            >
+              <Ionicons
+                name="arrow-up-circle-outline"
+                size={21}
+                color="#10B981"
+              />
+
+              <Text style={styles.voteCount}>
+                {item.upvotes || 0}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.voteBtn}
+              onPress={() =>
+                handleVote(item.id, -1)
+              }
+            >
+              <Ionicons
+                name="arrow-down-circle-outline"
+                size={21}
+                color="#EF4444"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Text
+            style={styles.authorText}
+            numberOfLines={1}
+          >
+            by @{authorName}
+          </Text>
         </View>
       </TouchableOpacity>
     );
   };
 
+  // ======================================================
+  // FILTER LABEL
+  // ======================================================
+
+  const filterLabel =
+    activeRegion !== 'All'
+      ? activeRegion
+      : activeCategory !== 'All'
+      ? activeCategory
+      : 'Filters';
+
+  // ======================================================
+  // UI
+  // ======================================================
+
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ animation: "fade" }} />
+      <Stack.Screen
+        options={{
+          animation: 'fade',
+        }}
+      />
+
       <StatusBar barStyle="dark-content" />
-      <TopBar titlePrimary="DialectGo" titleSecondary="DialectWiki" />
 
-      {/* Type filter tabs */}
-      <View style={[styles.typeFilterRow, { paddingTop: insets.top + 70 }]}>
-        {TYPE_FILTERS.map(t => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.typeFilterBtn, activeType === t && styles.typeFilterBtnActive]}
-            onPress={() => setActiveType(t)}
-          >
-            {t === 'Question' && <Ionicons name="help-circle-outline" size={14} color={activeType === t ? '#1F2937' : '#9CA3AF'} />}
-            {t === 'Term' && <Ionicons name="text-outline" size={14} color={activeType === t ? '#1F2937' : '#9CA3AF'} />}
-            <Text style={[styles.typeFilterText, activeType === t && styles.typeFilterTextActive]}>
-              {t === 'All' ? 'All Posts' : t + 's'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* =========================
+          TOP BAR
+      ========================== */}
 
-      {/* Search bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color="#9CA3AF" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search terms or translations..."
-          placeholderTextColor="#9CA3AF"
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
-          </TouchableOpacity>
-        )}
-      </View>
+      <TopBar
+        titlePrimary="DialectGo"
+        titleSecondary="DialectWiki"
+      />
 
-      {/* Region filter pills */}
-      <View style={styles.filterRow}>
-        <FlatList
-          data={REGIONS}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
+      {/* =========================
+          FIXED FILTER HEADER
+      ========================== */}
+
+      <View
+        style={[
+          styles.headerArea,
+          {
+            paddingTop: insets.top + 65,
+          },
+        ]}
+      >
+        {/* TYPE TABS */}
+
+        <View style={styles.typeTabs}>
+          {TYPE_FILTERS.map(type => {
+            const active =
+              activeType === type;
+
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[
+                  styles.typeTab,
+                  active &&
+                    styles.typeTabActive,
+                ]}
+                onPress={() =>
+                  setActiveType(type)
+                }
+              >
+                {type === 'Question' && (
+                  <Ionicons
+                    name="help-circle-outline"
+                    size={15}
+                    color={
+                      active
+                        ? '#4F3422'
+                        : '#9CA3AF'
+                    }
+                  />
+                )}
+
+                {type === 'Term' && (
+                  <Ionicons
+                    name="text-outline"
+                    size={15}
+                    color={
+                      active
+                        ? '#4F3422'
+                        : '#9CA3AF'
+                    }
+                  />
+                )}
+
+                <Text
+                  style={[
+                    styles.typeTabText,
+                    active &&
+                      styles.typeTabTextActive,
+                  ]}
+                >
+                  {type === 'All'
+                    ? 'All Posts'
+                    : `${type}s`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* SEARCH */}
+
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search-outline"
+            size={19}
+            color="#9CA3AF"
+          />
+
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search terms or translations..."
+            placeholderTextColor="#9CA3AF"
+            value={search}
+            onChangeText={setSearch}
+          />
+
+          {search.length > 0 && (
             <TouchableOpacity
-              style={[styles.filterPill, activeRegion === item && styles.activePill]}
-              onPress={() => setActiveRegion(item)}
+              onPress={() => setSearch('')}
             >
-              <Text style={[styles.filterPillText, activeRegion === item && styles.activePillText]}>
-                {item}
-              </Text>
+              <Ionicons
+                name="close-circle"
+                size={19}
+                color="#9CA3AF"
+              />
             </TouchableOpacity>
           )}
-        />
-      </View>
+        </View>
 
-      {/* Category & Sort row */}
-      <View style={styles.secondFilterRow}>
-        <TouchableOpacity
-          style={styles.dropdownBtn}
-          onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-        >
-          <Text style={styles.dropdownText}>
-            {activeCategory === 'All' ? 'Category' : activeCategory}
+        {/* FILTER / SORT ROW */}
+
+        <View style={styles.filterControlRow}>
+          {/* REGION */}
+
+          <FlatList
+            data={REGIONS}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={item => item}
+            contentContainerStyle={
+              styles.regionList
+            }
+            renderItem={({ item }) => {
+              const active =
+                activeRegion === item;
+
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.regionPill,
+                    active &&
+                      styles.regionPillActive,
+                  ]}
+                  onPress={() =>
+                    setActiveRegion(item)
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.regionPillText,
+                      active &&
+                        styles.regionPillTextActive,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+
+        {/* SECONDARY CONTROLS */}
+
+        <View style={styles.secondaryControls}>
+          {/* CATEGORY */}
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              activeCategory !== 'All' &&
+                styles.filterButtonActive,
+            ]}
+            onPress={() =>
+              setShowFilterMenu(
+                !showFilterMenu
+              )
+            }
+          >
+            <Ionicons
+              name="options-outline"
+              size={16}
+              color="#4F3422"
+            />
+
+            <Text style={styles.filterButtonText}>
+              {filterLabel}
+            </Text>
+
+            <Ionicons
+              name={
+                showFilterMenu
+                  ? 'chevron-up'
+                  : 'chevron-down'
+              }
+              size={15}
+              color="#6B7280"
+            />
+          </TouchableOpacity>
+
+          {/* SORT */}
+
+          <View style={styles.sortContainer}>
+            {SORTS.map(sort => {
+              const active =
+                activeSort === sort.value;
+
+              return (
+                <TouchableOpacity
+                  key={sort.value}
+                  style={[
+                    styles.sortButton,
+                    active &&
+                      styles.sortButtonActive,
+                  ]}
+                  onPress={() =>
+                    setActiveSort(
+                      sort.value
+                    )
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.sortButtonText,
+                      active &&
+                        styles.sortButtonTextActive,
+                    ]}
+                  >
+                    {sort.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* CATEGORY MENU */}
+
+        {showFilterMenu && (
+          <View style={styles.categoryMenu}>
+            {CATEGORIES.map(category => {
+              const active =
+                activeCategory === category;
+
+              return (
+                <TouchableOpacity
+                  key={category}
+                  style={styles.categoryOption}
+                  onPress={() => {
+                    setActiveCategory(
+                      category
+                    );
+                    setShowFilterMenu(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.categoryOptionText,
+                      active &&
+                        styles.categoryOptionActive,
+                    ]}
+                  >
+                    {category}
+                  </Text>
+
+                  {active && (
+                    <Ionicons
+                      name="checkmark"
+                      size={17}
+                      color="#D97706"
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* COUNT */}
+
+        <View style={styles.countRow}>
+          <Text style={styles.countText}>
+            {total}{' '}
+            {total === 1
+              ? 'entry'
+              : 'entries'}
           </Text>
-          <Ionicons name="chevron-down" size={16} color="#6B7280" />
-        </TouchableOpacity>
 
-        <View style={styles.sortGroup}>
-          {SORTS.map(s => (
-            <TouchableOpacity
-              key={s.value}
-              style={[styles.sortChip, activeSort === s.value && styles.activeSortChip]}
-              onPress={() => setActiveSort(s.value)}
-            >
-              <Text style={[styles.sortChipText, activeSort === s.value && styles.activeSortText]}>
-                {s.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.countLine} />
         </View>
       </View>
 
-      {/* Category picker dropdown */}
-      {showCategoryPicker && (
-        <View style={styles.categoryDropdown}>
-          {CATEGORIES.map(c => (
-            <TouchableOpacity
-              key={c}
-              style={styles.categoryOption}
-              onPress={() => { setActiveCategory(c); setShowCategoryPicker(false); }}
-            >
-              <Text style={[styles.categoryOptionText, activeCategory === c && styles.activeCategoryText]}>
-                {c}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      {/* =========================
+          FEED
+      ========================== */}
 
-      {/* Total count */}
-      <View style={styles.countRow}>
-        <Text style={styles.countText}>{total} {total === 1 ? 'entry' : 'entries'}</Text>
-      </View>
-
-      {/* Feed */}
       {loading && page === 1 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FBBF24" />
+          <ActivityIndicator
+            size="large"
+            color="#FBBF24"
+          />
         </View>
       ) : (
         <FlatList
           data={submissions}
-          keyExtractor={item => item.id}
+          keyExtractor={item =>
+            item.id.toString()
+          }
           renderItem={renderCard}
-          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingTop: 8,
+            },
+          ]}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FBBF24" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#FBBF24"
+            />
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
-            hasMore && submissions.length > 0 ? (
-              <ActivityIndicator size="small" color="#FBBF24" style={{ paddingVertical: 20 }} />
+            hasMore &&
+            submissions.length > 0 ? (
+              <ActivityIndicator
+                size="small"
+                color="#FBBF24"
+                style={{
+                  paddingVertical: 20,
+                }}
+              />
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="book-outline" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>No entries yet</Text>
-              <Text style={styles.emptySubtitle}>Be the first to contribute a dialect term!</Text>
+              <Ionicons
+                name="book-outline"
+                size={48}
+                color="#D1D5DB"
+              />
+
+              <Text style={styles.emptyTitle}>
+                No entries yet
+              </Text>
+
+              <Text
+                style={styles.emptySubtitle}
+              >
+                Be the first to contribute a
+                dialect term!
+              </Text>
             </View>
           }
         />
       )}
 
-      {/* FABs */}
+      {/* =========================
+          FLOATING BUTTONS
+      ========================== */}
+
       <View style={styles.fabContainer}>
-        {/* Ask AI FAB */}
+        {/* ASK AI */}
+
         <TouchableOpacity
-          style={[styles.fab, styles.aiFab]}
+          style={[
+            styles.fab,
+            styles.aiFab,
+          ]}
           activeOpacity={0.85}
-          onPress={() => setShowAiModal(true)}
+          onPress={() =>
+            setShowAiModal(true)
+          }
         >
-          <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+          <Ionicons
+            name="sparkles"
+            size={22}
+            color="#FFFFFF"
+          />
         </TouchableOpacity>
 
-        {/* Add Entry FAB */}
-        <TouchableOpacity
-          style={styles.fab}
-          activeOpacity={0.85}
-          onPress={() => setShowSubmitModal(true)}
-        >
-          <Ionicons name="add" size={28} color="#1F2937" />
-        </TouchableOpacity>
+        {/* ADD ENTRY */}
+
+<TouchableOpacity
+  style={styles.fab}
+  activeOpacity={0.85}
+  onPress={() =>
+    setShowSubmitModal(true)
+  }
+>
+  <Image
+    source={require('../../../assets/icons/add_icon.png')}
+    style={styles.fabIcon}
+    resizeMode="contain"
+  />
+</TouchableOpacity>
       </View>
+
+      {/* =========================
+          MODALS
+      ========================== */}
 
       <SubmitTermModal
         visible={showSubmitModal}
-        onClose={() => setShowSubmitModal(false)}
-        onSuccess={handleSubmitSuccess}
+        onClose={() =>
+          setShowSubmitModal(false)
+        }
+        onSuccess={
+          handleSubmitSuccess
+        }
       />
 
       <GlobalWikiAssistantModal
         visible={showAiModal}
-        onClose={() => setShowAiModal(false)}
+        onClose={() =>
+          setShowAiModal(false)
+        }
       />
+
+      {/* =========================
+          BOTTOM NAV
+      ========================== */}
 
       <BottomNav />
     </View>
   );
 }
 
+// ======================================================
+// STYLES
+// ======================================================
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFDF8',
   },
-  typeFilterRow: {
+
+  // ======================================================
+  // HEADER AREA
+  // ======================================================
+
+  headerArea: {
+    backgroundColor: '#FFFDF8',
+    paddingBottom: 4,
+    zIndex: 20,
+  },
+
+  // ======================================================
+  // TYPE TABS
+  // ======================================================
+
+  typeTabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginTop: 10,
-    gap: 8,
+    gap: 7,
+    marginBottom: 9,
   },
-  typeFilterBtn: {
+
+  typeTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
     gap: 4,
+
+    paddingHorizontal: 13,
+    height: 36,
+
+    borderRadius: 18,
+
+    backgroundColor: '#F3F4F6',
   },
-  typeFilterBtnActive: {
-    backgroundColor: '#FEF3C7',
+
+  typeTabActive: {
+    backgroundColor: '#FFF0BF',
   },
-  typeFilterText: {
-    fontSize: 13,
+
+  typeTabText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#9CA3AF',
   },
-  typeFilterTextActive: {
-    color: '#1F2937',
+
+  typeTabTextActive: {
+    color: '#4F3422',
     fontWeight: '800',
   },
+
+  // ======================================================
+  // SEARCH
+  // ======================================================
+
   searchContainer: {
+    height: 45,
+
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 14,
+
     marginHorizontal: 20,
-    marginTop: 10,
-    paddingHorizontal: 14,
-    height: 46,
+
+    paddingHorizontal: 13,
+
+    backgroundColor: '#FFFFFF',
+
+    borderRadius: 13,
+
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#F0EBDD',
+
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowRadius: 5,
+    elevation: 1,
   },
-  searchIcon: { marginRight: 8 },
+
   searchInput: {
     flex: 1,
-    fontSize: 15,
+
+    marginLeft: 8,
+
+    fontSize: 14,
     color: '#1F2937',
     fontWeight: '500',
   },
-  filterRow: {
-    paddingHorizontal: 16,
-    marginTop: 12,
+
+  // ======================================================
+  // REGION FILTER
+  // ======================================================
+
+  filterControlRow: {
+    marginTop: 10,
   },
-  filterPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+
+  regionList: {
+    paddingHorizontal: 20,
+    paddingRight: 30,
+  },
+
+  regionPill: {
+    height: 32,
+
+    paddingHorizontal: 12,
+
+    justifyContent: 'center',
+
+    borderRadius: 16,
+
     backgroundColor: '#F3F4F6',
-    marginRight: 8,
+
+    marginRight: 7,
   },
-  activePill: {
+
+  regionPillActive: {
     backgroundColor: '#FBBF24',
   },
-  filterPillText: {
-    fontSize: 13,
+
+  regionPillText: {
+    fontSize: 11,
     fontWeight: '600',
     color: '#6B7280',
   },
-  activePillText: {
-    color: '#1F2937',
+
+  regionPillTextActive: {
+    color: '#4F3422',
     fontWeight: '800',
   },
-  secondFilterRow: {
+
+  // ======================================================
+  // SECONDARY FILTER CONTROLS
+  // ======================================================
+
+  secondaryControls: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+
     paddingHorizontal: 20,
-    marginTop: 10,
+
+    marginTop: 8,
   },
-  dropdownBtn: {
+
+  filterButton: {
+    height: 34,
+
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+
+    paddingHorizontal: 10,
+
     borderRadius: 10,
+
+    backgroundColor: '#FFFFFF',
+
     borderWidth: 1,
     borderColor: '#E5E7EB',
+
+    gap: 5,
   },
-  dropdownText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    marginRight: 4,
+
+  filterButtonActive: {
+    backgroundColor: '#FFF4D6',
+    borderColor: '#FBBF24',
   },
-  sortGroup: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  sortChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-  },
-  activeSortChip: {
-    backgroundColor: '#FEF3C7',
-  },
-  sortChipText: {
+
+  filterButtonText: {
     fontSize: 11,
+    fontWeight: '700',
+    color: '#4F3422',
+  },
+
+  // ======================================================
+  // SORT
+  // ======================================================
+
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    marginLeft: 8,
+
+    flex: 1,
+
+    justifyContent: 'flex-end',
+
+    gap: 5,
+  },
+
+  sortButton: {
+    height: 32,
+
+    paddingHorizontal: 9,
+
+    justifyContent: 'center',
+
+    borderRadius: 9,
+
+    backgroundColor: '#F3F4F6',
+  },
+
+  sortButtonActive: {
+    backgroundColor: '#FFF0BF',
+  },
+
+  sortButtonText: {
+    fontSize: 10,
     fontWeight: '600',
     color: '#9CA3AF',
   },
-  activeSortText: {
+
+  sortButtonTextActive: {
     color: '#D97706',
     fontWeight: '800',
   },
-  categoryDropdown: {
+
+  // ======================================================
+  // CATEGORY MENU
+  // ======================================================
+
+  categoryMenu: {
     position: 'absolute',
-    top: 200,
+
+    top: 182,
     left: 20,
+
+    width: 155,
+
     backgroundColor: '#FFFFFF',
+
     borderRadius: 12,
-    padding: 8,
+
+    paddingVertical: 5,
+
+    borderWidth: 1,
+    borderColor: '#F0EBDD',
+
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
     shadowRadius: 12,
+
     elevation: 8,
+
     zIndex: 100,
-    minWidth: 140,
   },
+
   categoryOption: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    height: 38,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+
+    paddingHorizontal: 13,
   },
+
   categoryOptionText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4B5563',
   },
-  activeCategoryText: {
-    color: '#FBBF24',
+
+  categoryOptionActive: {
+    color: '#D97706',
     fontWeight: '800',
   },
+
+  // ======================================================
+  // COUNT
+  // ======================================================
+
   countRow: {
-    paddingHorizontal: 22,
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    paddingHorizontal: 20,
+
+    marginTop: 8,
+    marginBottom: 2,
   },
+
   countText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#9CA3AF',
     fontWeight: '600',
+
+    marginRight: 8,
   },
+
+  countLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#F0EBDD',
+  },
+
+  // ======================================================
+  // FEED
+  // ======================================================
+
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 120,
+    paddingBottom: 150,
   },
+
+  // ======================================================
+  // CARD
+  // ======================================================
+
   card: {
     backgroundColor: '#FFFFFF',
+
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
+
+    padding: 16,
+
+    marginBottom: 11,
+
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#F1EEE7',
+
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+    shadowOpacity: 0.035,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowRadius: 7,
+
     elevation: 2,
   },
+
   questionCard: {
     borderLeftWidth: 3,
     borderLeftColor: '#7C3AED',
   },
+
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+
+    marginBottom: 7,
   },
+
+  termContainer: {
+    flex: 1,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    gap: 7,
+
+    paddingRight: 8,
+  },
+
   sourceTerm: {
-    fontSize: 18,
+    flex: 1,
+
+    fontSize: 17,
     fontWeight: '800',
     color: '#1F2937',
-    flex: 1,
   },
+
   regionBadge: {
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
+
+    paddingHorizontal: 9,
     paddingVertical: 4,
+
     borderRadius: 8,
-    marginLeft: 8,
+
+    maxWidth: 115,
   },
+
   regionBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#6B7280',
   },
+
   verifiedBadge: {
     backgroundColor: '#D1FAE5',
   },
+
   verifiedBadgeText: {
     color: '#059669',
   },
+
+  // ======================================================
+  // TRANSLATION
+  // ======================================================
+
   translation: {
-    fontSize: 15,
+    fontSize: 14,
+
     color: '#4B5563',
+
     fontWeight: '500',
-    marginBottom: 10,
-    lineHeight: 22,
+
+    lineHeight: 20,
+
+    marginBottom: 9,
   },
+
+  // ======================================================
+  // TAGS
+  // ======================================================
+
   tagsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    alignItems: 'center',
+
+    gap: 6,
+
+    marginBottom: 11,
   },
+
   categoryChip: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
+    backgroundColor: '#FFF4D6',
+
+    paddingHorizontal: 8,
     paddingVertical: 4,
+
     borderRadius: 6,
   },
+
   categoryChipText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: '#D97706',
   },
-  sentimentChip: {
+
+  questionChip: {
     backgroundColor: '#EDE9FE',
+
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+
+    borderRadius: 6,
   },
-  sentimentChipText: {
-    fontSize: 11,
+
+  questionChipText: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#7C3AED',
   },
+
+  sentimentChip: {
+    backgroundColor: '#F3E8FF',
+
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+
+    borderRadius: 6,
+  },
+
+  sentimentChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+
+  // ======================================================
+  // CARD FOOTER
+  // ======================================================
+
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
+
     borderTopWidth: 1,
-    borderTopColor: '#F9FAFB',
-    paddingTop: 10,
+    borderTopColor: '#F5F3EF',
+
+    paddingTop: 9,
   },
+
+  voteSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
   voteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 14,
+
+    marginRight: 12,
   },
+
   voteCount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#374151',
-    marginLeft: 4,
+
+    marginLeft: 3,
   },
+
   authorText: {
     flex: 1,
+
     textAlign: 'right',
-    fontSize: 12,
+
+    fontSize: 10,
     color: '#9CA3AF',
     fontWeight: '500',
   },
+
+  // ======================================================
+  // LOADING
+  // ======================================================
+
   loadingContainer: {
     flex: 1,
+
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  // ======================================================
+  // EMPTY
+  // ======================================================
+
   emptyContainer: {
     alignItems: 'center',
+
     paddingTop: 60,
+    paddingHorizontal: 30,
   },
+
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#374151',
-    marginTop: 16,
+
+    marginTop: 14,
   },
+
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#9CA3AF',
-    marginTop: 6,
+
+    marginTop: 5,
+
+    textAlign: 'center',
   },
+
+  // ======================================================
+  // FAB
+  // ======================================================
+
   fabContainer: {
     position: 'absolute',
+
     bottom: 100,
-    right: 24,
-    gap: 16,
+    right: 20,
+
+    gap: 12,
+
     alignItems: 'center',
   },
+
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FBBF24',
+    width: 54,
+    height: 54,
+
+    borderRadius: 27,
+
+    backgroundColor: '#ffe7ab',
+
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#FBBF24',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
+
+    shadowColor: '#B7791F',
+    shadowOpacity: 0.25,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowRadius: 9,
+
     elevation: 6,
   },
+
   aiFab: {
+    width: 46,
+    height: 46,
+
+    borderRadius: 23,
+
     backgroundColor: '#7C3AED',
+
     shadowColor: '#7C3AED',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
   },
+  fabIcon: {
+  width: 27,
+  height: 27,
+  resizeMode: 'contain',
+},
 });
