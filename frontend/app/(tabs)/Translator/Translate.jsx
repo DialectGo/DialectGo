@@ -24,7 +24,7 @@ import LanguageSelector from '../../../src/features/translator/components/Langua
 import ContributionModal from '../../../src/features/wiki/components/ContributionModal'; // Added Shared Component
 import BreakdownPanel from '../../../src/features/translator/components/BreakdownPanel';
 import LoadingModal from '../../../src/shared/components/LoadingModal';
-import CustomizeModal from '../../../src/features/home/components/CustomizeModal';
+import CustomizeModal from '../../../src/shared/components/CustomizeModal';
 import DocumentUploadModal from '../../../src/features/translator/components/DocumentUploadModal';
 import TranslationResultModal from '../../../src/features/translator/components/TranslationResultModal';
 import SwipeableBottomSheet from '../../../src/shared/components/SwipeableBottomSheet';

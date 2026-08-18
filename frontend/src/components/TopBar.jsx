@@ -4,7 +4,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../shared/api/supabase';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import NotificationsModal from '../features/home/components/NotificationsModal';
+import NotificationsModal from '../shared/components/NotificationsModal';
 import { NOTIFICATIONS_API_BASE } from '../shared/api/client';
 
 const availableAvatars = [

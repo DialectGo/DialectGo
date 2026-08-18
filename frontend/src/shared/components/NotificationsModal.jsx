@@ -2,8 +2,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../../shared/api/supabase';
-import { NOTIFICATIONS_API_BASE } from '../../../shared/api/client';
+import { supabase } from '../api/supabase';
+import { NOTIFICATIONS_API_BASE } from '../api/client';
 import { useRouter } from 'expo-router';
 
 export default function NotificationsModal({ visible, onClose }) {
