@@ -19,6 +19,10 @@ import { getCebuanoGreeting } from '../../shared/utils/dateUtils';
 import BottomNav from '../../components/BottomNav';
 import TopBar from '../../components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer';
+import HomeSkeleton from '../../shared/components/HomeSkeleton';
+import HomeCard from '../../shared/components/HomeCard';
+import ToastMessage from '../../shared/components/ToastMessage';
+import WordOfDayOverlay from '../../shared/components/WordOfDayOverlay';
 import { styles } from './styles/HomeStyles';
 
 export default function HomeScreen({ onNavigate, activeTab }) {
@@ -26,6 +30,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
   const insets = useSafeAreaInsets();
   
   const [wotdModalVisible, setWotdModalVisible] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
   
   // Custom Hooks Encapsulating Business Logic
   const mascotAnim = useMascotAnimation(-8, 1200);
@@ -43,6 +48,12 @@ export default function HomeScreen({ onNavigate, activeTab }) {
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Stack.Screen options={{ animation: "fade" }} />
       <TopBar titleMode="brand" />
+      <ToastMessage 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        topOffset={insets.top + 8} 
+      />
 
       <View style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         <RefreshContainer
@@ -90,7 +101,11 @@ export default function HomeScreen({ onNavigate, activeTab }) {
                 <View style={styles.wordBubbleArrow} />
 
                 {loading ? (
-                  <ActivityIndicator color="#B45309" />
+                  <View style={{ gap: 8, alignItems: 'center', marginVertical: 10 }}>
+                    <HomeSkeleton width={140} height={24} borderRadius={12} />
+                    <HomeSkeleton width={100} height={16} borderRadius={8} />
+                    <HomeSkeleton width={200} height={12} borderRadius={6} />
+                  </View>
                 ) : (
                   <>
                     <Text style={styles.heroWord}>
@@ -113,22 +128,17 @@ export default function HomeScreen({ onNavigate, activeTab }) {
             </View>
           </View>
 
-          {/* DYNAMIC PROGRESS SECTION */}
-          <View style={styles.progressSectionHeader}>
-            <View>
-              <Text style={styles.progressSectionTitle}>Your Progress</Text>
-              <Text style={styles.progressSubtitle}>
-                Keep the streak alive! 🐝
-              </Text>
-            </View>
-            <View style={styles.streakBadge}>
-              <View style={styles.activeDot} />
-              <Text style={styles.streakBadgeText}>ACTIVE</Text>
-            </View>
-          </View>
-
-          {/* STREAK CARD */}
-          <View style={styles.progressCard}>
+          {/* STREAK CARD WRAPPED IN BASECARD */}
+          <HomeCard
+            title="Your Progress"
+            subtitle="Keep the streak alive! 🐝"
+            rightBadge={
+              <View style={styles.streakBadge}>
+                <View style={styles.activeDot} />
+                <Text style={styles.streakBadgeText}>ACTIVE</Text>
+              </View>
+            }
+          >
             <View style={styles.progressTopRow}>
               <View style={styles.streakTextGroup}>
                 <Text style={styles.streakSmallLabel}>
@@ -190,7 +200,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
                 )}
               </View>
             </View>
-          </View>
+          </HomeCard>
 
           {/* CHATBOT PROMO SECTION */}
           <View style={styles.chatPromoWrapper}>
@@ -201,7 +211,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
               <Text style={styles.chatBubbleEmoji}>✨</Text>
             </View>
 
-            <View style={styles.chatPromoCard}>
+            <HomeCard style={{ marginTop: 15, flexDirection: 'row', alignItems: 'center' }}>
               <View style={styles.chatBeeContainer}>
                 <Image
                   source={require('../../../assets/logo/bee.png')}
@@ -243,7 +253,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </HomeCard>
           </View>
 
         </RefreshContainer>
@@ -251,28 +261,11 @@ export default function HomeScreen({ onNavigate, activeTab }) {
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
 
       {/* WORD OF THE DAY MODAL */}
-      <Modal visible={wotdModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.wotdModalCard}>
-            <Text style={styles.wotdModalTitle}>“{wordOfDay?.term}”</Text>
-            <View style={styles.wotdDivider} />
-            <Text style={styles.wotdModalSubtitle}>Definition</Text>
-            <Text style={styles.wotdModalText}>{wordOfDay?.definition}</Text>
-
-            <Text style={[styles.wotdModalSubtitle, { marginTop: 15 }]}>Usages</Text>
-            {wordOfDay?.usageCeb ? <Text style={styles.wotdModalUsage}>• Ceb: "{wordOfDay.usageCeb}"</Text> : null}
-            {wordOfDay?.usageEng ? <Text style={styles.wotdModalUsage}>• Eng: "{wordOfDay.usageEng}"</Text> : null}
-            {wordOfDay?.usageTag ? <Text style={styles.wotdModalUsage}>• Tag: "{wordOfDay.usageTag}"</Text> : null}
-
-            <TouchableOpacity
-              style={styles.wotdModalCloseBtn}
-              onPress={() => setWotdModalVisible(false)}
-            >
-              <Text style={styles.wotdModalCloseText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <WordOfDayOverlay 
+        visible={wotdModalVisible} 
+        onClose={() => setWotdModalVisible(false)} 
+        wordData={wordOfDay} 
+      />
     </View>
   );
 }
