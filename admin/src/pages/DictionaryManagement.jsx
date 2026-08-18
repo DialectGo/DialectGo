@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/apiService';
 import CardSkeleton from '../components/fallbacks/CardSkeleton';
+import TableSkeleton from '../components/fallbacks/TableSkeleton';
 
 const DictionaryManagement = () => {
   const [entries, setEntries] = useState([]);
@@ -86,9 +87,8 @@ const DictionaryManagement = () => {
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
           {Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
-        <div className="empty-state loading-pulse">
-          <div className="empty-icon">📖</div>
-          <div className="empty-text">Loading dictionary entries...</div>
+        <div style={{ marginTop: 24 }}>
+          <TableSkeleton columns={5} rows={5} />
         </div>
       </div>
     );
