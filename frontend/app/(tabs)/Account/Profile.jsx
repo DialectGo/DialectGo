@@ -221,7 +221,7 @@ export default function Profile({ onNavigate }) {
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Activities')}>
             <View style={styles.menuLeft}>
-              <Ionicons name="pulse-outline" size={24} color="#6B7280" style={{ marginRight: 16 }} />
+              <Image source={require('../../../assets/icons/activities_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>My Activities</Text>
             </View>
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
@@ -229,7 +229,7 @@ export default function Profile({ onNavigate }) {
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/fireIcon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/images/beefire.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Streaks</Text>
             </View>
             <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />

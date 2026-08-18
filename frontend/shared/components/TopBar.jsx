@@ -15,9 +15,9 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-const TopBar = ({ 
-  titlePrimary, 
-  titleSecondary, 
+const TopBar = ({
+  titlePrimary,
+  titleSecondary,
   screenType = 'home',
   titleMode = 'column',
   onHistoryPress,
@@ -36,7 +36,7 @@ const TopBar = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      
+
       // Fetch avatar
       const { data: userData } = await supabase.auth.getUser(session.access_token);
       if (userData?.user?.user_metadata?.avatar_url) {
@@ -82,32 +82,32 @@ const TopBar = ({
 
           {/* Right Section (Glassmorphism Pill Buttons) */}
           <View style={styles.rightSection}>
-            
+
             {screenType === 'dictionary' ? (
               <>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.iconCircle}
                   onPress={onHistoryPress}
                 >
-                  <Image source={require('../../assets/images/history.png')} style={styles.topIcon} />
+                  <Image source={require('../../assets/images/history.png')} style={styles.historyIcon} />
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.iconCircle}
                   onPress={onSaveWordsPress}
                 >
-                  <Image source={require('../../assets/icons/star.png')} style={styles.topIcon} />
+                  <Image source={require('../../assets/images/star.png')} style={styles.starIcon} />
                 </TouchableOpacity>
               </>
             ) : screenType === 'translator' ? (
               <>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.iconCircle}
                   onPress={onHistoryPress}
                 >
                   <Image source={require('../../assets/images/history.png')} style={styles.topIcon} />
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.glassBtn}
                   onPress={() => handleNavigation('/Account/Profile')}
                 >
@@ -116,22 +116,28 @@ const TopBar = ({
               </>
             ) : (
               <>
-                <TouchableOpacity 
-                  style={styles.glassBtn} 
+                <TouchableOpacity
+                  style={styles.glassBtn}
                   onPress={() => {
                     setNotificationsVisible(true);
                     setUnreadCount(0); // Optimistic clear
                   }}
                 >
-                  <Ionicons name="notifications-outline" size={20} color="#1F2937" />
+                  <Image
+                    source={require('../../assets/icons/notif_icon.png')}
+                    style={styles.notificationIcon}
+                    resizeMode="contain"
+                  />
+
                   {unreadCount > 0 && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                      <Text style={styles.badgeText}>
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
-
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.glassBtn}
                   onPress={() => handleNavigation('/Account/Profile')}
                 >
@@ -145,12 +151,12 @@ const TopBar = ({
       </SafeAreaView>
 
       {/* --- NOTIFICATIONS MODAL --- */}
-      <NotificationsModal 
-        visible={notificationsVisible} 
+      <NotificationsModal
+        visible={notificationsVisible}
         onClose={() => {
           setNotificationsVisible(false);
           fetchTopBarData(); // Refresh count on close
-        }} 
+        }}
       />
     </View>
   );
@@ -189,14 +195,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12, // Space between glass buttons
   },
-  glassBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)', // Subdued glassmorphism background
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+glassBtn: {
+  backgroundColor: 'transparent',
+  padding: 0,
+  margin: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   avatarIcon: {
     width: 38,
     height: 38,
@@ -224,7 +229,7 @@ const styles = StyleSheet.create({
   titleWrapper: {
     flexDirection: 'column',
     justifyContent: 'center',
-    marginLeft: -5, 
+    marginLeft: -5,
   },
   titleWrapperRow: {
     flexDirection: 'row',
@@ -235,7 +240,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFD54F',
-    marginBottom: -6, 
+    marginBottom: -6,
     letterSpacing: 0.5,
   },
   headerTitleYellowRow: {
@@ -252,15 +257,66 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)', // Match glassmorphism of default buttons
     justifyContent: 'center',
     alignItems: 'center',
   },
   topIcon: {
-    width: 22,
-    height: 22,
+    width: 42,
+    height: 42,
     resizeMode: 'contain',
   },
+
+  historyButton: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+
+    shadowColor: '#421C00',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+
+    elevation: 5,
+  },
+
+  historyIcon: {
+    width: 42,
+    height: 42,
+    resizeMode: 'contain',
+  },
+  starButton: {
+    width: 42,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+
+    shadowColor: '#421C00',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+
+    elevation: 5,
+  },
+
+  starIcon: {
+    width: 42,
+    height: 42,
+    resizeMode: 'contain',
+  },
+  notificationIcon: {
+  width: 42,
+  height: 42,
+  resizeMode: 'contain',
+},
 });
 
 export default TopBar;
