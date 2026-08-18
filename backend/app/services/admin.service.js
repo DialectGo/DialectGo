@@ -214,4 +214,52 @@ export const AdminService = {
             .eq('id', id);
         return { error };
     },
+
+    // ─── Admin Notifications ─────────────────────────────────────────────────
+    getNotifications: async (adminId) => {
+        const { data, error } = await supabaseAdmin
+            .from('admin_notifications')
+            .select('*')
+            .eq('recipient_id', adminId)
+            .order('created_at', { ascending: false });
+        return { data: data || [], error };
+    },
+
+    markNotificationRead: async (adminId, notificationId) => {
+        const { data, error } = await supabaseAdmin
+            .from('admin_notifications')
+            .update({ is_read: true })
+            .eq('id', notificationId)
+            .eq('recipient_id', adminId)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    markAllNotificationsRead: async (adminId) => {
+        const { data, error } = await supabaseAdmin
+            .from('admin_notifications')
+            .update({ is_read: true })
+            .eq('recipient_id', adminId)
+            .eq('is_read', false)
+            .select();
+        return { data, error };
+    },
+
+    deleteNotification: async (adminId, notificationId) => {
+        const { error } = await supabaseAdmin
+            .from('admin_notifications')
+            .delete()
+            .eq('id', notificationId)
+            .eq('recipient_id', adminId);
+        return { error };
+    },
+
+    deleteAllNotifications: async (adminId) => {
+        const { error } = await supabaseAdmin
+            .from('admin_notifications')
+            .delete()
+            .eq('recipient_id', adminId);
+        return { error };
+    },
 };

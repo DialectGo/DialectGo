@@ -138,3 +138,44 @@ export const deleteCorpusEntry = async (req, res, next) => {
         res.json({ success: true });
     } catch (err) { next(err); }
 };
+
+// ─── Admin Notifications ─────────────────────────────────────────────────────
+export const getNotifications = async (req, res, next) => {
+    try {
+        const { data, error } = await AdminService.getNotifications(req.user.id);
+        if (error) return res.status(500).json({ success: false, message: error.message });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+};
+
+export const markNotificationRead = async (req, res, next) => {
+    try {
+        const { data, error } = await AdminService.markNotificationRead(req.user.id, req.params.id);
+        if (error) return res.status(500).json({ success: false, message: error.message });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+};
+
+export const markAllNotificationsRead = async (req, res, next) => {
+    try {
+        const { data, error } = await AdminService.markAllNotificationsRead(req.user.id);
+        if (error) return res.status(500).json({ success: false, message: error.message });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+};
+
+export const deleteNotification = async (req, res, next) => {
+    try {
+        const { error } = await AdminService.deleteNotification(req.user.id, req.params.id);
+        if (error) return res.status(500).json({ success: false, message: error.message });
+        res.json({ success: true });
+    } catch (err) { next(err); }
+};
+
+export const deleteAllNotifications = async (req, res, next) => {
+    try {
+        const { error } = await AdminService.deleteAllNotifications(req.user.id);
+        if (error) return res.status(500).json({ success: false, message: error.message });
+        res.json({ success: true });
+    } catch (err) { next(err); }
+};
