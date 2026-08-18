@@ -12,12 +12,12 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
-import { supabase } from '../../../shared/lib/supabase';
-import RefreshContainer from '../../../shared/components/RefreshContainer';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
-import { styles } from '../../../shared/styles/ResultDictionaryStyles';
-import FeatureGateModal from '../../../shared/components/FeatureGateModal';
-import { endpoints } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import RefreshContainer from '../../../src/shared/components/RefreshContainer';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import { styles } from '../../../src/features/dictionary/styles/ResultDictionaryStyles';
+import FeatureGateModal from '../../../src/shared/components/FeatureGateModal';
+import { endpoints } from '../../../src/shared/api/client';
 
 const SAVE_API_URL = endpoints.DICTIONARY_SAVE;
 const CHECK_SAVED_API_URL = endpoints.DICTIONARY_CHECK_SAVED;

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Platform, ScrollView, StatusBar, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../../shared/lib/supabase';
-import { API_BASE_URL } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import { API_BASE_URL } from '../../../src/shared/api/client';
 
-import BottomNav from '../../../shared/components/BottomNav';
-import TopBar from '../../../shared/components/TopBar';
-import { styles } from '../../../shared/styles/GamesStyles';
+import BottomNav from '../../../src/components/BottomNav';
+import TopBar from '../../../src/components/TopBar';
+import { styles } from '../../../src/features/games/styles/GamesStyles';
 
 const API_URL = `${API_BASE_URL}/api`;
 

@@ -13,8 +13,8 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { endpoints } from '../../shared/config/apiConfig';
-import { styles } from '../../shared/styles/AuthTransitionStyles';
+import { endpoints } from '../../src/shared/api/client';
+import { styles } from '../../src/features/auth/styles/AuthTransitionStyles';
 
 // FIXED IMPORTS: 
 // 1. '../login' dahil nasa app/login.jsx (lowercase 'l')

@@ -15,9 +15,9 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './WordMatcherStyles';
-import { supabase } from '../../../../shared/lib/supabase';
+import { supabase } from '../../../../src/shared/api/supabase';
 
-import { API_BASE_URL } from '../../../../shared/config/apiConfig';
+import { API_BASE_URL } from '../../../../src/shared/api/client';
 const API_URL = `${API_BASE_URL}/api`;
 const WORD_MATCHER_GAME_ID = 1;
 

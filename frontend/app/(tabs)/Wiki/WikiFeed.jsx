@@ -16,12 +16,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 
-import { supabase } from '../../../shared/lib/supabase';
-import TopBar from '../../../shared/components/TopBar';
-import BottomNav from '../../../shared/components/BottomNav';
-import SubmitTermModal from '../../../shared/components/SubmitTermModal';
-import GlobalWikiAssistantModal from '../../../shared/components/GlobalWikiAssistantModal';
-import { WIKI_API_BASE } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import TopBar from '../../../src/components/TopBar';
+import BottomNav from '../../../src/components/BottomNav';
+import SubmitTermModal from '../../../src/features/wiki/components/SubmitTermModal';
+import GlobalWikiAssistantModal from '../../../src/features/wiki/components/GlobalWikiAssistantModal';
+import { WIKI_API_BASE } from '../../../src/shared/api/client';
 
 const REGIONS = [
   'All',

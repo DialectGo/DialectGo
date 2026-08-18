@@ -11,10 +11,10 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../../shared/lib/supabase';
-import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
-import { endpoints } from '../../../shared/config/apiConfig';
+import { supabase } from '../../../src/shared/api/supabase';
+import RefreshContainer from '../../../src/shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import { endpoints } from '../../../src/shared/api/client';
 
 // Use centralized API endpoints
 const API_BASE = endpoints.DICTIONARY_BASE;

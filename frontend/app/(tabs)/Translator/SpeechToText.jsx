@@ -10,17 +10,17 @@ import { Audio, InterruptionModeAndroid } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 
 // Shared Utilities & Components
-import { supabase } from '../../../shared/lib/supabase';
-import LanguageSelector from '../../../shared/components/LanguageSelector';
-import ResultCard from '../../../shared/components/ResultCard';
-import TopBar from '../../../shared/components/TopBar';
-import ContributionModal from '../../../shared/components/ContributionModal';
+import { supabase } from '../../../src/shared/api/supabase';
+import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
+import ResultCard from '../../../src/features/dictionary/components/ResultCard';
+import TopBar from '../../../src/components/TopBar';
+import ContributionModal from '../../../src/features/wiki/components/ContributionModal';
 
 // Assets
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
-import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
 const ENDPOINTS = {
   AUDIO: `${TRANSLATION_API_BASE}/translate/audio`,
   FEEDBACK: `${TRANSLATION_API_BASE}/feedback`,

@@ -14,10 +14,10 @@ import {
   View
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { styles } from '../../shared/styles/LoginStyles';
+import { styles } from '../../src/features/auth/styles/LoginStyles';
 import { useRouter } from 'expo-router'; 
-import { endpoints } from '../../shared/config/apiConfig';
-import { supabase } from '../../shared/lib/supabase';
+import { endpoints } from '../../src/shared/api/client';
+import { supabase } from '../../src/shared/api/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';

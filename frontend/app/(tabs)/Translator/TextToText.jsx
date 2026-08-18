@@ -4,19 +4,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import TextShadow from '../../../shared/components/TextShadow';
-import LanguageSelector from '../../../shared/components/LanguageSelector';
-import TranslationInput from '../../../shared/components/TranslationInput';
-import ResultCard from '../../../shared/components/ResultCard';
+import TextShadow from '../../../src/shared/components/TextShadow';
+import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
+import TranslationInput from '../../../src/features/translator/components/TranslationInput';
+import ResultCard from '../../../src/features/dictionary/components/ResultCard';
 
 import cameraIcon from '../../../assets/icons/cameraIcon.png';
 import micIcon from '../../../assets/icons/micIcon.png';
 import translateIcon from '../../../assets/icons/translateIcon.png';
 import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
 
-import { supabase } from '../../../shared/lib/supabase';
+import { supabase } from '../../../src/shared/api/supabase';
 
-import { TRANSLATION_API_BASE } from '../../../shared/config/apiConfig';
+import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
 const API_URL = `${TRANSLATION_API_BASE}/translate`;
 const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;

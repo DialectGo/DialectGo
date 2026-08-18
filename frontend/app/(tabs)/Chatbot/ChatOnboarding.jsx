@@ -3,8 +3,8 @@ import React from 'react';
 import { Image,  StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 // I-import ang styles dito
-import { styles } from '../../../shared/styles/ChatOnboardingStyles'; 
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import { styles } from '../../../src/features/chat/styles/ChatOnboardingStyles'; 
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
 
 export default function DialectBot() {
   const router = useRouter();

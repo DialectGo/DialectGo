@@ -5,9 +5,9 @@ import { ActivityIndicator, Modal,  StatusBar, Text, TouchableOpacity, View, Ale
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import { styles } from './WordMatcherStyles';
-import { supabase } from '../../../../shared/lib/supabase';
+import { supabase } from '../../../../src/shared/api/supabase';
 
-import { API_BASE_URL } from '../../../../shared/config/apiConfig';
+import { API_BASE_URL } from '../../../../src/shared/api/client';
 const API_URL = `${API_BASE_URL}/api`;
 const WORD_MATCHER_GAME_ID = 1;
 const HEART_XP_COST = 50;

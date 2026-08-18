@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../shared/lib/supabase';
-import { endpoints } from '../../shared/config/apiConfig';
-import BottomNav from '../../shared/components/BottomNav';
-import TopBar from '../../shared/components/TopBar';
-import RefreshContainer from '../../shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
-import { styles } from '../../shared/styles/HomeStyles';
+import { supabase } from '../../src/shared/api/supabase';
+import { endpoints } from '../../src/shared/api/client';
+import BottomNav from '../../src/components/BottomNav';
+import TopBar from '../../src/components/TopBar';
+import RefreshContainer from '../../src/shared/components/RefreshContainer'; // ✅ IMPORT NEW REUSABLE CONTAINER
+import { styles } from '../../src/features/home/styles/HomeStyles';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 
 const availableAvatars = [

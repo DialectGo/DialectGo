@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../../shared/lib/supabase';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
-import BottomNav from '../../../shared/components/BottomNav';
+import { supabase } from '../../../src/shared/api/supabase';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import BottomNav from '../../../src/components/BottomNav';
 import { Ionicons } from '@expo/vector-icons';
-import FeatureGateModal from '../../../shared/components/FeatureGateModal'; 
-import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ Imported RefreshContainer
-import { styles } from '../../../shared/styles/ProfileStyles';
+import FeatureGateModal from '../../../src/shared/components/FeatureGateModal'; 
+import RefreshContainer from '../../../src/shared/components/RefreshContainer'; // ✅ Imported RefreshContainer
+import { styles } from '../../../src/features/account/styles/ProfileStyles';
 import NetInfo from '@react-native-community/netinfo';
-import { endpoints } from '../../../shared/config/apiConfig';
+import { endpoints } from '../../../src/shared/api/client';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },

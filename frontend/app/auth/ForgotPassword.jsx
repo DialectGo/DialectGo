@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../shared/lib/supabase';
+import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
-import AuthInput from '../../shared/components/AuthInput';
-import CustomButton from '../../shared/components/CustomButton';
+import AuthInput from '../../src/shared/components/AuthInput';
+import CustomButton from '../../src/shared/components/CustomButton';
 import { useLocalSearchParams } from 'expo-router';
-import { PASSWORD_RESET_REDIRECT_URL } from '../../shared/config/apiConfig';
+import { PASSWORD_RESET_REDIRECT_URL } from '../../src/shared/api/client';
 
 export default function ForgotPassword() {
   const router = useRouter();

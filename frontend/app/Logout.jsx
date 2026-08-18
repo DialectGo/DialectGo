@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../shared/lib/supabase';
+import { supabase } from '../src/shared/api/supabase';
 import { router } from 'expo-router';
 
 export const handleLogout = async () => {

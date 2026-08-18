@@ -1,9 +1,9 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { Image, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View, } from 'react-native';
-import { styles } from '../../../shared/styles/SettingsStyles';
+import { styles } from '../../../src/features/account/styles/SettingsStyles';
 import { useRouter } from 'expo-router';
-import ProfileTopBar from '../../../shared/components/ProfileTopBar';
+import ProfileTopBar from '../../../src/components/ProfileTopBar';
 
 export default function Settings() {
   const router = useRouter();

@@ -14,9 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../WordBridge/WordBridgeStyles';
-import { supabase } from '../../../../shared/lib/supabase';
+import { supabase } from '../../../../src/shared/api/supabase';
 
-import { API_API_BASE } from '../../../../shared/config/apiConfig';
+import { API_API_BASE } from '../../../../src/shared/api/client';
 const API_URL = API_API_BASE;
 const WORD_BRIDGE_GAME_ID = 2;
 const HEART_XP_COST = 50; 

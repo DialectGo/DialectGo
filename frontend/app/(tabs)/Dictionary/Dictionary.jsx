@@ -15,19 +15,19 @@ import {
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 
-import BottomNav from '../../../shared/components/BottomNav';
-import TopBar from '../../../shared/components/TopBar';
-import DictionaryFilters from '../../../shared/components/DictionaryFilters';
-import FeatureGateModal from '../../../shared/components/FeatureGateModal';
+import BottomNav from '../../../src/components/BottomNav';
+import TopBar from '../../../src/components/TopBar';
+import DictionaryFilters from '../../../src/features/dictionary/components/DictionaryFilters';
+import FeatureGateModal from '../../../src/shared/components/FeatureGateModal';
 
-import { useDictionaryBrowse } from '../../../shared/hooks/useDictionaryBrowse';
-import { useOfflineSearch } from '../../../shared/hooks/useOfflineSearch';
+import { useDictionaryBrowse } from '../../../src/features/dictionary/hooks/useDictionaryBrowse';
+import { useOfflineSearch } from '../../../src/features/dictionary/hooks/useOfflineSearch';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { styles } from '../../../shared/styles/DictionaryStyles';
-import { supabase } from '../../../shared/lib/supabase';
-import { endpoints } from '../../../shared/config/apiConfig';
+import { styles } from '../../../src/features/dictionary/styles/DictionaryStyles';
+import { supabase } from '../../../src/shared/api/supabase';
+import { endpoints } from '../../../src/shared/api/client';
 
 const API_BASE_URL = endpoints.DICTIONARY_SEARCH;
 
