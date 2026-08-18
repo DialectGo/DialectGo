@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/apiService';
+import CardSkeleton from '../components/CardSkeleton';
 
 const WikiManagement = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -94,9 +95,14 @@ const WikiManagement = () => {
 
   if (loading) {
     return (
-      <div className="empty-state loading-pulse">
-        <div className="empty-icon">📝</div>
-        <div className="empty-text">Loading wiki data...</div>
+      <div>
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+        <div className="empty-state loading-pulse">
+          <div className="empty-icon">📝</div>
+          <div className="empty-text">Loading wiki data...</div>
+        </div>
       </div>
     );
   }

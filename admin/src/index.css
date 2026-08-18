@@ -776,6 +776,12 @@ body {
   animation: pulse 1.5s infinite;
 }
 
+.skeleton-box {
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  animation: pulse 1.5s infinite;
+}
+
 /* ─── Utility ─────────────────────────────────────────────────────────────── */
 .flex { display: flex; }
 .items-center { align-items: center; }

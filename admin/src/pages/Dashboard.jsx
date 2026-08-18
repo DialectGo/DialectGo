@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../services/apiService';
+import CardSkeleton from '../components/CardSkeleton';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -23,9 +24,12 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="empty-state loading-pulse">
-        <div className="empty-icon">📊</div>
-        <div className="empty-text">Loading dashboard metrics...</div>
+      <div>
+        <div className="stats-grid">
+          {Array.from({ length: 11 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
