@@ -853,4 +853,90 @@ chatBubbleTwo: {
 chatBubbleEmoji: {
   fontSize: 14,
 },
+
+// ========================================
+// WORD OF THE DAY (WOTD) MODAL & DEFINITION
+// ========================================
+
+heroDefinition: {
+  fontFamily: 'Poppins-Regular',
+  fontSize: 13,
+  color: '#634F4B',
+  textAlign: 'center',
+  marginBottom: 8,
+},
+
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 20,
+},
+
+wotdModalCard: {
+  backgroundColor: '#FFF',
+  borderRadius: 20,
+  padding: 25,
+  width: '100%',
+  maxWidth: 400,
+  elevation: 5,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+},
+
+wotdModalTitle: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 24,
+  color: '#421C00',
+  textAlign: 'center',
+  marginBottom: 10,
+},
+
+wotdDivider: {
+  height: 1,
+  backgroundColor: '#E5E7EB',
+  width: '100%',
+  marginBottom: 15,
+},
+
+wotdModalSubtitle: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 16,
+  color: '#B45309',
+  marginBottom: 5,
+},
+
+wotdModalText: {
+  fontFamily: 'Poppins-Regular',
+  fontSize: 15,
+  color: '#4B5563',
+  lineHeight: 22,
+},
+
+wotdModalUsage: {
+  fontFamily: 'Poppins-Regular',
+  fontSize: 14,
+  color: '#4B5563',
+  lineHeight: 20,
+  marginBottom: 6,
+  fontStyle: 'italic',
+},
+
+wotdModalCloseBtn: {
+  backgroundColor: '#FFD54F',
+  borderRadius: 25,
+  paddingVertical: 12,
+  alignItems: 'center',
+  marginTop: 25,
+},
+
+wotdModalCloseText: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 16,
+  color: '#421C00',
+},
+
 });
