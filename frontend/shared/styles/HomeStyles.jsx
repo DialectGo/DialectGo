@@ -24,147 +24,17 @@ export const styles = StyleSheet.create({
     fontFamily: 'System', // Use default font but could be custom
   },
 
-  // Mascot Banner Styles
-  mascotBannerWrapper: {
-    width: width, // use full width
-    marginHorizontal: -25, // stretch past container padding
-    height: 115, // Decreased height
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 25,
-    marginTop: 0,
-    position: 'relative',
-  },
-  mascotBannerBg: {
-    position: 'absolute',
-    top: 40,
-    left: 0,
-    right: 0,
-    bottom: -5,
-    backgroundColor: '#FFD54F', // The yellow band theme
-  },
-  mascotImage: {
-    position: 'absolute',
-    left: 10,
-    bottom: -10, // Adjusted to match new thinner height
-    width: 100,
-    height: 100,
-    zIndex: 10,
-  },
-  speechBubble: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 15,
-    marginLeft: 110,
-    marginRight: 20,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-    minHeight: 80,
-    justifyContent: 'center',
-    zIndex: 5,
-  },
-  speechArrow: {
-    position: 'absolute',
-    left: -12,
-    top: '50%',
-    marginTop: -8,
-    width: 0,
-    height: 0,
-    borderTopWidth: 8,
-    borderTopColor: 'transparent',
-    borderBottomWidth: 8,
-    borderBottomColor: 'transparent',
-    borderRightWidth: 15,
-    borderRightColor: '#FFFFFF',
-  },
-  speechTerm: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4D7A58', // Green text for the mascot name/term
-    marginBottom: 4,
-  },
-  speechText: {
-    fontSize: 12,
-    color: '#4B5563',
-    lineHeight: 18,
-  },
-  speechUsage: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-
-  // --- MODAL STYLES ---
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  wotdModalCard: {
-    backgroundColor: '#FFF',
-    width: '80%',
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  wotdModalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#B45309',
-    textAlign: 'center',
-  },
-  wotdDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-  wotdModalSubtitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4B5563',
-    marginBottom: 5,
-  },
-  wotdModalText: {
-    fontSize: 13,
-    color: '#1F2937',
-    lineHeight: 20,
-  },
-  wotdModalUsage: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
-    marginBottom: 4,
-  },
-  wotdModalCloseBtn: {
-    marginTop: 20,
-    backgroundColor: '#FFD54F',
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  wotdModalCloseText: {
-    fontWeight: 'bold',
-    color: '#421C00',
-  },
-
   // --- MAIN CONTAINER ---
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF', // o kahit anong background color ng app mo
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Para sa Android
   },
+  
   scrollContent: {
     paddingHorizontal: 25,
     paddingBottom: 120, // Space para hindi matakpan ng Bottom Tab
-    paddingTop: 10,
+    paddingTop: 0,
   },
 
   // --- TOP BAR (CLEAN VERSION) ---
@@ -263,337 +133,6 @@ export const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'Poppins-Bold',
   },
-
-  // --- SECTION TITLES ---
-  sectionTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 24, // Medyo pinalaki para sa "Lively" feel
-    color: '#421C00',
-    marginBottom: 12,
-    marginTop: 5,
-    letterSpacing: 0.5,
-  },
-
-  // --- LIVELY SECTION TITLE ---
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    marginTop: 15,
-    paddingHorizontal: 5, // Konting hinga sa gilid
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 26,
-    color: '#421C00', // Dark Brown para solid ang dating
-    letterSpacing: -0.5,
-  },
-  titleAccent: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFD54F', // Mantatili itong yellow para sa "Bee" theme
-    marginLeft: 6,
-    alignSelf: 'center',
-    marginTop: 5,
-  },
-
-  // --- DARKER & BOLDER DISCOVER BADGE ---
-  discoverBadge: {
-    backgroundColor: '#421C00', // Ginawa nating Dark Brown ang background
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20, // Mas rounded para sa "Pill" look
-    marginLeft: 12,
-    // Subtle shadow para mag-pop up talaga
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  discoverBadgeText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 10,
-    color: '#FFD54F', // Yellow text sa loob ng dark background para High Contrast
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-
-  // --- DISCOVER / WORD CARD (POP-UP VERSION) ---
-  wordCard: {
-    backgroundColor: '#FFD54F', // Solid yellow or you can use a gradient
-    borderRadius: 35,
-    padding: 25,
-    // INALIS ANG BORDER COLOR PARA SA CLEANER LOOK
-    borderWidth: 0,
-
-    // LIGHTING & SHADOW (PARA SA POP-UP EFFECT)
-    elevation: 12, // Mas mataas na elevation para sa Android
-    shadowColor: '#FFAB00', // Warm shadow para mas lively
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 15,
-
-    marginBottom: 20,
-  },
-
-  wordLabel: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 14,
-    color: 'rgba(66, 28, 0, 0.6)', // Semi-transparent brown for modern look
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    textAlign: 'center',
-  },
-
-  wordText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 52, // Pinalaki para sa "Lively" impact
-    color: '#421C00',
-    textAlign: 'center',
-    marginVertical: 0,
-    // Subtle text shadow para mag-pop ang mismong salita
-    textShadowColor: 'rgba(255, 255, 255, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-
-  wordDetails: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Soft glassmorphism effect sa loob
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginTop: 10,
-  },
-
-  meaningText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 15,
-    color: '#421C00',
-  },
-
-  usageText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 13,
-    color: '#421C00',
-    opacity: 0.7,
-    marginTop: 2,
-  },
-
-  // --- LIVELY STREAK & STATS ---
-  // --- LARGE STREAK CARD ---
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 20,
-    paddingHorizontal: 5,
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 26,
-    color: '#421C00',
-    letterSpacing: -0.5,
-  },
-
-  // Orange Accent para sa Progress
-  titleAccentOrange: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF6F00',
-    marginLeft: 6,
-    marginTop: 8,
-  },
-  // STREAK STATUS BADGE
-  streakBadge: {
-    backgroundColor: '#E8F5E9', // Light green background
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginLeft: 12,
-    borderWidth: 1,
-    borderColor: '#C8E6C9',
-  },
-  streakBadgeText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 10,
-    color: '#2E7D32', // Dark green text para sa "Active" status
-    textTransform: 'uppercase',
-  },
-
-  largeStreakCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 40,
-    padding: 25,
-    marginVertical: 15,
-    elevation: 15,
-    shadowColor: '#FFAB00',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FDF2E9',
-  },
-  streakTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  streakNumberLarge: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 60, // BOLD & BIG!
-    color: '#421C00',
-    lineHeight: 65,
-  },
-  streakStatus: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 16,
-    color: '#A0A0A0',
-    letterSpacing: 2,
-  },
-  onFireBadge: {
-    backgroundColor: '#FF6F00',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 15,
-    marginTop: 5,
-  },
-  onFireText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontFamily: 'Poppins-Bold',
-  },
-  mainFlameIcon: {
-    width: 90,
-    height: 90,
-  },
-  // --- TRIPLE FLAME STYLING ---
-  tripleFlameWrapper: {
-    width: 120,
-    height: 100,
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centerFlame: {
-    width: 85,
-    height: 85,
-    zIndex: 2,
-  },
-  sideFlame: {
-    width: 55,
-    height: 55,
-    position: 'absolute',
-    bottom: 5,
-    opacity: 0.7, // Medyo transparent para mag-focus sa center
-  },
-  leftFlame: {
-    left: 0,
-    transform: [{ rotate: '-15deg' }], // Nakatagilid nang konti
-    zIndex: 1,
-  },
-  rightFlame: {
-    right: 0,
-    transform: [{ rotate: '15deg' }], // Nakatagilid sa kabila
-    zIndex: 1,
-  },
-
-  // --- RE-ADJUSTED STREAK CARD FOR 3 FLAMES ---
-  largeStreakCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 40,
-    padding: 25,
-    marginVertical: 15,
-    elevation: 20,
-    shadowColor: '#FF6F00', // Mas "apoy" na shadow color
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FDF2E9',
-  },
-  streakNumberLarge: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 65,
-    color: '#421C00',
-    lineHeight: 70,
-  },
-  onFireBadge: {
-    backgroundColor: '#FF3D00', // Brighter Red-Orange
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 15,
-    marginTop: 8,
-  },
-
-  // --- LARGE WEEKLY ROW ---
-  largeWeekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#F9F9F9',
-    padding: 15,
-    borderRadius: 25,
-    marginBottom: 15,
-  },
-  largeDayBox: {
-    alignItems: 'center',
-  },
-  dayCircleLarge: {
-    width: 34, // Pinalaki mula 22
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dayActive: {
-    backgroundColor: '#FFD54F',
-    elevation: 4,
-  },
-  dayInactive: {
-    backgroundColor: '#E0E0E0',
-  },
-  checkMarkLarge: {
-    fontSize: 16,
-    color: '#421C00',
-    fontWeight: 'bold',
-  },
-  lockIcon: {
-    fontSize: 10,
-    opacity: 0.5,
-  },
-  largeDayText: {
-    fontSize: 10,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
-  },
-
-  // --- FOOTER BUTTON ---
-  streakFooterBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#421C00',
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  streakFooterText: {
-    color: '#FFD54F',
-    fontFamily: 'Poppins-Bold',
-    fontSize: 14,
-    marginRight: 10,
-  },
-  arrowIcon: {
-    color: '#FFD54F',
-    fontSize: 18,
-  },
-
   // --- SECTION HEADER ---
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -725,4 +264,593 @@ export const styles = StyleSheet.create({
     height: 42,
     transform: [{ rotate: '-10deg' }],
   },
+
+
+
+// ========================================
+// Word of the Day Part
+// ========================================
+
+homeHero: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  width: '100%',
+  minHeight: 200,
+  marginTop: 0,
+  marginBottom: 20,
+},
+
+// LEFT SIDE — BEE
+heroBeeContainer: {
+  width: '42%',
+  height: 270,
+  justifyContent: 'center',
+  alignItems: 'center',
+  overflow: 'visible',
+},
+
+heroBee: {
+  width: 150,
+  height: 220,
+},
+
+// RIGHT SIDE
+heroContent: {
+  width: '58%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingLeft: 8,
+},
+
+// DATE
+heroDate: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 13,
+  color: '#634F4B',
+  letterSpacing: 0.4,
+  textAlign: 'center',
+  marginBottom: 2,
+},
+
+// GREETING
+heroGreeting: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 21,
+  color: '#FFD044',
+  textAlign: 'center',
+  lineHeight: 28,
+  marginBottom: 16,
+},
+
+heroUserName: {
+  color: '#634F4B',
+},
+
+// WORD OF THE DAY
+wordOfDayBubble: {
+  width: '96%',
+  minHeight: 165,
+  backgroundColor: '#FFD54F',
+  borderRadius: 28,
+  paddingHorizontal: 20,
+  paddingVertical: 18,
+  alignItems: 'center',
+  justifyContent: 'center',
+
+  // Soft floating effect
+  elevation: 8,
+  shadowColor: '#8A6200',
+  shadowOffset: {
+    width: 0,
+    height: 6,
+  },
+  shadowOpacity: 0.18,
+  shadowRadius: 10,
+  position: 'relative',
+  // subtle border
+  borderWidth: 1,
+  borderColor: 'rgba(255,255,255,0.45)',
+},
+
+// SPEECH ARROW
+wordBubbleArrow: {
+  position: 'absolute',
+  left: -18,
+  top: '50%',
+  marginTop: -14,
+  width: 0,
+  height: 0,
+  borderTopWidth: 14,
+  borderBottomWidth: 14,
+  borderRightWidth: 22,
+  borderTopColor: 'transparent',
+  borderBottomColor: 'transparent',
+  borderRightColor: '#FFD54F',
+},
+
+// WORD
+heroWord: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 30,
+  color: '#421C00',
+  textAlign: 'center',
+  marginBottom: 4,
+  letterSpacing: -0.5,
+},
+
+// TRANSLATION
+heroTranslation: {
+  fontFamily: 'Poppins-Medium',
+  fontSize: 16,
+  color: '#634F4B',
+  textAlign: 'center',
+  fontStyle: 'italic',
+  lineHeight: 21,
+},
+
+// DEFINITION
+heroWord: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 30,
+  color: '#421C00',
+  textAlign: 'center',
+  marginBottom: 4,
+  letterSpacing: -0.5,
+},
+
+// DETAILS
+heroDetails: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 10.5,
+  color: '#8A6200',
+  textDecorationLine: 'underline',
+  marginTop: 8,
+},
+
+progressSectionHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+
+  marginTop: 15,
+  marginBottom: 14,
+
+  paddingHorizontal: 5,
+},
+
+progressSectionTitle: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 25,
+  color: '#421C00',
+  letterSpacing: -0.5,
+},
+
+progressSubtitle: {
+  fontFamily: 'Poppins-Medium',
+  fontSize: 11,
+  color: '#9A8177',
+  marginTop: 1,
+},
+
+
+// STREAK BADGE
+
+streakBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#FFF7D6',
+  paddingHorizontal: 12,
+  paddingVertical: 7,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: '#FFE28A',
+},
+
+activeDot: {
+  width: 7,
+  height: 7,
+  borderRadius: 4,
+  backgroundColor: '#F4B400',
+  marginRight: 6,
+},
+
+streakBadgeText: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 9,
+  color: '#8A6200',
+  letterSpacing: 0.8,
+},
+
+progressCard: {
+  backgroundColor: '#FFFDF5',
+  borderRadius: 32,
+  paddingHorizontal: 22,
+  paddingTop: 22,
+  paddingBottom: 18,
+  marginBottom: 20,
+  borderWidth: 1,
+  borderColor: '#F4E7BF',
+  elevation: 7,
+  shadowColor: '#8A6200',
+  shadowOffset: {
+    width: 0,
+    height: 6,
+  },
+  shadowOpacity: 0.12,
+  shadowRadius: 12,
+  position: 'relative',
+  overflow: 'hidden',
+},
+
+progressBee: {
+  position: 'absolute',
+  width: 75,
+  height: 75,
+  right: -8,
+  top: -10,
+  opacity: 0.95,
+  transform: [
+    { rotate: '12deg' }
+  ],
+},
+progressTopRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  minHeight: 115,
+},
+streakSmallLabel: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 10,
+  color: '#A58D80',
+  letterSpacing: 1.3,
+  marginBottom: 2,
+},
+streakNumberRow: {
+  flexDirection: 'row',
+  alignItems: 'baseline',
+},
+
+streakNumberLarge: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 58,
+  color: '#421C00',
+  lineHeight: 64,
+  letterSpacing: -2,
+},
+
+streakDays: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 14,
+  color: '#8A6200',
+  marginLeft: 7,
+  letterSpacing: 1,
+},
+superStreakBadge: {
+  alignSelf: 'flex-start',
+  backgroundColor: '#421C00',
+  paddingHorizontal: 11,
+  paddingVertical: 5,
+  borderRadius: 15,
+  marginTop: 4,
+},
+
+superStreakText: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 9,
+  color: '#FFD54F',
+  letterSpacing: 0.4,
+},
+
+tripleFlameWrapper: {
+  width: 105,
+  height: 65,
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  marginRight: 10,
+},
+
+centerFlame: {
+  width: 100,
+  height: 100,
+  zIndex: 2,
+},
+
+sideFlame: {
+  width: 100,
+  height: 100,
+  position: 'absolute',
+  bottom: 4,
+  opacity: 0.65,
+},
+
+leftFlame: {
+  left: 100,
+  transform: [
+    { rotate: '-15deg' }
+  ],
+  zIndex: 1,
+},
+rightFlame: {
+  right: 0,
+  transform: [
+    { rotate: '15deg' }
+  ],
+  zIndex: 1,
+},
+weeklyProgressContainer: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 23,
+  paddingHorizontal: 13,
+  paddingVertical: 13,
+  borderWidth: 1,
+  borderColor: '#F3E9D8',
+},
+weeklyProgressTitle: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 9,
+  color: '#A58D80',
+  letterSpacing: 1.2,
+  marginBottom: 10,
+  textAlign: 'center',
+},
+largeWeekRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
+largeDayBox: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 35,
+},
+
+dayCircleLarge: {
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 5,
+},
+
+dayActive: {
+  backgroundColor: '#FFD54F',
+  borderWidth: 2,
+  borderColor: '#F4B400',
+  elevation: 3,
+  shadowColor: '#D89B00',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.15,
+  shadowRadius: 3,
+},
+
+dayInactive: {
+  backgroundColor: '#F5F1EA',
+  borderWidth: 1,
+  borderColor: '#E8DED0',
+},
+
+checkMarkLarge: {
+  fontSize: 15,
+  color: '#421C00',
+  fontFamily: 'Poppins-Bold',
+},
+
+lockIcon: {
+  fontSize: 9,
+  opacity: 0.35,
+},
+
+largeDayText: {
+  fontSize: 8.5,
+  fontFamily: 'Poppins-Bold',
+  color: '#806F65',
+  letterSpacing: 0.2,
+},
+
+// ========================================
+// CHATBOT PROMO
+// ========================================
+
+chatPromoWrapper: {
+  width: '100%',
+  marginTop: 8,
+  marginBottom: 25,
+  position: 'relative',
+},
+
+chatPromoCard: {
+  width: '100%',
+  minHeight: 220,
+  backgroundColor: '#FFF7D6',
+  borderRadius: 32,
+  borderWidth: 1.5,
+  borderColor: '#FFD45A',
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 18,
+  paddingVertical: 20,
+  overflow: 'hidden',
+  elevation: 7,
+  shadowColor: '#B97800',
+  shadowOffset: {
+    width: 0,
+    height: 6,
+  },
+  shadowOpacity: 0.13,
+  shadowRadius: 10,
+},
+
+// ========================================
+// BEE
+// ========================================
+
+chatBeeContainer: {
+  width: '40%',
+  height: 180,
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+},
+
+chatPromoBee: {
+  width: 130,
+  height: 175,
+  transform: [
+    { rotate: '-3deg' }
+  ],
+},
+
+// ========================================
+// BEE CHAT BUBBLE
+// ========================================
+
+beeChatBubble: {
+  position: 'absolute',
+  top: 5,
+  right: -2,
+  backgroundColor: '#FFFFFF',
+  paddingHorizontal: 10,
+  paddingVertical: 7,
+  borderRadius: 15,
+  borderWidth: 1,
+  borderColor: '#F2D98B',
+  elevation: 3,
+  shadowColor: '#8A6200',
+  shadowOffset: {
+    width: 0,
+    height: 2,
+  },
+  shadowOpacity: 0.12,
+  shadowRadius: 4,
+},
+
+beeChatText: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 9,
+  color: '#634F4B',
+},
+
+// ========================================
+// TEXT CONTENT
+// ========================================
+
+chatPromoContent: {
+  width: '60%',
+  paddingLeft: 5,
+  paddingRight: 5,
+},
+
+chatPromoLabel: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 9,
+  color: '#A47700',
+  letterSpacing: 1.1,
+  marginBottom: 3,
+},
+
+chatPromoTitle: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 23,
+  color: '#421C00',
+  lineHeight: 29,
+  marginBottom: 7,
+},
+
+chatPromoTitleAccent: {
+  color: '#F4B400',
+},
+
+chatPromoDescription: {
+  fontFamily: 'Poppins-Medium',
+  fontSize: 11.5,
+  color: '#75635B',
+  lineHeight: 17,
+  marginBottom: 13,
+},
+
+// ========================================
+// BUTTON
+// ========================================
+
+chatExploreBtn: {
+  alignSelf: 'flex-start',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#421C00',
+  paddingLeft: 15,
+  paddingRight: 11,
+  paddingVertical: 9,
+  borderRadius: 18,
+  elevation: 3,
+  shadowColor: '#421C00',
+  shadowOffset: {
+    width: 0,
+    height: 3,
+  },
+  shadowOpacity: 0.18,
+  shadowRadius: 4,
+},
+
+chatExploreBtnText: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 11,
+  color: '#FFD54F',
+},
+
+chatExploreArrow: {
+  fontFamily: 'Poppins-Bold',
+  fontSize: 17,
+  color: '#FFD54F',
+  marginLeft: 7,
+  marginTop: -2,
+},
+
+// ========================================
+// FLOATING BUBBLES
+// ========================================
+
+chatBubbleSmall: {
+  position: 'absolute',
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  backgroundColor: '#FFD54F',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 5,
+  elevation: 4,
+  shadowColor: '#B97800',
+  shadowOffset: {
+    width: 0,
+    height: 3,
+  },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+},
+
+chatBubbleOne: {
+  right: 15,
+  top: -13,
+},
+
+chatBubbleTwo: {
+  right: 55,
+  bottom: -10,
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  backgroundColor: '#FFF0B3',
+},
+
+chatBubbleEmoji: {
+  fontSize: 14,
+},
 });

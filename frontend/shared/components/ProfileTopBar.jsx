@@ -74,13 +74,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   backBtn: {
-    width: 40,
-    height: 40,
+    width: 64,
+    height: 64,
+
     justifyContent: 'center',
+    alignItems: 'center',
+
+    backgroundColor: 'transparent',
+
+    // iOS shadow
+    shadowColor: '#421C00',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+
+    // Android shadow
+    elevation: 5,
   },
+
   backIcon: {
-    width: 24,
-    height: 24,
+    width: 54,
+    height: 54,
+
+    resizeMode: 'contain',
   },
 });
 

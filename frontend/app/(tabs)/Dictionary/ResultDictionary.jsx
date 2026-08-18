@@ -1,14 +1,19 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Image,  Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
+import {
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 import { supabase } from '../../../shared/lib/supabase';
-import BottomNav from '../../../shared/components/BottomNav';
-import RefreshContainer from '../../../shared/components/RefreshContainer'; // ✅ IMPORT REUSABLE REFRESH CONTAINER
+import RefreshContainer from '../../../shared/components/RefreshContainer';
 import ProfileTopBar from '../../../shared/components/ProfileTopBar';
 import { styles } from '../../../shared/styles/ResultDictionaryStyles';
 import FeatureGateModal from '../../../shared/components/FeatureGateModal';
@@ -17,28 +22,39 @@ import { endpoints } from '../../../shared/config/apiConfig';
 const SAVE_API_URL = endpoints.DICTIONARY_SAVE;
 const CHECK_SAVED_API_URL = endpoints.DICTIONARY_CHECK_SAVED;
 
-
 export default function ResultDictionary() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { 
-    id, wordTerm, partOfSpeech, definition, languageId,
-    exampleUsage, phoneticTranscription, 
-    translation1, translation2, 
-    usage1, usage2, translationDef1, translationDef2
+
+  const {
+    id,
+    wordTerm,
+    partOfSpeech,
+    definition,
+    languageId,
+    exampleUsage,
+    phoneticTranscription,
+    translation1,
+    translation2,
+    usage1,
+    usage2,
+    translationDef1,
+    translationDef2,
   } = params;
 
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [refreshing, setRefreshing] = useState(false); // ✅ STATE FOR PULL-TO-REFRESH
-
+  const [refreshing, setRefreshing] = useState(false);
   const [isGuestMode, setIsGuestMode] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
-  
   const [isConnected, setIsConnected] = useState(true);
+
   const canUseOnlineFeatures = isConnected && !isGuestMode;
 
-  // Listen for network changes
+  // --------------------------------------------------
+  // NETWORK
+  // --------------------------------------------------
+
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       const connected = state.isConnected ?? false;
@@ -58,56 +74,83 @@ export default function ResultDictionary() {
     checkGuestMode();
   }, []);
 
-  // Extraction handler to verify initial bookmark state
-  const verifyBookmarkStatus = async () => {
-    if (!id || isGuestMode || !isConnected) return;
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(`${CHECK_SAVED_API_URL}/${id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-      if (response.ok && result.success) {
-        setIsBookmarked(result.isBookmarked); 
-      }
-    } catch (error) {
-      console.error("Failed to fetch initial word bookmark state:", error);
-    }
-  };
-
-  // Verify bookmark status on mount
-  useEffect(() => {
-    verifyBookmarkStatus();
-  }, [id, isGuestMode, isConnected]);
-
-  // ✅ PULL-TO-REFRESH LIFECYCLE HANDLER
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await checkGuestMode();
-    await verifyBookmarkStatus(); // Re-checks database if word state has been saved/altered
-    setRefreshing(false);
-  }, [id, isGuestMode, isConnected]);
+  // --------------------------------------------------
+  // GUEST MODE
+  // --------------------------------------------------
 
   const checkGuestMode = async () => {
     try {
       const localGuestMode = await AsyncStorage.getItem('@guest_mode');
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const role = await AsyncStorage.getItem('@user_role');
 
-      const isGuest = !session || role === 'guest' || localGuestMode !== null;
+      const isGuest =
+        !session || role === 'guest' || localGuestMode !== null;
+
       setIsGuestMode(isGuest);
     } catch (error) {
       setIsGuestMode(true);
     }
   };
+
+  // --------------------------------------------------
+  // BOOKMARK STATUS
+  // --------------------------------------------------
+
+  const verifyBookmarkStatus = async () => {
+    if (!id || isGuestMode || !isConnected) return;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) return;
+
+      const response = await fetch(`${CHECK_SAVED_API_URL}/${id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setIsBookmarked(result.isBookmarked);
+      }
+    } catch (error) {
+      console.error(
+        'Failed to fetch initial word bookmark state:',
+        error
+      );
+    }
+  };
+
+  useEffect(() => {
+    verifyBookmarkStatus();
+  }, [id, isGuestMode, isConnected]);
+
+  // --------------------------------------------------
+  // REFRESH
+  // --------------------------------------------------
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+
+    await checkGuestMode();
+    await verifyBookmarkStatus();
+
+    setRefreshing(false);
+  }, [id, isGuestMode, isConnected]);
+
+  // --------------------------------------------------
+  // LANGUAGE DATA
+  // --------------------------------------------------
 
   const currentLangId = parseInt(languageId, 10);
 
@@ -119,237 +162,329 @@ export default function ResultDictionary() {
   if (currentLangId === 3) {
     cebuanoTerm = wordTerm;
     cebuanoDef = definition || 'Walay kahulugan.';
+
     tagalogTerm = translation1 || '---';
     tagalogDef = translationDef1 || 'Walang kahulugan.';
   } else {
     tagalogTerm = wordTerm;
     tagalogDef = definition || 'Walang kahulugan.';
+
     cebuanoTerm = translation2 || '---';
     cebuanoDef = translationDef2 || 'Walay kahulugan.';
   }
 
+  // --------------------------------------------------
+  // SAVE WORD
+  // --------------------------------------------------
+
   const handleSaveWord = async () => {
     if (!id) {
-      Alert.alert("Error", "ID is missing.");
+      Alert.alert('Error', 'ID is missing.');
       return;
     }
+
     if (!isConnected) {
-      Alert.alert("Network Offline", "You need an internet connection to save words.");
+      Alert.alert(
+        'Network Offline',
+        'You need an internet connection to save words.'
+      );
       return;
     }
 
     setIsSaving(true);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session) {
-        Alert.alert("Error", "Please login to save words.");
+        Alert.alert('Error', 'Please login to save words.');
         return;
       }
-      
+
       const response = await fetch(SAVE_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ dictionary_id: parseInt(id) }),
+        body: JSON.stringify({
+          dictionary_id: parseInt(id),
+        }),
       });
 
       const result = await response.json();
+
       if (response.ok && result.success) {
-        setIsBookmarked(true); 
-        Alert.alert("Success", `"${wordTerm}" saved.`);
+        setIsBookmarked(true);
+
+        Alert.alert(
+          'Saved!',
+          `"${wordTerm}" has been added to your saved words.`
+        );
       } else {
-        throw new Error(result.message || "Failed to save.");
+        throw new Error(result.message || 'Failed to save.');
       }
     } catch (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert('Error', error.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      
+
+      {/* OFFLINE NOTICE */}
       {!isConnected && (
-        <View style={{ backgroundColor: '#D32F2F', padding: 5, alignItems: 'center' }}>
-          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>
-            OFFLINE MODE: ONLINE ACTIONS ARE TEMPORARILY DISABLED
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>
+            OFFLINE MODE • ONLINE ACTIONS DISABLED
           </Text>
         </View>
       )}
 
-      {/* HEADER SECTION */}
+      {/* HEADER */}
       <ProfileTopBar title="Dictionary" />
 
-      {/* ✅ REPLACED SCROLLVIEW WITH REFRESHCONTAINER */}
-      <RefreshContainer 
-        refreshing={refreshing} 
-        onRefresh={handleRefresh} 
+      <RefreshContainer
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         contentContainerStyle={styles.scrollPadding}
       >
-        {/* HERO CARD */}
-        <View style={styles.mainWordCard}>
-          <Text style={styles.heroWord}>{wordTerm}</Text>
-          
+
+        {/* =========================
+            WORD HERO
+        ========================== */}
+        <View style={styles.heroCard}>
+
+          <Text style={styles.heroLabel}>
+            DICTIONARY ENTRY
+          </Text>
+
+          <Text
+            style={styles.heroWord}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+          >
+            {wordTerm}
+          </Text>
+
           {phoneticTranscription ? (
-            <Text style={styles.heroPronounce}>//{phoneticTranscription}//</Text>
+            <Text style={styles.heroPronounce}>
+              /{phoneticTranscription}/
+            </Text>
           ) : null}
 
           {partOfSpeech ? (
-            <View style={{
-              backgroundColor: '#FFD54F',
-              paddingHorizontal: 14,
-              paddingVertical: 4,
-              borderRadius: 20,
-              alignSelf: 'center',
-              marginTop: 8,
-              borderWidth: 1,
-              borderColor: '#FFC107',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.1,
-              shadowRadius: 1,
-              elevation: 1
-            }}>
-              <Text style={{ 
-                fontSize: 12, 
-                fontWeight: '800', 
-                color: '#421C00', 
-                textTransform: 'uppercase',
-                letterSpacing: 0.5
-              }}>
+            <View style={styles.partOfSpeechBadge}>
+              <Text style={styles.partOfSpeechText}>
                 {partOfSpeech}
               </Text>
             </View>
           ) : null}
+
         </View>
 
-        {/* DEFINITIONS LIST */}
-        <View style={{ paddingHorizontal: 20, marginTop: 15 }}>
-          <Text style={{ fontSize: 16, fontWeight: '800', color: '#421C00', marginBottom: 12 }}>
-            Definitions & Meanings:
+        {/* =========================
+            DEFINITIONS
+        ========================== */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Definitions & Meanings
           </Text>
 
-          {/* CEBUANO CARD */}
-          <View style={{
-            backgroundColor: currentLangId === 3 ? '#FFFDE7' : '#FFFFFF',
-            padding: 14,
-            borderRadius: 12,
-            borderWidth: 2,
-            borderColor: currentLangId === 3 ? '#FFD54F' : '#EFEBE9',
-            marginBottom: 10,
-          }}>
-            <Text style={{ fontSize: 11, fontWeight: '900', color: '#795548', textTransform: 'uppercase', marginBottom: 2 }}>
-              Cebuano Meaning {currentLangId === 3 ? '• (Current Term Language)' : ''}
-            </Text>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#421C00' }}>
+          {/* CEBUANO */}
+          <View
+            style={[
+              styles.languageCard,
+              currentLangId === 3 && styles.currentLanguageCard,
+            ]}
+          >
+            <View style={styles.languageHeaderRow}>
+              <Text style={styles.languageLabel}>
+                CEBUANO
+              </Text>
+
+              {currentLangId === 3 && (
+                <View style={styles.currentBadge}>
+                  <Text style={styles.currentBadgeText}>
+                    CURRENT
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.languageTerm}>
               {cebuanoTerm}
             </Text>
-            <Text style={{ fontSize: 13, color: '#5D4037', marginTop: 4, fontStyle: 'italic' }}>
+
+            <Text style={styles.languageDefinition}>
               {cebuanoDef}
             </Text>
           </View>
 
-          {/* TAGALOG CARD */}
-          <View style={{
-            backgroundColor: currentLangId !== 3 ? '#FFFDE7' : '#FFFFFF',
-            padding: 14,
-            borderRadius: 12,
-            borderWidth: 2,
-            borderColor: currentLangId !== 3 ? '#FFD54F' : '#EFEBE9',
-            marginBottom: 10,
-          }}>
-            <Text style={{ fontSize: 11, fontWeight: '900', color: '#795548', textTransform: 'uppercase', marginBottom: 2 }}>
-              Tagalog Meaning {currentLangId !== 3 ? '• (Current Term Language)' : ''}
-            </Text>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#421C00' }}>
+          {/* TAGALOG */}
+          <View
+            style={[
+              styles.languageCard,
+              currentLangId !== 3 && styles.currentLanguageCard,
+            ]}
+          >
+            <View style={styles.languageHeaderRow}>
+              <Text style={styles.languageLabel}>
+                TAGALOG
+              </Text>
+
+              {currentLangId !== 3 && (
+                <View style={styles.currentBadge}>
+                  <Text style={styles.currentBadgeText}>
+                    CURRENT
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.languageTerm}>
               {tagalogTerm}
             </Text>
-            <Text style={{ fontSize: 13, color: '#5D4037', marginTop: 4 }}>
+
+            <Text style={styles.languageDefinition}>
               {tagalogDef}
             </Text>
           </View>
 
-          {/* ENGLISH CARD */}
-          <View style={{
-            backgroundColor: '#FFFFFF',
-            padding: 14,
-            borderRadius: 12,
-            borderWidth: 2,
-            borderColor: '#EFEBE9',
-            marginBottom: 10,
-          }}>
-            <Text style={{ fontSize: 11, fontWeight: '900', color: '#795548', textTransform: 'uppercase', marginBottom: 2 }}>
-              English Meaning
+          {/* ENGLISH */}
+          <View style={styles.languageCard}>
+            <View style={styles.languageHeaderRow}>
+              <Text style={styles.languageLabel}>
+                ENGLISH
+              </Text>
+            </View>
+
+            <Text style={styles.languageTerm}>
+              {wordTerm}
             </Text>
-            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#421C00' }}>
-              {wordTerm} (English Context)
-            </Text>
-            <Text style={{ fontSize: 13, color: '#5D4037', marginTop: 4 }}>
-              {currentLangId === 3 ? translationDef1 || 'No English translation available.' : translationDef2 || 'No English translation available.'}
+
+            <Text style={styles.languageDefinition}>
+              {currentLangId === 3
+                ? translationDef1 || 'No English translation available.'
+                : translationDef2 || 'No English translation available.'}
             </Text>
           </View>
         </View>
 
-        {/* USAGE EXAMPLES SECTION */}
-        <View style={[styles.exampleSection, { marginTop: 25 }]}>
-          <Text style={[styles.exampleTitle, { fontSize: 18, fontWeight: 'bold', color: '#421C00' }]}>Usage Examples:</Text>
-          <View style={styles.exampleContent}>
-            <View style={{ marginBottom: 12 }}>
-                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{wordTerm}:</Text>
-                <Text style={styles.exampleLine}>{exampleUsage || 'No example available.'}</Text>
+        {/* =========================
+            USAGE EXAMPLES
+        ========================== */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Usage Examples
+          </Text>
+
+          <View style={styles.exampleCard}>
+
+            <View style={styles.exampleItem}>
+              <Text style={styles.exampleLanguage}>
+                {wordTerm}
+              </Text>
+
+              <Text style={styles.exampleText}>
+                {exampleUsage || 'No example available.'}
+              </Text>
             </View>
+
             {translation1 ? (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation1}:</Text>
-                <Text style={styles.exampleLine}>{usage1 || 'No example available.'}</Text>
+              <View style={styles.exampleItem}>
+                <Text style={styles.exampleLanguage}>
+                  {translation1}
+                </Text>
+
+                <Text style={styles.exampleText}>
+                  {usage1 || 'No example available.'}
+                </Text>
               </View>
             ) : null}
+
             {translation2 ? (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={[styles.boldLabel, { marginBottom: 2 }]}>{translation2}:</Text>
-                <Text style={styles.exampleLine}>{usage2 || 'No example available.'}</Text>
+              <View style={styles.exampleItem}>
+                <Text style={styles.exampleLanguage}>
+                  {translation2}
+                </Text>
+
+                <Text style={styles.exampleText}>
+                  {usage2 || 'No example available.'}
+                </Text>
               </View>
             ) : null}
+
           </View>
         </View>
+
+        {/* EXTRA SPACE FOR SAVE BUTTON */}
+        <View style={{ height: 100 }} />
+
       </RefreshContainer>
 
-      {/* SAVE BUTTON CONTAINER */}
-      <View style={{ paddingBottom: 20, alignItems: 'center', backgroundColor: '#FFFFFF' }}>
-          <TouchableOpacity 
-            style={[
-              styles.floatingSaveBtn, 
-              isBookmarked && styles.activeSaveBtn,
-              (!isConnected && !isBookmarked) && { backgroundColor: '#A0A0A0' } 
-            ]} 
-            onPress={() => {
-              if (!canUseOnlineFeatures) {
-                setShowFeatureModal(true);
-                return;
-              }
-              handleSaveWord();
-            }}
-            disabled={isSaving || isBookmarked}
-          >
-            {isSaving ? (
-                <ActivityIndicator color="#FFF" />
-            ) : (
-                <>
-                    <Image source={require('../../../assets/icons/star.png')} style={[styles.starIcon, { tintColor: '#FFFFFF' }]} />
-                    <Text style={styles.bookmarkText}>
-                        {isBookmarked ? 'SAVED' : 'SAVE WORD'}
-                    </Text>
-                </>
-            )}
-          </TouchableOpacity>
+      {/* =========================
+          SAVE WORD BUTTON
+      ========================== */}
+      <View style={styles.saveButtonWrapper}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            isBookmarked && styles.savedButton,
+            !isConnected &&
+            !isBookmarked &&
+            styles.disabledSaveButton,
+          ]}
+          onPress={() => {
+            if (!canUseOnlineFeatures) {
+              setShowFeatureModal(true);
+              return;
+            }
+
+            handleSaveWord();
+          }}
+          disabled={isSaving || isBookmarked}
+        >
+          {isSaving ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Image
+                source={require('../../../assets/icons/star.png')}
+                style={[
+                  styles.starIcon,
+                  isBookmarked && styles.savedStarIcon,
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  isBookmarked && styles.savedButtonText,
+                ]}
+              >
+                {isBookmarked ? 'SAVED' : 'SAVE WORD'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
-      <FeatureGateModal visible={showFeatureModal} onClose={() => setShowFeatureModal(false)} />
-      <BottomNav activeTab="Dictionary" />
+      <FeatureGateModal
+        visible={showFeatureModal}
+        onClose={() => setShowFeatureModal(false)}
+      />
+
+      {/* BottomNav intentionally removed */}
     </View>
   );
 }
