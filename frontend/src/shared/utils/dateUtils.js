@@ -1,4 +1,23 @@
 /**
+ * Formats a Date object into a YYYY-MM-DD string for API submission.
+ *
+ * @param {Date} dateObj
+ * @returns {string} e.g. "2003-07-15"
+ */
+export const formatBirthDate = (dateObj) =>
+  dateObj instanceof Date ? dateObj.toISOString().split('T')[0] : '';
+
+/**
+ * Formats an ISO date string into a human-readable local date.
+ * Used for displaying activity timestamps in lists.
+ *
+ * @param {string} isoString - ISO 8601 date string from backend
+ * @returns {string} e.g. "8/20/2026"
+ */
+export const formatDateDisplay = (isoString) =>
+  isoString ? new Date(isoString).toLocaleDateString() : '';
+
+/**
  * Evaluates the local device time and returns the appropriate Cebuano greeting.
  * 
  * @returns {string} The greeting string

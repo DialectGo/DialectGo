@@ -22,7 +22,7 @@ const ProfileTopBar = ({ title = "Profile" }) => {
               activeOpacity={0.7}
             >
                <Image 
-                source={require('../../assets/icons/backArrow.png')} 
+                source={require('../../assets/icons/nav/backArrow.png')} 
                 style={styles.backIcon} 
                 resizeMode="contain"
                />

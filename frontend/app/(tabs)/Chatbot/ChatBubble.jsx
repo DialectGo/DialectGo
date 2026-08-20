@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { Text, Surface } from 'react-native-paper';
-import learnIcon from '../../../assets/icons/chatbotIcon1.png'; 
+import learnIcon from '../../../assets/icons/actions/chatbotIcon1.png'; 
 
 export default function ChatBubble({ message }) {
   const isBot = message.sender === 'bot';

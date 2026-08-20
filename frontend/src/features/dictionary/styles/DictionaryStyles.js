@@ -1,9 +1,11 @@
 import { StyleSheet } from 'react-native';
+import { colors } from '../../../shared/theme/colorPalette';
+import { fonts } from '../../../shared/theme/typography';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
 
   listContent: {
@@ -36,16 +38,16 @@ export const styles = StyleSheet.create({
 
   headerTitleYellow: {
     fontSize: 24,
-    fontFamily: 'Poppins-Bold',
-    color: '#FFD54F',
+    fontFamily: fonts.bold,
+    color: colors.primary,
     marginBottom: -10,
     letterSpacing: 0.5,
   },
 
   headerTitleBlack: {
     fontSize: 36,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
+    fontFamily: fonts.bold,
+    color: colors.accent,
     fontWeight: '900',
   },
 
@@ -81,7 +83,7 @@ iconCircle: {
   // ==========================================
 
   searchContainer: {
-  backgroundColor: '#FFD54F',
+  backgroundColor: colors.primary,
 
   borderRadius: 30,
   height: 60,
@@ -98,14 +100,14 @@ iconCircle: {
     flex: 1,
 
     fontSize: 17,
-    fontFamily: 'Poppins-Medium',
-    color: '#421C00',
+    fontFamily: fonts.medium,
+    color: colors.accent,
   },
 
   searchIcon: {
     width: 20,
     height: 20,
-    tintColor: '#421C00',
+    tintColor: colors.accent,
   },
 
   // ==========================================
@@ -119,7 +121,7 @@ iconCircle: {
 
     paddingVertical: 20,
 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
 
     borderBottomWidth: 1,
     borderBottomColor: '#F0ECE8',
@@ -127,13 +129,13 @@ iconCircle: {
 
   entryWord: {
     fontSize: 21,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     color: '#2D1606',
   },
 
   entryTranslation: {
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fonts.regular,
     color: '#8D817A',
 
     marginTop: 2,
@@ -152,13 +154,13 @@ iconCircle: {
     alignItems: 'center',
 
     borderWidth: 1,
-    borderColor: '#FFD54F',
+    borderColor: colors.primary,
   },
 
   tagText: {
     fontSize: 11,
-    fontFamily: 'Poppins-Bold',
-    color: '#421C00',
+    fontFamily: fonts.bold,
+    color: colors.accent,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -174,7 +176,7 @@ filterSection: {
 
 filterLabel: {
   fontSize: 12,
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   color: '#8D817A',
   letterSpacing: 0.8,
   marginBottom: 9,
@@ -207,19 +209,19 @@ languageFilter: {
 },
 
 activeLanguageFilter: {
-  backgroundColor: '#FFD54F',
-  borderColor: '#FFD54F',
+  backgroundColor: colors.primary,
+  borderColor: colors.primary,
 },
 
 languageFilterText: {
   fontSize: 14,
-  fontFamily: 'Poppins-Medium',
+  fontFamily: fonts.medium,
   color: '#666666',
 },
 
 activeLanguageFilterText: {
-  fontFamily: 'Poppins-Bold',
-  color: '#421C00',
+  fontFamily: fonts.bold,
+  color: colors.accent,
 },
 
 // ==========================================
@@ -254,13 +256,13 @@ activeAlphabetButton: {
 
 alphabetText: {
   fontSize: 15,
-  fontFamily: 'Poppins-Medium',
+  fontFamily: fonts.medium,
   color: '#4F3422',
 },
 
 activeAlphabetText: {
-  color: '#FFFFFF',
-  fontFamily: 'Poppins-Bold',
+  color: colors.background,
+  fontFamily: fonts.bold,
 },
 });
 

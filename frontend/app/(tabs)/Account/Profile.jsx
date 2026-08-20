@@ -20,6 +20,7 @@ import RefreshContainer from '../../../src/shared/components/RefreshContainer'; 
 import { styles } from '../../../src/features/account/styles/ProfileStyles';
 import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../../src/shared/api/client';
+import { formatFullName } from '../../../src/shared/utils/stringUtils';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
@@ -204,7 +205,7 @@ export default function Profile({ onNavigate }) {
           <View style={styles.avatarWrapper}>
             <Image source={userAvatar} style={styles.avatarImg} />
           </View>
-          <Text style={styles.userName}>{`${firstName} ${lastName}`.trim()}</Text>
+          <Text style={styles.userName}>{formatFullName(firstName, lastName)}</Text>
           <Text style={styles.streakText}>
             {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
           </Text>
@@ -213,18 +214,18 @@ export default function Profile({ onNavigate }) {
         <View style={styles.settingsContainer}>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/AccountInformation')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profileIcon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/profileIcon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Account Information</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Activities')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/activities_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/activities_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>My Activities</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
@@ -232,28 +233,28 @@ export default function Profile({ onNavigate }) {
               <Image source={require('../../../assets/images/beefire.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Streaks</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/Settings')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/settings_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/settings_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Settings</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/About')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/info_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/info_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>About DialectGo</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/logout_icon.png')} style={styles.logoutIcon} />
+              <Image source={require('../../../assets/icons/actions/logout_icon.png')} style={styles.logoutIcon} />
               <Text style={styles.logoutText}>{isGuest ? 'Exit Guest Mode' : 'Log out'}</Text>
             </View>
           </TouchableOpacity>

@@ -49,7 +49,7 @@ export default function HomeSkeleton({ width = '100%', height = 20, borderRadius
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#E5E7EB', // Tailwind gray-200
+    backgroundColor: '#E5E7EB', // colors.divider — inlined to prevent Hermes cold-boot crash
     overflow: 'hidden',
   },
 });

@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../../src/shared/api/supabase';
-import { ACTIVITIES_API_BASE } from '../../../src/shared/api/client';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
+import { formatDateDisplay } from '../../../src/shared/utils/dateUtils';
+import { fetchActivities as fetchActivitiesService } from '../../../src/shared/services/activitiesService';
 
 const TABS = ['Posts', 'Translations', 'Comments', 'Bookmarks'];
 
@@ -26,20 +26,8 @@ export default function Activities() {
 
   const fetchActivities = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const response = await fetch(ACTIVITIES_API_BASE, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const json = await response.json();
-      if (json.success) {
-        setActivities({
-          posts: json.data.posts || [],
-          translations: json.data.translations || [],
-          comments: json.data.comments || [],
-          bookmarks: json.data.bookmarks || [],
-        });
-      }
+      const data = await fetchActivitiesService();
+      setActivities(data);
     } catch (error) {
       console.error('[Activities] Fetch error:', error);
     } finally {
@@ -59,7 +47,7 @@ export default function Activities() {
       </View>
       <Text style={styles.cardSubtitle}>{item.translation}</Text>
       <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+        <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
         <Text style={[styles.statusText, item.status === 'verified' && { color: '#059669' }]}>
           {item.status.toUpperCase()}
         </Text>
@@ -75,7 +63,7 @@ export default function Activities() {
       </View>
       <Text style={styles.cardSubtitle}>{item.user_translation}</Text>
       <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+        <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
         <Text style={[styles.statusText, item.status === 'approved' && { color: '#059669' }]}>
           {item.status.toUpperCase()}
         </Text>
@@ -90,7 +78,7 @@ export default function Activities() {
         <Text style={styles.cardTitle}>On: {item.dialect_submissions?.source_term}</Text>
       </View>
       <Text style={styles.cardSubtitle}>{item.content}</Text>
-      <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+      <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
     </TouchableOpacity>
   );
 

@@ -16,6 +16,7 @@ import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
 import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
+import { maskEmail } from '../../src/shared/utils/stringUtils';
 
 // Supabase standard OTP is 6 digits. 
 const OTP_LENGTH = 8; 
@@ -64,11 +65,6 @@ export default function VerifyEmail() {
     }
   };
 
-  const maskEmail = (email) => {
-    if (!email) return 'your email';
-    const [name, domain] = email.split('@');
-    return `${name[0]}******@${domain}`;
-  };
 
   const handleResendCode = async () => {
     setLoading(true);

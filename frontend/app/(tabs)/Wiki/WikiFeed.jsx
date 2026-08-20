@@ -21,7 +21,7 @@ import TopBar from '../../../src/components/TopBar';
 import BottomNav from '../../../src/components/BottomNav';
 import SubmitTermModal from '../../../src/features/wiki/components/SubmitTermModal';
 import GlobalWikiAssistantModal from '../../../src/features/wiki/components/GlobalWikiAssistantModal';
-import { WIKI_API_BASE } from '../../../src/shared/api/client';
+import { fetchSubmissions as fetchSubmissionsService, voteSubmission } from '../../../src/shared/services/wikiService';
 
 const REGIONS = [
   'All',
@@ -81,75 +81,32 @@ export default function WikiFeed() {
   const fetchSubmissions = useCallback(
     async (pageNum = 1, append = false) => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session) return;
-
-        const params = new URLSearchParams({
-          page: String(pageNum),
-          limit: '20',
+        const filters = {
           sort: activeSort,
-        });
+          region: activeRegion,
+          category: activeCategory,
+          type: activeType,
+          search,
+        };
 
-        if (activeRegion !== 'All') {
-          params.append('region', activeRegion);
+        const { data, pagination } = await fetchSubmissionsService(pageNum, filters);
+
+        if (append) {
+          setSubmissions(prev => [...prev, ...data]);
+        } else {
+          setSubmissions(data);
         }
 
-        if (activeCategory !== 'All') {
-          params.append('category', activeCategory);
-        }
-
-        if (activeType !== 'All') {
-          params.append('type', activeType);
-        }
-
-        if (search.trim()) {
-          params.append('search', search.trim());
-        }
-
-        const response = await fetch(
-          `${WIKI_API_BASE}?${params}`,
-          {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          }
-        );
-
-        const json = await response.json();
-
-        if (json.success) {
-          if (append) {
-            setSubmissions(prev => [
-              ...prev,
-              ...json.data,
-            ]);
-          } else {
-            setSubmissions(json.data);
-          }
-
-          setTotal(json.pagination.total);
-          setHasMore(json.data.length === 20);
-        }
+        setTotal(pagination.total);
+        setHasMore(data.length === 20);
       } catch (err) {
-        console.error(
-          '[WikiFeed] Fetch error:',
-          err
-        );
+        console.error('[WikiFeed] Fetch error:', err);
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [
-      activeRegion,
-      activeCategory,
-      activeSort,
-      activeType,
-      search,
-    ]
+    [activeRegion, activeCategory, activeSort, activeType, search]
   );
 
   // ======================================================
@@ -210,60 +167,25 @@ export default function WikiFeed() {
   // VOTE
   // ======================================================
 
-  const handleVote = async (
-    submissionId,
-    voteType
-  ) => {
+  const handleVote = async (submissionId, voteType) => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const result = await voteSubmission(submissionId, voteType);
 
-      if (!session) return;
-
-      const response = await fetch(
-        `${WIKI_API_BASE}/${submissionId}/vote`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            vote_type: voteType,
-          }),
-        }
-      );
-
-      const json = await response.json();
-
-      if (json.success) {
+      if (result) {
         setSubmissions(prev =>
           prev.map(s =>
             s.id === submissionId
-              ? {
-                  ...s,
-                  upvotes: json.upvotes,
-                  status: json.promoted
-                    ? 'verified'
-                    : s.status,
-                }
+              ? { ...s, upvotes: result.upvotes, status: result.promoted ? 'verified' : s.status }
               : s
           )
         );
 
-        if (json.promoted) {
-          Alert.alert(
-            '🎉 Verified!',
-            'This term has been added to the translation corpus!'
-          );
+        if (result.promoted) {
+          Alert.alert('🎉 Verified!', 'This term has been added to the translation corpus!');
         }
       }
     } catch (err) {
-      console.error(
-        '[WikiFeed] Vote error:',
-        err
-      );
+      console.error('[WikiFeed] Vote error:', err);
     }
   };
 
@@ -849,7 +771,7 @@ export default function WikiFeed() {
   }
 >
   <Image
-    source={require('../../../assets/icons/add_icon.png')}
+    source={require('../../../assets/icons/actions/add_icon.png')}
     style={styles.fabIcon}
     resizeMode="contain"
   />

@@ -26,7 +26,7 @@ export default function Settings() {
           {subtitle && <Text style={styles.subtitleText}>{subtitle}</Text>}
         </View>
       </View>
-      <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+      <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
     </TouchableOpacity>
   );
 
@@ -45,19 +45,19 @@ export default function Settings() {
           
           <View style={styles.menuCard}>
             <SettingItem 
-              icon={require('../../../assets/icons/help_icon.png')} 
+              icon={require('../../../assets/icons/profile/help_icon.png')} 
               title="How to Use" 
               subtitle="Learn the basics of DialectGo"
               onPress={() => handlePress('guide')}
             />
             <SettingItem 
-              icon={require('../../../assets/icons/terms_icon.png')} 
+              icon={require('../../../assets/icons/profile/terms_icon.png')} 
               title="Terms and Conditions" 
               subtitle="Usage rules and agreements"
               onPress={() => handlePress('terms')}
             />
             <SettingItem 
-              icon={require('../../../assets/icons/privacy_icon.png')} 
+              icon={require('../../../assets/icons/profile/privacy_icon.png')} 
               title="Privacy Policy" 
               subtitle="How we protect your data"
               onPress={() => handlePress('privacy')}

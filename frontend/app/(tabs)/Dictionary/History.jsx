@@ -165,7 +165,7 @@ export default function History() {
             </Text>
           </View>
           <Image 
-            source={require('../../../assets/icons/back_arrow.png')} 
+            source={require('../../../assets/icons/nav/back_arrow.png')} 
             style={styles.arrowIcon} 
           />
         </TouchableOpacity>
@@ -197,7 +197,7 @@ export default function History() {
             ) : (
               <View style={styles.emptyState}>
                 <Image 
-                  source={require('../../../assets/icons/back_arrow.png')} 
+                  source={require('../../../assets/icons/nav/back_arrow.png')} 
                   style={[styles.emptyIcon, { opacity: 0.2 }]} 
                 />
                 <Text style={styles.emptyText}>No recent searches yet.</Text>

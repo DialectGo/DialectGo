@@ -459,7 +459,7 @@ export default function ResultDictionary() {
           ) : (
             <>
               <Image
-                source={require('../../../assets/icons/star.png')}
+                source={require('../../../assets/icons/status/star.png')}
                 style={[
                   styles.starIcon,
                   isBookmarked && styles.savedStarIcon,

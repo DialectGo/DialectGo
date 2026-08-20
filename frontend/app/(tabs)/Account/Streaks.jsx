@@ -5,33 +5,29 @@ import {
 } from 'react-native';
 import { styles } from '../../../src/features/account/styles/StreakStyles';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../../src/shared/api/supabase';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
-import { endpoints } from '../../../src/shared/api/client';
+import { getWeeklyStatus } from '../../../src/shared/utils/dateUtils';
+import { fetchStreak } from '../../../src/shared/services/streakService';
 
 export default function Streaks() { 
   const router = useRouter(); 
   const [loading, setLoading] = useState(true);
   const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
 
-  useEffect(() => {
-    fetchStreak();
-  }, []);
-
-  const fetchStreak = async () => {
+  const loadStreak = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(endpoints.USER_STREAK, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      const result = await response.json();
-      if (result.success) setStreakData(result.data);
+      const data = await fetchStreak();
+      if (data) setStreakData(data);
     } catch (error) {
-      console.error("Fetch Streak Error:", error);
+      console.error('Fetch Streak Error:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadStreak();
+  }, []);
 
   const currentStreak = streakData.streak;
   const currentWeekNum = Math.floor(currentStreak / 7) + 1;
@@ -44,30 +40,7 @@ export default function Streaks() {
    * 3. Loop 7 times to create the YYYY-MM-DD string for each day of this week.
    * 4. Check if that string exists in the activeDays array from the backend.
    */
-  const getWeeklyStatus = () => {
-    const status = [false, false, false, false, false, false, false];
-    const today = new Date();
-    
-    // Find Sunday of the current week
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
-    sunday.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < 7; i++) {
-      const tempDate = new Date(sunday);
-      tempDate.setDate(sunday.getDate() + i);
-      
-      // Format as YYYY-MM-DD to match database/backend format
-      const dateString = tempDate.toISOString().split('T')[0];
-      
-      if (streakData.activeDays && streakData.activeDays.includes(dateString)) {
-        status[i] = true;
-      }
-    }
-    return status;
-  };
-
-  const weeklyStatus = getWeeklyStatus();
+  const weeklyStatus = getWeeklyStatus(streakData.activeDays);
 
   if (loading) return (
     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -101,7 +74,7 @@ export default function Streaks() {
                     weeklyStatus[index] ? styles.activeDayCircle : styles.inactiveDayCircle
                   ]}>
                     {weeklyStatus[index] && (
-                      <Image source={require('../../../assets/icons/check_icon.png')} style={styles.checkIcon} />
+                      <Image source={require('../../../assets/icons/status/check_icon.png')} style={styles.checkIcon} />
                     )}
                   </View>
                   <Text style={styles.dayLabel}>{day}</Text>

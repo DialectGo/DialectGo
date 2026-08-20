@@ -42,66 +42,64 @@ export default function WordOfDayOverlay({ visible, onClose, wordData }) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // colors.overlay
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   wotdModalCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF', // colors.white
     borderRadius: 20,
     padding: 25,
     width: '100%',
     maxWidth: 400,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   wotdModalTitle: {
-    fontFamily: 'Poppins-Bold',
     fontSize: 24,
-    color: '#421C00',
+    color: '#421C00', // colors.accent
     textAlign: 'center',
     marginBottom: 10,
+    fontWeight: '700',
   },
   wotdDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E5E7EB', // colors.divider
     width: '100%',
     marginBottom: 15,
   },
   wotdModalSubtitle: {
-    fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#B45309',
+    color: '#D89B00', // colors.primaryDeep
     marginBottom: 5,
+    fontWeight: '700',
   },
   wotdModalText: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 15,
-    color: '#4B5563',
+    color: '#374151', // colors.textDark
     lineHeight: 22,
   },
   wotdModalUsage: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#4B5563',
+    color: '#374151', // colors.textDark
     lineHeight: 20,
     marginBottom: 6,
     fontStyle: 'italic',
   },
   wotdModalCloseBtn: {
-    backgroundColor: '#FFD54F',
+    backgroundColor: '#FFD54F', // colors.primary
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 25,
   },
   wotdModalCloseText: {
-    fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#421C00',
+    color: '#421C00', // colors.accent
+    fontWeight: '700',
   },
 });

@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -76,9 +76,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   messageText: {
-    color: '#FFF',
+    color: '#FFFFFF', // colors.white
     fontSize: 14,
-    fontFamily: 'Poppins-Medium',
     flex: 1,
   },
 });

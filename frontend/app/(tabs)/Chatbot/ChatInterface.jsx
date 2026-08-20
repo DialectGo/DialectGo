@@ -16,14 +16,12 @@ import {
 import { styles } from '../../../src/features/chat/styles/ChatInterfaceStyles';
 import ChatBubble from './ChatBubble';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
-import { endpoints } from '../../../src/shared/api/client';
+import { sendChatMessage } from '../../../src/shared/services/chatService';
 
 // Import your custom JSON knowledge base file
 import APP_KNOWLEDGE_BASE from '../../../assets/data/appKnowledge.json'; 
 
-const GROQ_API_KEY = endpoints.GROQ_API_KEY; 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
 
 const getSystemPrompt = () => {
   return `
@@ -108,56 +106,18 @@ export default function Learn() {
     });
 
     try {
-      const response = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          max_tokens: 300,
-          messages: [
-            { role: 'system', content: getSystemPrompt() },
-            ...chatHistory.current,
-          ],
-        }),
-      });
+      const botReply = await sendChatMessage(chatHistory.current, getSystemPrompt());
 
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        throw new Error(data.error?.message || `HTTP ${response.status}`);
-      }
-
-      const botReply = data?.choices?.[0]?.message?.content;
-
-      if (!botReply) {
-        throw new Error('Groq returned an empty response');
-      }
-
-      chatHistory.current.push({
-        role: 'assistant',
-        content: botReply,
-      });
+      chatHistory.current.push({ role: 'assistant', content: botReply });
 
       setMessages((prev) => [
         ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: botReply.trim(),
-        },
+        { id: (Date.now() + 1).toString(), sender: 'bot', text: botReply },
       ]);
-
     } catch (error) {
       setMessages((prev) => [
         ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: `Error: ${error.message}`,
-        },
+        { id: (Date.now() + 1).toString(), sender: 'bot', text: `Error: ${error.message}` },
       ]);
     } finally {
       setLoading(false);
@@ -294,7 +254,7 @@ export default function Learn() {
             disabled={loading}
           >
             <Image
-              source={require('../../../assets/icons/sendButton.png')}
+              source={require('../../../assets/icons/nav/sendButton.png')}
               style={styles.sendIcon}
             />
           </TouchableOpacity>

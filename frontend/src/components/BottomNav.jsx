@@ -112,10 +112,10 @@ export default function BottomNav() {
   };
 
   const tabs = [
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/homeIcon.png'), isGated: false },
-    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/dictionaryIcon.png'), isGated: false },
-    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/translateIcon1.png'), isGated: false },
-{ name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/wikiIcon.png'), isGated: true },  ];
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/bottombar/homeIcon.png'), isGated: false },
+    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/bottombar/dictionaryIcon.png'), isGated: false },
+    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/bottombar/translateIcon1.png'), isGated: false },
+{ name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/bottombar/wikiIcon.png'), isGated: true },  ];
 
   const handleNavigationInterception = async (tab, index) => {
     if (tab.isGated) {

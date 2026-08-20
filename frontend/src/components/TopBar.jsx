@@ -124,7 +124,7 @@ const TopBar = ({
                   }}
                 >
                   <Image
-                    source={require('../../assets/icons/notif_icon.png')}
+                    source={require('../../assets/icons/nav/notif_icon.png')}
                     style={styles.notificationIcon}
                     resizeMode="contain"
                   />

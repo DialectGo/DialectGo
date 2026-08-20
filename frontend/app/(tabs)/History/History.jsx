@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
-import { supabase } from '../../../src/shared/api/supabase';
-import { API_API_BASE } from '../../../src/shared/api/client';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native'; // Ensure you have React Navigation installed
+import { useNavigation } from '@react-navigation/native';
+import { fetchHistory as fetchHistoryService } from '../../../src/shared/services/historyService';
 
-const API_BASE_URL = API_API_BASE;
 const PAGE_SIZE = 10;
 
 export default function History() {
@@ -20,33 +18,8 @@ export default function History() {
     const fetchHistory = async (pageNumber = 0, shouldRefresh = false) => {
         try {
             if (pageNumber === 0) setLoading(true);
-            
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                Alert.alert("Session Expired", "Please log in again.");
-                return;
-            }
 
-            // Append pagination query parameters to match backend adjustments
-            const response = await fetch(`${API_BASE_URL}/history?page=${pageNumber}&limit=${PAGE_SIZE}`, {
-                method: 'GET',
-                headers: { 
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Accept': 'application/json' 
-                }
-            });
-
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const textError = await response.text();
-                console.error("Backend returned non-JSON:", textError);
-                throw new Error("Server error: Technical issues with the history service.");
-            }
-
-            const jsonResponse = await response.json();
-            
-            // FIX: Extracts the 'data' array from the backend response wrapper payload
-            const records = jsonResponse.success && Array.isArray(jsonResponse.data) ? jsonResponse.data : [];
+            const records = await fetchHistoryService(pageNumber, PAGE_SIZE);
 
             if (shouldRefresh || pageNumber === 0) {
                 setHistory(records);
@@ -56,8 +29,8 @@ export default function History() {
                 setHasMore(records.length === PAGE_SIZE);
             }
         } catch (error) {
-            console.error("Fetch History Error:", error.message);
-            Alert.alert("Error", error.message);
+            console.error('Fetch History Error:', error.message);
+            Alert.alert('Error', error.message);
         } finally {
             setLoading(false);
             setLoadingMore(false);
