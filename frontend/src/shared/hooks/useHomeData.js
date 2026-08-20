@@ -1,63 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchUserProfile } from '../services/userService';
 import { fetchDailyWord } from '../services/wordService';
-import { fetchStreak } from '../services/streakService';
 import { getWeeklyStatus } from '../utils/dateUtils';
+import { useProfileContext } from '../contexts/profile/ProfileContext';
 
-// Hardcoded avatars or can be abstracted to a constants file
-const availableAvatars = [
-  { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
-  { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
-  { id: 3, name: '2.png', source: require('../../../assets/avatars/2.png') },
-  { id: 4, name: '3.png', source: require('../../../assets/avatars/3.png') },
-  { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
-];
-
-/**
- * Orchestrator hook for all data required on the Home Screen.
- * Encapsulates state management, data fetching, and refresh routines.
- */
 export const useHomeData = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
   const [wordOfDay, setWordOfDay] = useState(null);
-  const [userName, setUserName] = useState('User');
-  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   
-  const [streakData, setStreakData] = useState({ streak: 0, activeDays: [] });
+  // Get all profile data from the global context
+  const { 
+    firstName, 
+    userAvatar, 
+    streakCount, 
+    activeDays, 
+    refreshProfile 
+  } = useProfileContext();
+
   const [weeklyStatus, setWeeklyStatus] = useState([false, false, false, false, false, false, false]);
 
-  const loadAllData = async (forceRefresh = false) => {
+  const loadWordData = async (forceRefresh = false) => {
     try {
-      const [profileResult, wordResult, streakResult] = await Promise.all([
-        fetchUserProfile(),
-        fetchDailyWord(forceRefresh),
-        fetchStreak()
-      ]);
-
-      if (profileResult) {
-        setUserName(profileResult.first_name || 'User');
-        if (profileResult.profile_avatar_url) {
-          const matched = availableAvatars.find(a => a.name === profileResult.profile_avatar_url);
-          if (matched) {
-            setUserAvatar(matched.source);
-          } else if (profileResult.profile_avatar_url.startsWith('http')) {
-            setUserAvatar({ uri: profileResult.profile_avatar_url });
-          }
-        }
-      }
-
-      if (wordResult) {
-        setWordOfDay(wordResult);
-      }
-
-      if (streakResult) {
-        setStreakData(streakResult);
-        setWeeklyStatus(getWeeklyStatus(streakResult.activeDays || []));
-      }
+      const wordResult = await fetchDailyWord(forceRefresh);
+      if (wordResult) setWordOfDay(wordResult);
     } catch (error) {
-      console.error("Home Data Orchestrator Error:", error);
+      console.error("Home Data Word Error:", error);
     }
   };
 
@@ -65,26 +33,32 @@ export const useHomeData = () => {
     let isMounted = true;
     const initializeData = async () => {
       setLoading(true);
-      await loadAllData(false);
+      await loadWordData(false);
       if (isMounted) setLoading(false);
     };
     initializeData();
     return () => { isMounted = false; };
   }, []);
 
+  // Whenever activeDays updates from context, recalculate weekly status
+  useEffect(() => {
+    setWeeklyStatus(getWeeklyStatus(activeDays || []));
+  }, [activeDays]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadAllData(true);
+    await loadWordData(true);
+    refreshProfile(); 
     setRefreshing(false);
-  }, []);
+  }, [refreshProfile]);
 
   return {
     loading,
     refreshing,
     wordOfDay,
-    userName,
+    userName: firstName || 'User',
     userAvatar,
-    streakData,
+    streakData: { streak: streakCount, activeDays },
     weeklyStatus,
     handleRefresh
   };

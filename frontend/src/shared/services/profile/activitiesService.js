@@ -3,8 +3,8 @@
  *
  * Handles all user activity API calls (posts, translations, comments, bookmarks).
  */
-import { ACTIVITIES_API_BASE } from '../api/client';
-import { getValidSession } from './authService';
+import { ACTIVITIES_API_BASE } from '../../api/client';
+import { getValidSession } from '../authService';
 
 /**
  * Fetches all activity categories for the current user.

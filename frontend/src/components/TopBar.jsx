@@ -15,6 +15,8 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
+import { useProfileContext } from '../shared/contexts/profile/ProfileContext';
+
 const TopBar = ({
   titlePrimary,
   titleSecondary,
@@ -25,8 +27,9 @@ const TopBar = ({
 }) => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   const router = useRouter();
+
+  const { userAvatar } = useProfileContext();
 
   useEffect(() => {
     fetchTopBarData();
@@ -36,13 +39,6 @@ const TopBar = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-
-      // Fetch avatar
-      const { data: userData } = await supabase.auth.getUser(session.access_token);
-      if (userData?.user?.user_metadata?.avatar_url) {
-        const found = availableAvatars.find(a => a.name === userData.user.user_metadata.avatar_url);
-        if (found) setUserAvatar(found.source);
-      }
 
       // Fetch unread count
       const response = await fetch(NOTIFICATIONS_API_BASE, {
