@@ -3,8 +3,8 @@
  *
  * Handles all calls to the core translation API (translate, TTS, feedback, customize, document).
  */
-import { TRANSLATION_API_BASE } from '../api/client';
-import { getValidSession } from './authService';
+import { TRANSLATION_API_BASE } from '../../api/client';
+import { getValidSession } from '../authService';
 
 const API_URL = `${TRANSLATION_API_BASE}/translate`;
 const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;

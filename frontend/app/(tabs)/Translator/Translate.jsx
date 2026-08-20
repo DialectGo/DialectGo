@@ -1,5 +1,5 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -7,21 +7,16 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
-  Dimensions,
   LayoutAnimation,
-  Clipboard,
 } from 'react-native';
-import { Audio, InterruptionModeAndroid } from 'expo-av';
-import * as FileSystem from 'expo-file-system/legacy';
-import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 import BottomNav from '../../../src/components/BottomNav';
 import TopBar from '../../../src/components/TopBar';
 import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
-import ContributionModal from '../../../src/features/wiki/components/ContributionModal'; // Added Shared Component
+import ContributionModal from '../../../src/features/wiki/components/ContributionModal';
 import BreakdownPanel from '../../../src/features/translator/components/BreakdownPanel';
 import LoadingModal from '../../../src/shared/components/LoadingModal';
 import CustomizeModal from '../../../src/shared/components/CustomizeModal';
@@ -30,472 +25,42 @@ import TranslationResultModal from '../../../src/features/translator/components/
 import SwipeableBottomSheet from '../../../src/shared/components/SwipeableBottomSheet';
 import SpeechModal from '../../../src/features/translator/components/SpeechModal';
 import { styles } from '../../../src/features/translator/styles/TranslateStyles';
-import { supabase } from '../../../src/shared/api/supabase';
-
-// Assets
 import translateIcon from '../../../assets/icons/bottombar/translateIcon.png';
 
-const { width } = Dimensions.get('window');
-
-// API Endpoints
-import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
-import { cleanBase64Audio } from '../../../src/shared/utils/stringUtils';
-const API_URL = `${TRANSLATION_API_BASE}/translate`;
-const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
-
-const LANGUAGES = [
-  { name: 'English', id: 1 },
-  { name: 'Tagalog', id: 2 },
-  { name: 'Cebuano', id: 3 },
-];
-
-// Dialect variant options per target language
-const DIALECT_OPTIONS = {
-  Cebuano: [{ label: 'Standard', value: null }, { label: 'Boholano', value: 'Boholano' }],
-  Tagalog: [{ label: 'Standard', value: null }, { label: 'Batangeño', value: 'Batangeño' }],
-};
+// Import our new custom hook and constants
+import { useTranslate, LANGUAGES, DIALECT_OPTIONS } from '../../../src/shared/hooks/translate/useTranslate';
 
 export default function TranslateScreen({ activeTab, onNavigate }) {
-  const { slide } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // UI State
-  const [modalVisible, setModalVisible] = useState(false);
-  const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
-  const [rateModalVisible, setRateModalVisible] = useState(false);
-  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [speechModalVisible, setSpeechModalVisible] = useState(false);
-  const [selectingFor, setSelectingFor] = useState('source');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
-
-  // Language & Text State
-  const [sourceLang, setSourceLang] = useState('English');
-  const [targetLang, setTargetLang] = useState('Cebuano');
-  const [targetDialect, setTargetDialect] = useState(null);
-  const [inputText, setInputText] = useState('');
-  const [translation, setTranslation] = useState('');
-  const [currentTranslationId, setCurrentTranslationId] = useState(null);
-
-  // Feedback/Contribution State
-  const [feedback, setFeedback] = useState(null);
-  const [comment, setComment] = useState('');
-  const [suggestionText, setSuggestionText] = useState('');
-
-  // LLM Meta-Layer State
-  const [breakdownData, setBreakdownData] = useState(null);
-  const [isBreakdownLoading, setIsBreakdownLoading] = useState(false);
-  const [breakdownPanelVisible, setBreakdownPanelVisible] = useState(false);
-  const [showCustomize, setShowCustomize] = useState(false);
-  const [isCustomizeLoading, setIsCustomizeLoading] = useState(false);
-
-  // TTS State
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const soundRef = useRef(null);
-  // When the speech modal delivers results directly, skip the debounce re-translation
-  const skipDebounceRef = useRef(false);
-
-  // Document Upload State
-  const [docUploadVisible, setDocUploadVisible] = useState(false);
-  const [docResultVisible, setDocResultVisible] = useState(false);
-  const [isDocTranslating, setIsDocTranslating] = useState(false);
-  const [docResult, setDocResult] = useState(null);
-  const [docError, setDocError] = useState(false);
-
-  // Cleanup sound on unmount
-  useEffect(() => {
-    return () => { soundRef.current?.unloadAsync().catch(() => {}); };
-  }, []);
-
-  // --- TTS ---
-  const playTranslatedAudio = async (text, lang) => {
-    if (!text) return;
-
-    // If already playing, stop
-    if (isPlayingAudio && soundRef.current) {
-      await soundRef.current.stopAsync().catch(() => {});
-      await soundRef.current.unloadAsync().catch(() => {});
-      soundRef.current = null;
-      setIsPlayingAudio(false);
-      return;
-    }
-
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-
-      setIsPlayingAudio(true);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${TRANSLATION_API_BASE}/translate/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ text, lang }),
-      });
-
-      if (!response.ok) throw new Error('TTS request failed');
-      const data = await response.json();
-      const base64String = data.audioBase64;
-      if (!base64String) throw new Error('No audio returned');
-
-      const cleanBase64 = cleanBase64Audio(base64String);
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false, playsInSilentModeIOS: true,
-        staysActiveInBackground: false, shouldDuckAndroid: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        playThroughEarpieceAndroid: false,
-      });
-
-      const fileUri = `${FileSystem.cacheDirectory}tts_output.mp3`;
-      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, { encoding: FileSystem.EncodingType.Base64 });
-
-      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true, volume: 1.0 });
-      soundRef.current = sound;
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) setIsPlayingAudio(false);
-      });
-    } catch (err) {
-      console.error('[TTS Error]:', err);
-      setIsPlayingAudio(false);
-      Alert.alert('Playback Error', 'Could not generate audio for this translation.');
-    }
-  };
-
-  /**
-   * Plays a raw base64 audio string directly (used for speech-to-text auto-playback).
-   * This is different from playTranslatedAudio which calls the TTS endpoint first.
-   */
-  const playBase64Audio = async (rawBase64) => {
-    if (!rawBase64) return;
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync().catch(() => {});
-        soundRef.current = null;
-      }
-
-      setIsPlayingAudio(true);
-
-      const cleanBase64 = cleanBase64Audio(rawBase64);
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false, playsInSilentModeIOS: true,
-        staysActiveInBackground: false, shouldDuckAndroid: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        playThroughEarpieceAndroid: false,
-      });
-
-      const fileUri = `${FileSystem.cacheDirectory}speech_result.mp3`;
-      await FileSystem.writeAsStringAsync(fileUri, cleanBase64, { encoding: FileSystem.EncodingType.Base64 });
-
-      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true, volume: 1.0 });
-      soundRef.current = sound;
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) setIsPlayingAudio(false);
-      });
-    } catch (err) {
-      console.error('[Base64 Audio Playback Error]:', err);
-      setIsPlayingAudio(false);
-    }
-  };
-
-  // --- Copy ---
-  const handleCopy = () => {
-    if (!translation) return;
-    Clipboard.setString(translation);
-    Alert.alert('Copied!', 'Translation copied to clipboard.');
-  };
-
-  // --- API HANDLERS ---
-
-  const handleQuickRating = async (ratingValue) => {
-    if (!currentTranslationId) return Alert.alert("Wait", "Translate something first.");
-
-    setFeedback(ratingValue === 5 ? 'like' : 'unlike');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch(FEEDBACK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          translationId: currentTranslationId,
-          rating: ratingValue,
-        })
-      });
-      setFeedbackModalVisible(true); // Open modal for further input
-    } catch (err) {
-      console.error("Feedback error", err);
-    }
-  };
-
-  const handleDetailedSubmit = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` };
-
-      // 1. Submit Feedback Comment
-      if (comment.trim()) {
-        await fetch(FEEDBACK_URL, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            translationId: currentTranslationId,
-            rating: feedback === 'like' ? 5 : 1,
-            comment: comment
-          })
-        });
-      }
-
-      // 2. Submit Suggested Translation
-      if (suggestionText.trim()) {
-        await fetch(`${API_URL}/contribute`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            sourceText: inputText,
-            userTranslation: suggestionText,
-            sourceLang,
-            targetLang,
-            source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
-            target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
-          })
-        });
-      }
-
-      Alert.alert("Salamat!", "Nakatulong ka sa pag-improve ng DialectoGo.");
-      setFeedbackModalVisible(false);
-      setComment('');
-      setSuggestionText('');
-    } catch (err) {
-      Alert.alert("Error", "Hindi maipadala ang feedback.");
-    }
-  };
-
-  const handleTranslate = async (text) => {
-    if (!text.trim()) {
-      setTranslation('');
-      setError(false);
-      setBreakdownData(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setFeedback(null);
-    setError(false);
-    setBreakdownData(null);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          sourceText: text,
-          sourceLang,
-          targetLang,
-          targetDialect,
-          source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
-          target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setTranslation(data.translatedText?.trim() || "");
-        setCurrentTranslationId(data.historyRecord?.id || data.historyId);
-        if (data.breakdown) {
-          setBreakdownData(data.breakdown);
-        }
-      } else {
-        setError(true);
-      }
-    } catch (err) {
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleShowBreakdown = async () => {
-    if (breakdownData) return; // Already loaded
-
-    setIsBreakdownLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          sourceText: inputText,
-          sourceLang,
-          targetLang,
-          targetDialect,
-          source_language_id: LANGUAGES.find(l => l.name === sourceLang)?.id,
-          target_language_id: LANGUAGES.find(l => l.name === targetLang)?.id,
-          withBreakdown: true // Trigger the Meta-Layer
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.breakdown) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setBreakdownData(data.breakdown);
-      }
-    } catch (err) {
-      console.error("Failed to fetch breakdown", err);
-    } finally {
-      setIsBreakdownLoading(false);
-    }
-  };
-
-  const handleCustomizeSubmit = async (params) => {
-    setIsCustomizeLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(`${API_URL}/customize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          sourceText: inputText,
-          translatedText: translation,
-          sourceLang,
-          targetLang,
-          ...params
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.success) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setTranslation(data.customizedText?.trim());
-        setShowCustomize(false);
-        // We could also set breakdownData here to reflect the new text, but we'd need a new breakdown.
-        // For now, we clear the old breakdown.
-        setBreakdownData(null);
-      } else {
-        Alert.alert("Error", data.message || "Failed to customize translation.");
-      }
-    } catch (err) {
-      console.error("Customize error", err);
-      Alert.alert("Error", "Could not reach customization service.");
-    } finally {
-      setIsCustomizeLoading(false);
-    }
-  };
-
-  const handleDocumentSelected = async (fileAsset) => {
-    console.log('[Translate] handleDocumentSelected fileAsset:', fileAsset);
-    setDocResultVisible(true);
-    setIsDocTranslating(true);
-    setDocError(false);
-    setDocResult(null);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const formData = new FormData();
-      const getMimeType = (asset) => {
-        if (asset.mimeType) return asset.mimeType;
-        if (asset.uri?.toLowerCase().endsWith('.pdf')) return 'application/pdf';
-        if (asset.uri?.toLowerCase().endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        // If no mime type, assume image for ImagePicker
-        return 'image/jpeg';
-      };
-
-      formData.append('file', {
-        uri: fileAsset.uri,
-        name: fileAsset.fileName || fileAsset.name || 'upload.jpg',
-        type: getMimeType(fileAsset),
-      });
-      formData.append('sourceLang', sourceLang);
-      formData.append('targetLang', targetLang);
-      if (targetDialect) formData.append('targetDialect', targetDialect);
-      
-      const srcId = LANGUAGES.find(l => l.name === sourceLang)?.id;
-      const tgtId = LANGUAGES.find(l => l.name === targetLang)?.id;
-      if (srcId) formData.append('source_language_id', srcId);
-      if (tgtId) formData.append('target_language_id', tgtId);
-      
-      // Request breakdown from meta-layer for large text
-      formData.append('withBreakdown', 'true');
-
-      const response = await fetch(`${API_URL}/document`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDocResult(data);
-      } else {
-        setDocError(true);
-      }
-    } catch (err) {
-      console.error("[Translate] Document upload error:", err.message || err);
-      setDocError(true);
-    } finally {
-      setIsDocTranslating(false);
-      try {
-        await FileSystem.deleteAsync(fileAsset.uri, { idempotent: true });
-      } catch (e) {
-        console.warn("Failed to delete temp file:", e);
-      }
-    }
-  };
-
-  // Debounce Effect
-  useEffect(() => {
-    // Skip re-translation if speech modal already provided the result directly
-    if (skipDebounceRef.current) {
-      skipDebounceRef.current = false;
-      return;
-    }
-    const delayDebounceFn = setTimeout(() => {
-      if (inputText) handleTranslate(inputText);
-    }, 1000);
-    return () => clearTimeout(delayDebounceFn);
-  }, [inputText, targetLang, sourceLang]);
-
-  const selectLanguage = (langObj) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (selectingFor === 'source') {
-      if (langObj.name === targetLang) setTargetLang(sourceLang);
-      setSourceLang(langObj.name);
-    } else {
-      if (langObj.name === sourceLang) setSourceLang(targetLang);
-      setTargetLang(langObj.name);
-      // Reset dialect when target language changes
-      setTargetDialect(null);
-    }
-    setModalVisible(false);
-  };
+  const {
+    modalVisible, setModalVisible,
+    feedbackModalVisible, setFeedbackModalVisible,
+    rateModalVisible, setRateModalVisible,
+    moreMenuVisible, setMoreMenuVisible,
+    speechModalVisible, setSpeechModalVisible,
+    selectingFor, setSelectingFor,
+    isLoading, error,
+    sourceLang, setSourceLang,
+    targetLang, setTargetLang,
+    targetDialect, setTargetDialect,
+    inputText, setInputText,
+    translation, setTranslation,
+    feedback, setFeedback,
+    comment, setComment,
+    suggestionText, setSuggestionText,
+    breakdownData, setBreakdownData,
+    isBreakdownLoading, breakdownPanelVisible, setBreakdownPanelVisible,
+    showCustomize, setShowCustomize, isCustomizeLoading,
+    isPlayingAudio, skipDebounceRef,
+    docUploadVisible, setDocUploadVisible,
+    docResultVisible, setDocResultVisible,
+    isDocTranslating, docResult, docError,
+    playTranslatedAudio, playBase64Audio, handleCopy,
+    handleQuickRating, handleDetailedSubmit, handleShowBreakdown,
+    handleCustomizeSubmit, handleDocumentSelected, selectLanguage
+  } = useTranslate();
 
   return (
     <View style={styles.container}>
@@ -526,7 +91,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
             translateIcon={translateIcon}
           />
-
 
           {/* INPUT CARD */}
           <View style={styles.translateCard}>
@@ -592,7 +156,6 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
             <View style={[styles.translateCard, styles.resultCardExtra]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.inputLabel}>{targetLang.toUpperCase()}</Text>
-                {/* <Ionicons name="volume-high" size={20} color="#FBBF24" /> */}
               </View>
               {isLoading ? (
                 <View style={styles.loadingArea}>
@@ -668,7 +231,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               onSelectAlternative={(text) => {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setTranslation(text);
-                setBreakdownData(null); // Clear breakdown since text changed
+                setBreakdownData(null);
                 setBreakdownPanelVisible(false);
               }}
             />
@@ -780,17 +343,14 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         sourceLang={sourceLang}
         targetLang={targetLang}
         onTranscript={(transcript) => {
-          // Flag the debounce to skip — we already have the translation
           skipDebounceRef.current = true;
           setInputText(transcript);
         }}
         onTranslation={(translatedText) => {
-          // Set the translation directly so it displays simultaneously with audio
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setTranslation(translatedText.trim());
         }}
         onAudioResult={(audioBase64) => {
-          // Delay one frame so React can render the translation text first
           requestAnimationFrame(() => {
             playBase64Audio(audioBase64);
           });
