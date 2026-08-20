@@ -1,7 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../theme/colorPalette';
-import { fonts } from '../theme/typography';
 
 /**
  * A highly reusable Base Card component.
@@ -58,27 +56,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontFamily: 'Modulus-Bold',
-    color: colors.textDark, // gray-700
+    color: '#374151', // colors.textDark
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: fonts.regular,
-    color: '#6B7280', // gray-500
+    color: '#6B7280',
     marginTop: 2,
   },
   badgeContainer: {
     marginLeft: 12,
   },
   contentContainer: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFDF5', // colors.surface
     borderRadius: 32,
     padding: 22,
-    shadowColor: colors.shadowGold,
+    shadowColor: '#8A6200', // colors.shadowGold
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 7,
     borderWidth: 1,
-    borderColor: colors.border, 
+    borderColor: '#F4E7BF', // colors.border
   },
 });

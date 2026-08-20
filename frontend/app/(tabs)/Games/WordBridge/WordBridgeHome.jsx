@@ -98,7 +98,6 @@ export default function WordBridgeHome() {
       setLoading(false);
     }
   };
-  };
 
   if (loading) {
     return (

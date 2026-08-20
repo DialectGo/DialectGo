@@ -1,7 +1,5 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme/colorPalette';
-import { fonts } from '../theme/typography';
 
 /**
  * A reusable Modal Overlay for displaying Word of the Day details.
@@ -44,13 +42,13 @@ export default function WordOfDayOverlay({ visible, onClose, wordData }) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // colors.overlay
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   wotdModalCard: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF', // colors.white
     borderRadius: 20,
     padding: 25,
     width: '100%',
@@ -62,48 +60,46 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   wotdModalTitle: {
-    fontFamily: fonts.bold,
     fontSize: 24,
-    color: colors.accent,
+    color: '#421C00', // colors.accent
     textAlign: 'center',
     marginBottom: 10,
+    fontWeight: '700',
   },
   wotdDivider: {
     height: 1,
-    backgroundColor: colors.divider,
+    backgroundColor: '#E5E7EB', // colors.divider
     width: '100%',
     marginBottom: 15,
   },
   wotdModalSubtitle: {
-    fontFamily: fonts.bold,
     fontSize: 16,
-    color: colors.primaryDeep,
+    color: '#D89B00', // colors.primaryDeep
     marginBottom: 5,
+    fontWeight: '700',
   },
   wotdModalText: {
-    fontFamily: fonts.regular,
     fontSize: 15,
-    color: colors.textDark,
+    color: '#374151', // colors.textDark
     lineHeight: 22,
   },
   wotdModalUsage: {
-    fontFamily: fonts.regular,
     fontSize: 14,
-    color: colors.textDark,
+    color: '#374151', // colors.textDark
     lineHeight: 20,
     marginBottom: 6,
     fontStyle: 'italic',
   },
   wotdModalCloseBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFD54F', // colors.primary
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 25,
   },
   wotdModalCloseText: {
-    fontFamily: fonts.bold,
     fontSize: 16,
-    color: colors.accent,
+    color: '#421C00', // colors.accent
+    fontWeight: '700',
   },
 });

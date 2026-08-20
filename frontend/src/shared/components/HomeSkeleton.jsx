@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colorPalette';
 
 /**
  * A highly reusable Skeleton Loader component.
@@ -50,7 +49,7 @@ export default function HomeSkeleton({ width = '100%', height = 20, borderRadius
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: colors.divider, // Tailwind gray-200
+    backgroundColor: '#E5E7EB', // colors.divider — inlined to prevent Hermes cold-boot crash
     overflow: 'hidden',
   },
 });

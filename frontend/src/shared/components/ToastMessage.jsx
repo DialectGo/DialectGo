@@ -1,7 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, StyleSheet } from 'react-native';
-import { colors } from '../theme/colorPalette';
-import { fonts } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -78,9 +76,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   messageText: {
-    color: colors.white,
+    color: '#FFFFFF', // colors.white
     fontSize: 14,
-    fontFamily: fonts.medium,
     flex: 1,
   },
 });

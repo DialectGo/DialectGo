@@ -21,7 +21,7 @@ import { sendChatMessage } from '../../../src/shared/services/chatService';
 // Import your custom JSON knowledge base file
 import APP_KNOWLEDGE_BASE from '../../../assets/data/appKnowledge.json'; 
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
 
 const getSystemPrompt = () => {
   return `
