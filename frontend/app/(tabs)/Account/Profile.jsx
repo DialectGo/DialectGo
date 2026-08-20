@@ -1,184 +1,39 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import { 
   Image, 
   StatusBar, 
   Text, 
   TouchableOpacity, 
   View, 
-   
   ActivityIndicator 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../../src/shared/api/supabase';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
 import BottomNav from '../../../src/components/BottomNav';
-import { Ionicons } from '@expo/vector-icons';
 import FeatureGateModal from '../../../src/shared/components/FeatureGateModal'; 
-import RefreshContainer from '../../../src/shared/components/RefreshContainer'; // ✅ Imported RefreshContainer
+import RefreshContainer from '../../../src/shared/components/RefreshContainer';
 import { styles } from '../../../src/features/account/styles/ProfileStyles';
-import NetInfo from '@react-native-community/netinfo';
-import { endpoints } from '../../../src/shared/api/client';
 import { formatFullName } from '../../../src/shared/utils/stringUtils';
-
-const availableAvatars = [
-  { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
-  { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
-  { id: 3, name: '2.png', source: require('../../../assets/avatars/2.png') },
-  { id: 4, name: '3.png', source: require('../../../assets/avatars/3.png') },
-  { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
-];
+import { useProfile } from '../../../src/shared/hooks/profile/useProfile';
 
 export default function Profile({ onNavigate }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // ✅ Added state for pull-to-refresh handling
-  const [isGuest, setIsGuest] = useState(false);
-  const [gateVisible, setGateVisible] = useState(false); 
-  const [isConnected, setIsConnected] = useState(true);
-  const hasInitialized = useRef(false);
-
-  // Profile States
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
-  const [streakCount, setStreakCount] = useState(0);
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = state.isConnected ?? false;
-      setIsConnected(connected);
-
-      if (!connected) {
-        setLoading(false); 
-        setRefreshing(false);
-        setIsGuest(true);
-        setFirstName('Guest');
-        setLastName('User');
-        setStreakCount(0);
-        setUserAvatar(availableAvatars[0].source);
-        return;
-      }
-
-      if (!hasInitialized.current) {
-        hasInitialized.current = true;
-        loadProfileData();
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // ✅ Modified to cleanly support both standard initial loads and pull-to-refresh instances
-  const loadProfileData = async (isManualRefresh = false) => {
-    if (!isConnected) {
-      setRefreshing(false);
-      return; 
-    }
-    
-    if (!hasInitialized.current && !isManualRefresh) {
-      setLoading(true);
-    }
-
-    try {
-      const role = await AsyncStorage.getItem('@user_role');
-      const guestMode = await AsyncStorage.getItem('@guest_mode');
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const isGuest = role === 'guest' || guestMode !== null || !session || !isConnected;
-      setIsGuest(isGuest);
-
-      if (isGuest) {
-        setFirstName('Guest');
-        setLastName('User');
-        setStreakCount(0);
-        setUserAvatar(availableAvatars[0].source);
-        return;
-      }
-
-      await Promise.all([
-        fetchUserProfile(),
-        fetchStreak()
-      ]);
-
-    } catch (error) {
-      console.log('Profile load error:', error);
-      setIsGuest(true);
-      setFirstName('Guest');
-      setLastName('User');
-    } finally {
-      setLoading(false);
-      setRefreshing(false); // ✅ Safely terminates the pull-to-refresh load loop indicator
-    }
-  };
-
-  // ✅ Created handler explicitly for the RefreshContainer's onRefresh trigger
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadProfileData(true);
-  };
-
-  const fetchUserProfile = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(endpoints.USER_PROFILE, {
-        method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        const user = result.data;
-        setFirstName(user.first_name || 'User');
-        setLastName(user.last_name || '');
-        
-        if (user.profile_avatar_url) {
-          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
-          if (matched) setUserAvatar(matched.source);
-        }
-      }
-    } catch (error) {
-      console.error("Profile Fetch Error:", error);
-    }
-  };
-
-  const fetchStreak = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const response = await fetch(endpoints.USER_STREAK, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      const result = await response.json();
-      if (result.success) setStreakCount(result.data.streak);
-    } catch (error) {
-      console.error("Profile Streak Fetch Error:", error);
-    }
-  };
-
-  const handleProtectedAction = (targetPath) => {
-    if (isGuest || !isConnected) {
-      setGateVisible(true);
-      return;
-    }
-    router.push(targetPath);
-  };
-
-  const handleLogout = async () => {
-    await AsyncStorage.multiRemove(['@user_token', '@user_role', '@user_metadata', '@guest_mode']);
-    if (onNavigate) {
-      onNavigate('auth');
-    } else {
-      router.replace('/auth/AuthTransition');
-    }
-  };
+  
+  const {
+    loading,
+    refreshing,
+    isGuest,
+    gateVisible,
+    setGateVisible,
+    firstName,
+    lastName,
+    userAvatar,
+    streakCount,
+    handleRefresh,
+    handleProtectedAction,
+    handleLogout
+  } = useProfile(onNavigate, router);
 
   if (loading) {
     return (
@@ -194,10 +49,9 @@ export default function Profile({ onNavigate }) {
 
       <ProfileTopBar title="Profile" />
 
-      {/* ✅ SWAPPED: ScrollView has been replaced by the custom RefreshContainer */}
       <RefreshContainer
         style={styles.scrollBody}
-        contentContainerStyle={{ paddingBottom: 110 }} // Keeps your layout footer buffer intact
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
