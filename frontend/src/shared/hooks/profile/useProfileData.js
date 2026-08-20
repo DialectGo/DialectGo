@@ -7,11 +7,13 @@ export const useProfileData = () => {
   const [lastName, setLastName] = useState('');
   const [userAvatar, setUserAvatar] = useState(availableAvatars[0].source);
   const [streakCount, setStreakCount] = useState(0);
+  const [activeDays, setActiveDays] = useState([]);
 
   const resetProfileData = useCallback(() => {
     setFirstName('Guest');
     setLastName('User');
     setStreakCount(0);
+    setActiveDays([]);
     setUserAvatar(availableAvatars[0].source);
   }, []);
 
@@ -36,14 +38,17 @@ export const useProfileData = () => {
   const fetchStreak = useCallback(async (accessToken) => {
     try {
       const result = await fetchUserStreakData(accessToken);
-      if (result.success) setStreakCount(result.data.streak);
+      if (result.success) {
+        setStreakCount(result.data.streak);
+        setActiveDays(result.data.activeDays || []);
+      }
     } catch (error) {
       console.error("Profile Streak Fetch Error:", error);
     }
   }, []);
 
   return {
-    firstName, lastName, userAvatar, streakCount,
+    firstName, lastName, userAvatar, streakCount, activeDays,
     fetchUserProfile, fetchStreak, resetProfileData
   };
 };

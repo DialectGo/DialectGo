@@ -3,9 +3,11 @@ import { Alert } from 'react-native';
 import { formatAddress, parseAddress } from '../../utils/stringUtils';
 import { fetchUserProfile, updateUserProfile } from '../../services/profile/userService';
 import { availableAvatars } from './constants';
+import { useProfileContext } from '../../contexts/profile/ProfileContext';
 
 export const useAccountInformation = (router) => {
   const [loading, setLoading] = useState(true);
+  const { refreshProfile } = useProfileContext();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -61,6 +63,7 @@ export const useAccountInformation = (router) => {
       });
 
       if (success) {
+        refreshProfile();
         Alert.alert('Success', 'Information updated!', [{ text: 'OK', onPress: () => router.back() }]);
       } else {
         throw new Error('Update failed');

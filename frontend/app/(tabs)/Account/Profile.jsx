@@ -1,10 +1,6 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import { 
-  Image, 
   StatusBar, 
-  Text, 
-  TouchableOpacity, 
   View, 
   ActivityIndicator 
 } from 'react-native';
@@ -14,8 +10,9 @@ import BottomNav from '../../../src/components/BottomNav';
 import FeatureGateModal from '../../../src/shared/components/FeatureGateModal'; 
 import RefreshContainer from '../../../src/shared/components/RefreshContainer';
 import { styles } from '../../../src/features/account/styles/ProfileStyles';
-import { formatFullName } from '../../../src/shared/utils/stringUtils';
 import { useProfile } from '../../../src/shared/hooks/profile/useProfile';
+import ProfileHeader from '../../../src/shared/components/profile/ProfileHeader';
+import ProfileMenuItem from '../../../src/shared/components/profile/ProfileMenuItem';
 
 export default function Profile({ onNavigate }) {
   const router = useRouter();
@@ -46,7 +43,6 @@ export default function Profile({ onNavigate }) {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
-
       <ProfileTopBar title="Profile" />
 
       <RefreshContainer
@@ -55,68 +51,50 @@ export default function Profile({ onNavigate }) {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarWrapper}>
-            <Image source={userAvatar} style={styles.avatarImg} />
-          </View>
-          <Text style={styles.userName}>{formatFullName(firstName, lastName)}</Text>
-          <Text style={styles.streakText}>
-            {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
-          </Text>
-        </View>
+        <ProfileHeader 
+          firstName={firstName} 
+          lastName={lastName} 
+          userAvatar={userAvatar} 
+          isGuest={isGuest} 
+          streakCount={streakCount} 
+        />
 
         <View style={styles.settingsContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/AccountInformation')}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profile/profileIcon.png')} style={styles.menuIcon} />
-              <Text style={styles.menuText}>Account Information</Text>
-            </View>
-            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Activities')}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profile/activities_icon.png')} style={styles.menuIcon} />
-              <Text style={styles.menuText}>My Activities</Text>
-            </View>
-            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/images/beefire.png')} style={styles.menuIcon} />
-              <Text style={styles.menuText}>Streaks</Text>
-            </View>
-            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/Settings')}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profile/settings_icon.png')} style={styles.menuIcon} />
-              <Text style={styles.menuText}>Settings</Text>
-            </View>
-            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/About')}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profile/info_icon.png')} style={styles.menuIcon} />
-              <Text style={styles.menuText}>About DialectGo</Text>
-            </View>
-            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/actions/logout_icon.png')} style={styles.logoutIcon} />
-              <Text style={styles.logoutText}>{isGuest ? 'Exit Guest Mode' : 'Log out'}</Text>
-            </View>
-          </TouchableOpacity>
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/profileIcon.png')}
+            text="Account Information"
+            onPress={() => handleProtectedAction('/Account/AccountInformation')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/activities_icon.png')}
+            text="My Activities"
+            onPress={() => handleProtectedAction('/Account/Activities')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/images/beefire.png')}
+            text="Streaks"
+            onPress={() => handleProtectedAction('/Account/Streaks')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/settings_icon.png')}
+            text="Settings"
+            onPress={() => router.push('/Account/Settings')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/info_icon.png')}
+            text="About DialectGo"
+            onPress={() => router.push('/Account/About')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/actions/logout_icon.png')}
+            text={isGuest ? 'Exit Guest Mode' : 'Log out'}
+            onPress={handleLogout}
+            isLogout={true}
+          />
         </View>
       </RefreshContainer>
 
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
-
       <BottomNav activeTab="Profile" />
     </View>
   );
