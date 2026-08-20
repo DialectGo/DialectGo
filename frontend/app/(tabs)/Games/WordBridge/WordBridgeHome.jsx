@@ -17,10 +17,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from '../WordBridge/WordBridgeStyles';
-import { supabase } from '../../../../src/shared/api/supabase';
-
-import { API_API_BASE } from '../../../../src/shared/api/client';
-const API_URL = API_API_BASE;
+import { fetchGameProgress, startGameSession } from '../../../../src/shared/services/gameService';
 
 export default function WordBridgeHome() {
   const router = useRouter();
@@ -46,22 +43,16 @@ export default function WordBridgeHome() {
   // Fetch the latest progression from your backend database
   const fetchUserProgression = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // FIXED: Points to the unified profile progression route path
-      const response = await fetch(`${API_URL}/progress/me?game_id=2&difficulty=hard`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const key = `wordbridge_completed_levels_${session.user.id}_hard`;
+      const progressData = await fetchGameProgress(2, 'hard');
+      if (progressData) {
+        const key = `wordbridge_completed_levels_${progressData.user_id}_hard`;
         const saved = await AsyncStorage.getItem(key);
-        setCompletedLevels(saved ? JSON.parse(saved) : (Array.isArray(result.data.completed_levels) ? result.data.completed_levels : []));
+        setCompletedLevels(
+          saved ? JSON.parse(saved) : (Array.isArray(progressData.completed_levels) ? progressData.completed_levels : [])
+        );
       }
     } catch (error) {
-      console.error("Failed syncing WordBridge progression index logs:", error);
+      console.error('Failed syncing WordBridge progression index logs:', error);
     }
   };
 
@@ -86,48 +77,27 @@ export default function WordBridgeHome() {
   const startGameEngineInstance = async (lvl) => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session || !session.access_token) {
-        Alert.alert("Authentication Session Expired", "Please authenticate credentials to join tracking logs.");
-        setLoading(false);
-        return;
-      }
-      
-      const response = await fetch(`${API_URL}/sessions/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ game_id: 2 })
-      });
-      
-      const resData = await response.json();
-      
-      if (response.ok && resData.success && resData.data) {
-        // MATCH LOGIC: Extract target language dynamically based on what was picked
-        // If mode is 'Cebuano - Tagalog', target language context is 'tagalog'
-        const targetLangParam = gameMode.toLowerCase().includes('tagalog') ? 'english' : 'tagalog';
+      const sessionId = await startGameSession(2);
 
-        router.push({
-          pathname: '/Games/WordBridge/WordBridgeGame',
-          params: { 
-            initialLevel: lvl, 
-            gameMode: gameMode,
-            targetLanguage: targetLangParam, // <-- PASSES TRANSLATION PREFERENCE
-            sessionId: resData.data.session_id
-          }
-        });
-      } else {
-        Alert.alert("Session Error", resData.message || "Could not spin up tracking nodes.");
-      }
+      // MATCH LOGIC: Extract target language dynamically based on what was picked
+      const targetLangParam = gameMode.toLowerCase().includes('tagalog') ? 'english' : 'tagalog';
+
+      router.push({
+        pathname: '/Games/WordBridge/WordBridgeGame',
+        params: {
+          initialLevel: lvl,
+          gameMode: gameMode,
+          targetLanguage: targetLangParam,
+          sessionId,
+        }
+      });
     } catch (error) {
-      console.error("Critical handshake failure on WordBridge initiation path:", error);
-      Alert.alert("Network Timeout", "Could not verify device telemetry with processing server target endpoints.");
+      console.error('Critical handshake failure on WordBridge initiation path:', error);
+      Alert.alert('Session Error', error.message || 'Could not start game session.');
     } finally {
       setLoading(false);
     }
+  };
   };
 
   if (loading) {

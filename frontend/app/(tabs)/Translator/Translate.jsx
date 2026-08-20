@@ -39,6 +39,7 @@ const { width } = Dimensions.get('window');
 
 // API Endpoints
 import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
+import { cleanBase64Audio } from '../../../src/shared/utils/stringUtils';
 const API_URL = `${TRANSLATION_API_BASE}/translate`;
 const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 
@@ -140,9 +141,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
       const base64String = data.audioBase64;
       if (!base64String) throw new Error('No audio returned');
 
-      const cleanBase64 = base64String
-        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
-        .replace(/(\r\n|\n|\r)/gm, '');
+      const cleanBase64 = cleanBase64Audio(base64String);
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false, playsInSilentModeIOS: true,
@@ -180,9 +179,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
 
       setIsPlayingAudio(true);
 
-      const cleanBase64 = rawBase64
-        .replace(/^data:audio\/(mp3|wav|m4a|aac);base64,/, '')
-        .replace(/(\r\n|\n|\r)/gm, '');
+      const cleanBase64 = cleanBase64Audio(rawBase64);
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false, playsInSilentModeIOS: true,

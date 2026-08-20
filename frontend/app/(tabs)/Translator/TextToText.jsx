@@ -17,6 +17,7 @@ import pronounceIcon from '../../../assets/icons/actions/pronounceIcon.png';
 import { supabase } from '../../../src/shared/api/supabase';
 
 import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
+import { stripModelTags } from '../../../src/shared/utils/stringUtils';
 const API_URL = `${TRANSLATION_API_BASE}/translate`;
 const FEEDBACK_URL = `${TRANSLATION_API_BASE}/feedback`;
 const HEIGHT_RESULT_HIDDEN = 450;
@@ -119,10 +120,7 @@ export default function TextToText() {
         const result = await response.json();
         console.log("✅ Full API Response:", result);
 
-        const cleanText = result.translatedText
-            .replace(/<end_of_turn>/g, '')
-            .replace(/<start_of_turn>/g, '')
-            .trim();
+        const cleanText = stripModelTags(result.translatedText);
 
         setTranslatedText(cleanText || "No translation returned");
         setCurrentTranslationId(result.historyRecord?.id); 

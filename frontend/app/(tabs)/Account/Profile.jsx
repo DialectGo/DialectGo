@@ -20,6 +20,7 @@ import RefreshContainer from '../../../src/shared/components/RefreshContainer'; 
 import { styles } from '../../../src/features/account/styles/ProfileStyles';
 import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../../src/shared/api/client';
+import { formatFullName } from '../../../src/shared/utils/stringUtils';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
@@ -204,7 +205,7 @@ export default function Profile({ onNavigate }) {
           <View style={styles.avatarWrapper}>
             <Image source={userAvatar} style={styles.avatarImg} />
           </View>
-          <Text style={styles.userName}>{`${firstName} ${lastName}`.trim()}</Text>
+          <Text style={styles.userName}>{formatFullName(firstName, lastName)}</Text>
           <Text style={styles.streakText}>
             {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
           </Text>

@@ -14,12 +14,9 @@ import {
   } from 'react-native';
 import { styles } from '../../../src/features/account/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
-import { supabase } from '../../../src/shared/api/supabase';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
-import { endpoints } from '../../../src/shared/api/client';
-
-const API_BASE_URL = endpoints.USER_PROFILE;
+import { formatAddress, parseAddress } from '../../../src/shared/utils/stringUtils';
+import { fetchUserProfile, updateUserProfile } from '../../../src/shared/services/userService';
 
 const availableAvatars = [
   { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
@@ -50,51 +47,24 @@ export default function AccountInformation() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      
-      let session;
-      if (sessionError || !data.session) {
-          const { data: refreshData } = await supabase.auth.refreshSession();
-          if (!refreshData.session) {
-            Alert.alert("Authentication Required", "Please log in again.");
-            setLoading(false);
-            return;
-          }
-          session = refreshData.session;
-      } else {
-          session = data.session;
-      }
-
-      const response = await fetch(API_BASE_URL, {
-        method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const user = result.data;
+      const user = await fetchUserProfile();
+      if (user) {
         setFirstName(user.first_name || '');
         setLastName(user.last_name || '');
         setBirthDate(user.birth_date || '');
         setEmail(user.email || '');
-        
-        const addr = [user.country, user.province, user.city].filter(Boolean).join(', ');
-        setAddress(addr);
+        setAddress(formatAddress(user.country, user.province, user.city));
 
         if (user.profile_avatar_url) {
           const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
           if (matched) setCurrentAvatar(matched);
         }
       } else {
-        Alert.alert("Error", result.message || "Failed to load profile.");
+        Alert.alert('Error', 'Failed to load profile.');
       }
     } catch (error) {
-      console.error("Fetch Profile Error:", error);
-      Alert.alert("Error", "Could not connect to the server.");
+      console.error('Fetch Profile Error:', error);
+      Alert.alert('Error', 'Could not connect to the server.');
     } finally {
       setLoading(false);
     }
@@ -103,39 +73,25 @@ export default function AccountInformation() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-          Alert.alert("Authentication Required", "Please log in.");
-          setLoading(false);
-          return;
-      }
-      
-      const [country, province, city] = address.split(',').map(s => s.trim());
+      const [country, province, city] = parseAddress(address);
 
-      const response = await fetch(API_BASE_URL, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          birthDate,
-          country,
-          province,
-          city,
-          profile_avatar_url: currentAvatar.name 
-        }),
+      const success = await updateUserProfile({
+        firstName,
+        lastName,
+        birthDate,
+        country,
+        province,
+        city,
+        profile_avatar_url: currentAvatar.name,
       });
 
-      if (response.ok) {
-        Alert.alert("Success", "Information updated!", [{ text: "OK", onPress: () => router.back() }]);
+      if (success) {
+        Alert.alert('Success', 'Information updated!', [{ text: 'OK', onPress: () => router.back() }]);
       } else {
-        throw new Error("Update failed");
+        throw new Error('Update failed');
       }
     } catch (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
     }

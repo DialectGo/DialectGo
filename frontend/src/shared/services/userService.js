@@ -31,3 +31,30 @@ export const fetchUserProfile = async () => {
     return null;
   }
 };
+
+/**
+ * Updates the current user's profile data.
+ *
+ * @param {Object} profileData - Fields to update: { firstName, lastName, birthDate, country, province, city, profile_avatar_url }
+ * @returns {Promise<boolean>} true on success, false on failure
+ */
+export const updateUserProfile = async (profileData) => {
+  try {
+    const session = await getValidSession();
+
+    const response = await fetch(PROFILE_API, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("Profile Update Error:", error);
+    return false;
+  }
+};
+

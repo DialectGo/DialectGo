@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { formatBirthDate, deriveUsername } from '../../src/shared/utils/stringUtils';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -72,12 +73,12 @@ export default function SignUp({ onSwitch, onSuccess }) {
           password,
           firstName,
           lastName,
-          birthDate: birthDate.toISOString().split('T')[0],
+          birthDate: formatBirthDate(birthDate),
           country,
           province,
           city,
           // addressLine: `${city}, ${province}, ${country}`,
-          username: email.split('@')[0], 
+          username: deriveUsername(email), 
           preferredLanguageCode: 'en'
         }),
       });
