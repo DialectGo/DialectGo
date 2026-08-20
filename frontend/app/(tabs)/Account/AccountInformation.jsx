@@ -1,8 +1,6 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   ScrollView,
@@ -11,96 +9,28 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  } from 'react-native';
+} from 'react-native';
 import { styles } from '../../../src/features/account/styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../../src/components/ProfileTopBar';
-import { formatAddress, parseAddress } from '../../../src/shared/utils/stringUtils';
-import { fetchUserProfile, updateUserProfile } from '../../../src/shared/services/userService';
-
-const availableAvatars = [
-  { id: 1, name: 'maria_clara.png', source: require('../../../assets/avatars/maria_clara.png') },
-  { id: 2, name: '1.png', source: require('../../../assets/avatars/1.png') },
-  { id: 3, name: '2.png', source: require('../../../assets/avatars/2.png') },
-  { id: 4, name: '3.png', source: require('../../../assets/avatars/3.png') },
-  { id: 5, name: '4.png', source: require('../../../assets/avatars/4.png') },
-];
+import { useAccountInformation } from '../../../src/shared/hooks/profile/useAccountInformation';
 
 export default function AccountInformation() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-
-  // FORM STATES
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState(''); 
-
-  // AVATAR STATES
-  const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const user = await fetchUserProfile();
-      if (user) {
-        setFirstName(user.first_name || '');
-        setLastName(user.last_name || '');
-        setBirthDate(user.birth_date || '');
-        setEmail(user.email || '');
-        setAddress(formatAddress(user.country, user.province, user.city));
-
-        if (user.profile_avatar_url) {
-          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
-          if (matched) setCurrentAvatar(matched);
-        }
-      } else {
-        Alert.alert('Error', 'Failed to load profile.');
-      }
-    } catch (error) {
-      console.error('Fetch Profile Error:', error);
-      Alert.alert('Error', 'Could not connect to the server.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      const [country, province, city] = parseAddress(address);
-
-      const success = await updateUserProfile({
-        firstName,
-        lastName,
-        birthDate,
-        country,
-        province,
-        city,
-        profile_avatar_url: currentAvatar.name,
-      });
-
-      if (success) {
-        Alert.alert('Success', 'Information updated!', [{ text: 'OK', onPress: () => router.back() }]);
-      } else {
-        throw new Error('Update failed');
-      }
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAvatarSelect = (avatarObj) => {
-    setCurrentAvatar(avatarObj);
-    setIsModalVisible(false);
-  };
+  
+  const {
+    loading,
+    firstName, setFirstName,
+    lastName, setLastName,
+    birthDate, setBirthDate,
+    email,
+    address, setAddress,
+    currentAvatar,
+    isModalVisible, setIsModalVisible,
+    handleSave,
+    handleAvatarSelect,
+    availableAvatars
+  } = useAccountInformation(router);
 
   if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
@@ -177,7 +107,6 @@ export default function AccountInformation() {
             />
           </View>
 
-          {/* ✅ FIXED: Restyled Change Password button for better contrast and UI harmony */}
           <TouchableOpacity 
             style={[
               styles.saveBtn, 

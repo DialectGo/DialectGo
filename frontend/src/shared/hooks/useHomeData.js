@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchUserProfile } from '../services/userService';
+import { fetchUserProfile } from '../services/profile/userService';
 import { fetchDailyWord } from '../services/wordService';
 import { fetchStreak } from '../services/streakService';
 import { getWeeklyStatus } from '../utils/dateUtils';

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { clearAuthSession } from '../../services/profile/profileService';
+import { clearAuthSession } from '../../services/profile/userService';
 
 export const useProfileAuth = (isGuest, isConnected, onNavigate, router) => {
   const [gateVisible, setGateVisible] = useState(false);

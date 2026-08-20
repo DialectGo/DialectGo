@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getUserRoleAndMode, getAuthSession } from '../../services/profile/profileService';
+import { getUserRoleAndMode, getAuthSession } from '../../services/profile/userService';
 import { useProfileData } from './useProfileData';
 import { useProfileNetwork } from './useProfileNetwork';
 import { useProfileAuth } from './useProfileAuth';

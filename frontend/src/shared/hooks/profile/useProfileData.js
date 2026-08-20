@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { fetchUserProfileData, fetchUserStreakData } from '../../services/profile/profileService';
+import { fetchUserProfileData, fetchUserStreakData } from '../../services/profile/userService';
 import { availableAvatars } from './constants';
 
 export const useProfileData = () => {
