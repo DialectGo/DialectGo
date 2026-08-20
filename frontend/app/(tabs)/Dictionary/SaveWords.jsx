@@ -180,7 +180,7 @@ export default function SaveWords() {
           </View>
           <View style={styles.rightSection}>
             <Text style={styles.posTag}>{entry.part_of_speech?.toUpperCase() || 'WORD'}</Text>
-            <Image source={require('../../../assets/icons/star.png')} style={styles.starIcon} />
+            <Image source={require('../../../assets/icons/status/star.png')} style={styles.starIcon} />
           </View>
         </TouchableOpacity>
       </View>

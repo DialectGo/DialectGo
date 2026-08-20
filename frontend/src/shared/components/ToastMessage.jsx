@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, StyleSheet } from 'react-native';
+import { colors } from '../theme/colorPalette';
+import { fonts } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -76,9 +78,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   messageText: {
-    color: '#FFF',
+    color: colors.white,
     fontSize: 14,
-    fontFamily: 'Poppins-Medium',
+    fontFamily: fonts.medium,
     flex: 1,
   },
 });

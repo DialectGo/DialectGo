@@ -164,7 +164,7 @@ export default function AccountInformation() {
               onPress={() => setIsModalVisible(true)}
             >
               <Image 
-                source={require('../../../assets/icons/edit_icon.png')} 
+                source={require('../../../assets/icons/actions/edit_icon.png')} 
                 style={styles.editIcon} 
               />
             </TouchableOpacity>

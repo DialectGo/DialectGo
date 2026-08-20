@@ -849,7 +849,7 @@ export default function WikiFeed() {
   }
 >
   <Image
-    source={require('../../../assets/icons/add_icon.png')}
+    source={require('../../../assets/icons/actions/add_icon.png')}
     style={styles.fabIcon}
     resizeMode="contain"
   />

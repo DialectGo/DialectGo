@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { colors } from '../theme/colorPalette';
+import { fonts } from '../theme/typography';
 
 /**
  * A reusable Modal Overlay for displaying Word of the Day details.
@@ -42,66 +44,66 @@ export default function WordOfDayOverlay({ visible, onClose, wordData }) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   wotdModalCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.white,
     borderRadius: 20,
     padding: 25,
     width: '100%',
     maxWidth: 400,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   wotdModalTitle: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 24,
-    color: '#421C00',
+    color: colors.accent,
     textAlign: 'center',
     marginBottom: 10,
   },
   wotdDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.divider,
     width: '100%',
     marginBottom: 15,
   },
   wotdModalSubtitle: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 16,
-    color: '#B45309',
+    color: colors.primaryDeep,
     marginBottom: 5,
   },
   wotdModalText: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fonts.regular,
     fontSize: 15,
-    color: '#4B5563',
+    color: colors.textDark,
     lineHeight: 22,
   },
   wotdModalUsage: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fonts.regular,
     fontSize: 14,
-    color: '#4B5563',
+    color: colors.textDark,
     lineHeight: 20,
     marginBottom: 6,
     fontStyle: 'italic',
   },
   wotdModalCloseBtn: {
-    backgroundColor: '#FFD54F',
+    backgroundColor: colors.primary,
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 25,
   },
   wotdModalCloseText: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 16,
-    color: '#421C00',
+    color: colors.accent,
   },
 });

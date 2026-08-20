@@ -294,7 +294,7 @@ export default function Learn() {
             disabled={loading}
           >
             <Image
-              source={require('../../../assets/icons/sendButton.png')}
+              source={require('../../../assets/icons/nav/sendButton.png')}
               style={styles.sendIcon}
             />
           </TouchableOpacity>

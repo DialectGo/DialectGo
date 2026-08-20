@@ -1,4 +1,6 @@
 import { Dimensions, StyleSheet, Platform } from 'react-native';
+import { colors } from '../../../shared/theme/colorPalette';
+import { fonts } from '../../../shared/theme/typography';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -14,20 +16,20 @@ export const styles = StyleSheet.create({
   tarsiDate: {
     fontSize: 11,
     fontWeight: 'bold',
-    color: '#9CA3AF',
+    color: colors.textGray,
     letterSpacing: 1,
     marginBottom: 4,
   },
   tarsiGreeting: {
     fontSize: 26,
-    color: '#374151',
+    color: colors.textDark,
     fontFamily: 'System', // Use default font but could be custom
   },
 
   // --- MAIN CONTAINER ---
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // o kahit anong background color ng app mo
+    backgroundColor: colors.background, // o kahit anong background color ng app mo
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Para sa Android
   },
   
@@ -44,7 +46,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 25,
     paddingTop: 15,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.white,
   },
   miniLogoHeader: {
     width: 45,
@@ -58,7 +60,7 @@ export const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surfaceGray,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -66,9 +68,9 @@ export const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FFD54F',
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: colors.white,
   },
 
   // --- AESTHETIC HEADER ---
@@ -83,14 +85,14 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   helloText: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: fonts.regular,
     fontSize: 18,
     color: '#A0A0A0',
   },
   userName: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 32,
-    color: '#421C00',
+    color: colors.accent,
     lineHeight: 38,
   },
   statusBadge: {
@@ -99,14 +101,14 @@ export const styles = StyleSheet.create({
     marginTop: 5,
   },
   statusText: {
-    fontFamily: 'Poppins-Medium',
+    fontFamily: fonts.medium,
     fontSize: 12,
-    color: '#4CAF50', // Green indicator
+    color: colors.success, // Green indicator
   },
   avatarWrapper: {
     position: 'relative',
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
   },
@@ -115,23 +117,23 @@ export const styles = StyleSheet.create({
     height: 85,
     borderRadius: 42.5,
     borderWidth: 3,
-    borderColor: '#FFD54F',
+    borderColor: colors.primary,
   },
   levelBadge: {
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: '#421C00',
+    backgroundColor: colors.accent,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: colors.white,
   },
   levelText: {
-    color: '#FFF',
+    color: colors.white,
     fontSize: 10,
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
   },
   // --- SECTION HEADER ---
   sectionHeaderRow: {
@@ -142,15 +144,15 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   sectionTitle: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 26,
-    color: '#421C00',
+    color: colors.accent,
   },
   titleAccentYellow: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FFD54F',
+    backgroundColor: colors.primary,
     marginLeft: 6,
     marginTop: 8, // Center alignment fix for Poppins
   },
@@ -163,13 +165,13 @@ export const styles = StyleSheet.create({
     overflow: 'visible', // REQUIRED: Para lumabas ang bees at jeep sa border
   },
   promoCard: {
-    backgroundColor: '#421C00',
+    backgroundColor: colors.accent,
     borderRadius: 40,
     padding: 25,
     flexDirection: 'row',
     height: 175,
     elevation: 15,
-    shadowColor: '#421C00',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -180,21 +182,21 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   promoLabel: {
-    fontFamily: 'Poppins-Medium',
+    fontFamily: fonts.medium,
     fontSize: 13,
-    color: '#FFD54F',
+    color: colors.primary,
     opacity: 0.9,
     letterSpacing: 0.5,
   },
   promoBrand: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 36,
-    color: '#FFF',
+    color: colors.white,
     lineHeight: 40,
     marginBottom: 15,
   },
   exploreBtn: {
-    backgroundColor: '#FFD54F',
+    backgroundColor: colors.primary,
     paddingHorizontal: 22,
     paddingVertical: 10,
     borderRadius: 20,
@@ -202,9 +204,9 @@ export const styles = StyleSheet.create({
     elevation: 4,
   },
   exploreBtnText: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: fonts.bold,
     fontSize: 12,
-    color: '#421C00',
+    color: colors.accent,
     textTransform: 'uppercase',
   },
 
@@ -304,9 +306,9 @@ heroContent: {
 
 // DATE
 heroDate: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 13,
-  color: '#634F4B',
+  color: colors.accentLight,
   letterSpacing: 0.4,
   textAlign: 'center',
   marginBottom: 2,
@@ -314,23 +316,23 @@ heroDate: {
 
 // GREETING
 heroGreeting: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 21,
-  color: '#FFD044',
+  color: colors.greetingYellow,
   textAlign: 'center',
   lineHeight: 28,
   marginBottom: 16,
 },
 
 heroUserName: {
-  color: '#634F4B',
+  color: colors.accentLight,
 },
 
 // WORD OF THE DAY
 wordOfDayBubble: {
   width: '96%',
   minHeight: 165,
-  backgroundColor: '#FFD54F',
+  backgroundColor: colors.primary,
   borderRadius: 28,
   paddingHorizontal: 20,
   paddingVertical: 18,
@@ -339,7 +341,7 @@ wordOfDayBubble: {
 
   // Soft floating effect
   elevation: 8,
-  shadowColor: '#8A6200',
+  shadowColor: colors.shadowGold,
   shadowOffset: {
     width: 0,
     height: 6,
@@ -365,14 +367,14 @@ wordBubbleArrow: {
   borderRightWidth: 22,
   borderTopColor: 'transparent',
   borderBottomColor: 'transparent',
-  borderRightColor: '#FFD54F',
+  borderRightColor: colors.primary,
 },
 
 // WORD
 heroWord: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 30,
-  color: '#421C00',
+  color: colors.accent,
   textAlign: 'center',
   marginBottom: 4,
   letterSpacing: -0.5,
@@ -380,9 +382,9 @@ heroWord: {
 
 // TRANSLATION
 heroTranslation: {
-  fontFamily: 'Poppins-Medium',
+  fontFamily: fonts.medium,
   fontSize: 16,
-  color: '#634F4B',
+  color: colors.accentLight,
   textAlign: 'center',
   fontStyle: 'italic',
   lineHeight: 21,
@@ -390,9 +392,9 @@ heroTranslation: {
 
 // DEFINITION
 heroWord: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 30,
-  color: '#421C00',
+  color: colors.accent,
   textAlign: 'center',
   marginBottom: 4,
   letterSpacing: -0.5,
@@ -400,9 +402,9 @@ heroWord: {
 
 // DETAILS
 heroDetails: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 10.5,
-  color: '#8A6200',
+  color: colors.shadowGold,
   textDecorationLine: 'underline',
   marginTop: 8,
 },
@@ -419,16 +421,16 @@ progressSectionHeader: {
 },
 
 progressSectionTitle: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 25,
-  color: '#421C00',
+  color: colors.accent,
   letterSpacing: -0.5,
 },
 
 progressSubtitle: {
-  fontFamily: 'Poppins-Medium',
+  fontFamily: fonts.medium,
   fontSize: 11,
-  color: '#9A8177',
+  color: colors.textMuted,
   marginTop: 1,
 },
 
@@ -438,40 +440,40 @@ progressSubtitle: {
 streakBadge: {
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: '#FFF7D6',
+  backgroundColor: colors.surfaceLight,
   paddingHorizontal: 12,
   paddingVertical: 7,
   borderRadius: 20,
   borderWidth: 1,
-  borderColor: '#FFE28A',
+  borderColor: colors.borderGold,
 },
 
 activeDot: {
   width: 7,
   height: 7,
   borderRadius: 4,
-  backgroundColor: '#F4B400',
+  backgroundColor: colors.primaryDark,
   marginRight: 6,
 },
 
 streakBadgeText: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 9,
-  color: '#8A6200',
+  color: colors.shadowGold,
   letterSpacing: 0.8,
 },
 
 progressCard: {
-  backgroundColor: '#FFFDF5',
+  backgroundColor: colors.surface,
   borderRadius: 32,
   paddingHorizontal: 22,
   paddingTop: 22,
   paddingBottom: 18,
   marginBottom: 20,
   borderWidth: 1,
-  borderColor: '#F4E7BF',
+  borderColor: colors.border,
   elevation: 7,
-  shadowColor: '#8A6200',
+  shadowColor: colors.shadowGold,
   shadowOffset: {
     width: 0,
     height: 6,
@@ -500,9 +502,9 @@ progressTopRow: {
   minHeight: 115,
 },
 streakSmallLabel: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 10,
-  color: '#A58D80',
+  color: colors.textHint,
   letterSpacing: 1.3,
   marginBottom: 2,
 },
@@ -512,23 +514,23 @@ streakNumberRow: {
 },
 
 streakNumberLarge: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 58,
-  color: '#421C00',
+  color: colors.accent,
   lineHeight: 64,
   letterSpacing: -2,
 },
 
 streakDays: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 14,
-  color: '#8A6200',
+  color: colors.shadowGold,
   marginLeft: 7,
   letterSpacing: 1,
 },
 superStreakBadge: {
   alignSelf: 'flex-start',
-  backgroundColor: '#421C00',
+  backgroundColor: colors.accent,
   paddingHorizontal: 11,
   paddingVertical: 5,
   borderRadius: 15,
@@ -536,9 +538,9 @@ superStreakBadge: {
 },
 
 superStreakText: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 9,
-  color: '#FFD54F',
+  color: colors.primary,
   letterSpacing: 0.4,
 },
 
@@ -580,17 +582,17 @@ rightFlame: {
   zIndex: 1,
 },
 weeklyProgressContainer: {
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.background,
   borderRadius: 23,
   paddingHorizontal: 13,
   paddingVertical: 13,
   borderWidth: 1,
-  borderColor: '#F3E9D8',
+  borderColor: colors.borderLight,
 },
 weeklyProgressTitle: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 9,
-  color: '#A58D80',
+  color: colors.textHint,
   letterSpacing: 1.2,
   marginBottom: 10,
   textAlign: 'center',
@@ -617,11 +619,11 @@ dayCircleLarge: {
 },
 
 dayActive: {
-  backgroundColor: '#FFD54F',
+  backgroundColor: colors.primary,
   borderWidth: 2,
-  borderColor: '#F4B400',
+  borderColor: colors.primaryDark,
   elevation: 3,
-  shadowColor: '#D89B00',
+  shadowColor: colors.primaryDeep,
   shadowOffset: {
     width: 0,
     height: 2,
@@ -631,15 +633,15 @@ dayActive: {
 },
 
 dayInactive: {
-  backgroundColor: '#F5F1EA',
+  backgroundColor: colors.surfaceMuted,
   borderWidth: 1,
-  borderColor: '#E8DED0',
+  borderColor: colors.borderMuted,
 },
 
 checkMarkLarge: {
   fontSize: 15,
-  color: '#421C00',
-  fontFamily: 'Poppins-Bold',
+  color: colors.accent,
+  fontFamily: fonts.bold,
 },
 
 lockIcon: {
@@ -649,8 +651,8 @@ lockIcon: {
 
 largeDayText: {
   fontSize: 8.5,
-  fontFamily: 'Poppins-Bold',
-  color: '#806F65',
+  fontFamily: fonts.bold,
+  color: colors.textMuted,
   letterSpacing: 0.2,
 },
 
@@ -668,7 +670,7 @@ chatPromoWrapper: {
 chatPromoCard: {
   width: '100%',
   minHeight: 220,
-  backgroundColor: '#FFF7D6',
+  backgroundColor: colors.surfaceLight,
   borderRadius: 32,
   borderWidth: 1.5,
   borderColor: '#FFD45A',
@@ -678,7 +680,7 @@ chatPromoCard: {
   paddingVertical: 20,
   overflow: 'hidden',
   elevation: 7,
-  shadowColor: '#B97800',
+  shadowColor: colors.shadowAmber,
   shadowOffset: {
     width: 0,
     height: 6,
@@ -715,14 +717,14 @@ beeChatBubble: {
   position: 'absolute',
   top: 5,
   right: -2,
-  backgroundColor: '#FFFFFF',
+  backgroundColor: colors.background,
   paddingHorizontal: 10,
   paddingVertical: 7,
   borderRadius: 15,
   borderWidth: 1,
-  borderColor: '#F2D98B',
+  borderColor: colors.border,
   elevation: 3,
-  shadowColor: '#8A6200',
+  shadowColor: colors.shadowGold,
   shadowOffset: {
     width: 0,
     height: 2,
@@ -732,9 +734,9 @@ beeChatBubble: {
 },
 
 beeChatText: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 9,
-  color: '#634F4B',
+  color: colors.accentLight,
 },
 
 // ========================================
@@ -748,29 +750,29 @@ chatPromoContent: {
 },
 
 chatPromoLabel: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 9,
-  color: '#A47700',
+  color: colors.chatPromoLabel,
   letterSpacing: 1.1,
   marginBottom: 3,
 },
 
 chatPromoTitle: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 23,
-  color: '#421C00',
+  color: colors.accent,
   lineHeight: 29,
   marginBottom: 7,
 },
 
 chatPromoTitleAccent: {
-  color: '#F4B400',
+  color: colors.primaryDark,
 },
 
 chatPromoDescription: {
-  fontFamily: 'Poppins-Medium',
+  fontFamily: fonts.medium,
   fontSize: 11.5,
-  color: '#75635B',
+  color: colors.textMuted,
   lineHeight: 17,
   marginBottom: 13,
 },
@@ -784,13 +786,13 @@ chatExploreBtn: {
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#421C00',
+  backgroundColor: colors.accent,
   paddingLeft: 15,
   paddingRight: 11,
   paddingVertical: 9,
   borderRadius: 18,
   elevation: 3,
-  shadowColor: '#421C00',
+  shadowColor: colors.accent,
   shadowOffset: {
     width: 0,
     height: 3,
@@ -800,15 +802,15 @@ chatExploreBtn: {
 },
 
 chatExploreBtnText: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 11,
-  color: '#FFD54F',
+  color: colors.primary,
 },
 
 chatExploreArrow: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 17,
-  color: '#FFD54F',
+  color: colors.primary,
   marginLeft: 7,
   marginTop: -2,
 },
@@ -822,12 +824,12 @@ chatBubbleSmall: {
   width: 34,
   height: 34,
   borderRadius: 17,
-  backgroundColor: '#FFD54F',
+  backgroundColor: colors.primary,
   justifyContent: 'center',
   alignItems: 'center',
   zIndex: 5,
   elevation: 4,
-  shadowColor: '#B97800',
+  shadowColor: colors.shadowAmber,
   shadowOffset: {
     width: 0,
     height: 3,
@@ -847,7 +849,7 @@ chatBubbleTwo: {
   width: 28,
   height: 28,
   borderRadius: 14,
-  backgroundColor: '#FFF0B3',
+  backgroundColor: colors.surfaceLight,
 },
 
 chatBubbleEmoji: {
@@ -859,74 +861,74 @@ chatBubbleEmoji: {
 // ========================================
 
 heroDefinition: {
-  fontFamily: 'Poppins-Regular',
+  fontFamily: fonts.regular,
   fontSize: 13,
-  color: '#634F4B',
+  color: colors.accentLight,
   textAlign: 'center',
   marginBottom: 8,
 },
 
 modalOverlay: {
   flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  backgroundColor: colors.overlay,
   justifyContent: 'center',
   alignItems: 'center',
   padding: 20,
 },
 
 wotdModalCard: {
-  backgroundColor: '#FFF',
+  backgroundColor: colors.white,
   borderRadius: 20,
   padding: 25,
   width: '100%',
   maxWidth: 400,
   elevation: 5,
-  shadowColor: '#000',
+  shadowColor: '#000000',
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.25,
   shadowRadius: 4,
 },
 
 wotdModalTitle: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 24,
-  color: '#421C00',
+  color: colors.accent,
   textAlign: 'center',
   marginBottom: 10,
 },
 
 wotdDivider: {
   height: 1,
-  backgroundColor: '#E5E7EB',
+  backgroundColor: colors.divider,
   width: '100%',
   marginBottom: 15,
 },
 
 wotdModalSubtitle: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 16,
-  color: '#B45309',
+  color: colors.primaryDeep,
   marginBottom: 5,
 },
 
 wotdModalText: {
-  fontFamily: 'Poppins-Regular',
+  fontFamily: fonts.regular,
   fontSize: 15,
-  color: '#4B5563',
+  color: colors.textDark,
   lineHeight: 22,
 },
 
 wotdModalUsage: {
-  fontFamily: 'Poppins-Regular',
+  fontFamily: fonts.regular,
   fontSize: 14,
-  color: '#4B5563',
+  color: colors.textDark,
   lineHeight: 20,
   marginBottom: 6,
   fontStyle: 'italic',
 },
 
 wotdModalCloseBtn: {
-  backgroundColor: '#FFD54F',
+  backgroundColor: colors.primary,
   borderRadius: 25,
   paddingVertical: 12,
   alignItems: 'center',
@@ -934,9 +936,9 @@ wotdModalCloseBtn: {
 },
 
 wotdModalCloseText: {
-  fontFamily: 'Poppins-Bold',
+  fontFamily: fonts.bold,
   fontSize: 16,
-  color: '#421C00',
+  color: colors.accent,
 },
 
 });

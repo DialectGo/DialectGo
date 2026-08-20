@@ -7,10 +7,10 @@ import { supabase } from '../../../src/shared/api/supabase';
 // Components & Icons
 import LanguageSelector from '../../../src/features/translator/components/LanguageSelector';
 import ResultCard from '../../../src/features/dictionary/components/ResultCard';
-import translateIcon from '../../../assets/icons/translateIcon.png';
-import cameraIcon from '../../../assets/icons/cameraIcon.png'; 
-import galleryIcon from '../../../assets/icons/camera.png'; // Make sure you have this
-import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+import translateIcon from '../../../assets/icons/bottombar/translateIcon.png';
+import cameraIcon from '../../../assets/icons/actions/cameraIcon.png'; 
+import galleryIcon from '../../../assets/icons/actions/camera.png'; // Make sure you have this
+import pronounceIcon from '../../../assets/icons/actions/pronounceIcon.png';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 

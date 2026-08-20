@@ -17,8 +17,8 @@ import TopBar from '../../../src/components/TopBar';
 import ContributionModal from '../../../src/features/wiki/components/ContributionModal';
 
 // Assets
-import translateIcon from '../../../assets/icons/translateIcon.png';
-import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+import translateIcon from '../../../assets/icons/bottombar/translateIcon.png';
+import pronounceIcon from '../../../assets/icons/actions/pronounceIcon.png';
 
 import { TRANSLATION_API_BASE } from '../../../src/shared/api/client';
 const ENDPOINTS = {

@@ -213,18 +213,18 @@ export default function Profile({ onNavigate }) {
         <View style={styles.settingsContainer}>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/AccountInformation')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/profileIcon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/profileIcon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Account Information</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Activities')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/activities_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/activities_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>My Activities</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => handleProtectedAction('/Account/Streaks')}>
@@ -232,28 +232,28 @@ export default function Profile({ onNavigate }) {
               <Image source={require('../../../assets/images/beefire.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Streaks</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/Settings')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/settings_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/settings_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>Settings</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/Account/About')}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/info_icon.png')} style={styles.menuIcon} />
+              <Image source={require('../../../assets/icons/profile/info_icon.png')} style={styles.menuIcon} />
               <Text style={styles.menuText}>About DialectGo</Text>
             </View>
-            <Image source={require('../../../assets/icons/forward_arrow.png')} style={styles.arrowIcon} />
+            <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <View style={styles.menuLeft}>
-              <Image source={require('../../../assets/icons/logout_icon.png')} style={styles.logoutIcon} />
+              <Image source={require('../../../assets/icons/actions/logout_icon.png')} style={styles.logoutIcon} />
               <Text style={styles.logoutText}>{isGuest ? 'Exit Guest Mode' : 'Log out'}</Text>
             </View>
           </TouchableOpacity>

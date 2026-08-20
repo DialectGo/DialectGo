@@ -1,7 +1,7 @@
 // import React, { useState } from 'react'; 
 // import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 // import ResultCard from '../../../../src/features/dictionary/components/ResultCard';
-// import pronounceIcon from '../../../../assets/icons/pronounceIcon.png';
+// import pronounceIcon from '../../../../assets/icons/actions/pronounceIcon.png';
 
 // export default function Result({ onBack, sourceText, translatedText, targetLang, sourceLang }) {
 //   const [activeTab, setActiveTab] = useState('examples');

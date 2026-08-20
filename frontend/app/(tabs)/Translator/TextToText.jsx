@@ -9,10 +9,10 @@ import LanguageSelector from '../../../src/features/translator/components/Langua
 import TranslationInput from '../../../src/features/translator/components/TranslationInput';
 import ResultCard from '../../../src/features/dictionary/components/ResultCard';
 
-import cameraIcon from '../../../assets/icons/cameraIcon.png';
-import micIcon from '../../../assets/icons/micIcon.png';
-import translateIcon from '../../../assets/icons/translateIcon.png';
-import pronounceIcon from '../../../assets/icons/pronounceIcon.png';
+import cameraIcon from '../../../assets/icons/actions/cameraIcon.png';
+import micIcon from '../../../assets/icons/actions/micIcon.png';
+import translateIcon from '../../../assets/icons/bottombar/translateIcon.png';
+import pronounceIcon from '../../../assets/icons/actions/pronounceIcon.png';
 
 import { supabase } from '../../../src/shared/api/supabase';
 

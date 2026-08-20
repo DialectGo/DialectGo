@@ -101,7 +101,7 @@ export default function Streaks() {
                     weeklyStatus[index] ? styles.activeDayCircle : styles.inactiveDayCircle
                   ]}>
                     {weeklyStatus[index] && (
-                      <Image source={require('../../../assets/icons/check_icon.png')} style={styles.checkIcon} />
+                      <Image source={require('../../../assets/icons/status/check_icon.png')} style={styles.checkIcon} />
                     )}
                   </View>
                   <Text style={styles.dayLabel}>{day}</Text>
