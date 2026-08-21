@@ -31,7 +31,7 @@ import DictionaryList from "../../shared/components/dictionary/DictionaryList";
 import { styles } from "./styles/DictionaryStyles";
 
 export default function DictionaryScreen() {
-  const { slide } = useLocalSearchParams();
+  const { slide, search } = useLocalSearchParams();
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -66,6 +66,13 @@ export default function DictionaryScreen() {
   );
 
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+
+  useEffect(() => {
+    if (search && typeof search === 'string') {
+      setSearchQuery(search);
+    }
+  }, [search, setSearchQuery]);
+
   return (
     <View style={styles.container}>
       <Stack.Screen

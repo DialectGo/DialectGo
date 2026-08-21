@@ -28,7 +28,7 @@ export default function DictionaryHistoryCard({
         activeOpacity={0.7}
         style={styles.historyCard}
         onPress={() => {
-          router.push(`/Dictionary/Search?term=${item.search_term}`);
+          router.navigate({ pathname: '/Dictionary/Dictionary', params: { search: item.search_term } });
         }}
       >
         <View style={{ flex: 1 }}>
