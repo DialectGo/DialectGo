@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { fetchHistory as fetchHistoryService } from '../../services/historyService';
 
@@ -53,8 +53,23 @@ export const useTranslationHistory = () => {
         fetchHistory(nextPage);
     };
 
+    const historySections = React.useMemo(() => {
+        const sections = {};
+        history.forEach(record => {
+            const date = record.created_at ? new Date(record.created_at) : new Date();
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            const dateString = date.toLocaleDateString('en-US', options);
+            if (!sections[dateString]) {
+                sections[dateString] = [];
+            }
+            sections[dateString].push(record);
+        });
+        return Object.keys(sections).map(title => ({ title, data: sections[title] }));
+    }, [history]);
+
     return {
         history,
+        historySections,
         loading,
         loadingMore,
         refreshing,
