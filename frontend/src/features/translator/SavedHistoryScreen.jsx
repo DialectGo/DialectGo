@@ -13,7 +13,7 @@ export default function SavedHistoryScreen() {
         <HistoryCard
             item={item}
             onPress={() => router.push({
-                pathname: '/Translator/HistoryDetail',
+                pathname: '/Translator/TranslationDetail',
                 params: { itemString: JSON.stringify(item) }
             })}
         />

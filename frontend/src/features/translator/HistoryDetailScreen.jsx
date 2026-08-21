@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../shared/theme/colorPalette';
+import { LANGUAGES } from '../../shared/hooks/translate/constants';
 
 export default function HistoryDetailScreen() {
     const router = useRouter();
@@ -20,8 +21,11 @@ export default function HistoryDetailScreen() {
         );
     }
 
-    const sourceLangName = item.source_lang?.name || item.source_language_id || 'Unknown';
-    const targetLangName = item.target_lang?.name || item.target_language_id || 'Unknown';
+    const sourceLang = LANGUAGES.find(l => l.id == item.source_language_id);
+    const targetLang = LANGUAGES.find(l => l.id == item.target_language_id);
+
+    const sourceLangName = item.source_lang?.name || sourceLang?.name || item.source_language_id || 'Unknown';
+    const targetLangName = item.target_lang?.name || targetLang?.name || item.target_language_id || 'Unknown';
 
     return (
         <SafeAreaView style={styles.safeArea}>
