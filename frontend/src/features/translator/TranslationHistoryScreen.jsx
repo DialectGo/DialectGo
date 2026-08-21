@@ -1,75 +1,32 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import React from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { fetchHistory as fetchHistoryService } from '../../../src/shared/services/historyService';
+import { useRouter } from 'expo-router';
+import { useTranslationHistory } from '../../shared/hooks/translator/useTranslationHistory';
 
-const PAGE_SIZE = 10;
-
-export default function History() {
-    const navigation = useNavigation();
-    const [history, setHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [page, setPage] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-
-    const fetchHistory = async (pageNumber = 0, shouldRefresh = false) => {
-        try {
-            if (pageNumber === 0) setLoading(true);
-
-            const records = await fetchHistoryService(pageNumber, PAGE_SIZE);
-
-            if (shouldRefresh || pageNumber === 0) {
-                setHistory(records);
-                setHasMore(records.length === PAGE_SIZE);
-            } else {
-                setHistory(prev => [...prev, ...records]);
-                setHasMore(records.length === PAGE_SIZE);
-            }
-        } catch (error) {
-            console.error('Fetch History Error:', error.message);
-            Alert.alert('Error', error.message);
-        } finally {
-            setLoading(false);
-            setLoadingMore(false);
-            setRefreshing(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchHistory(0);
-    }, []);
-
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        setPage(0);
-        fetchHistory(0, true);
-    }, []);
-
-    const handleLoadMore = () => {
-        if (!hasMore || loadingMore || loading) return;
-        setLoadingMore(true);
-        const nextPage = page + 1;
-        setPage(nextPage);
-        fetchHistory(nextPage);
-    };
+export default function TranslationHistoryScreen() {
+    const router = useRouter();
+    const {
+        history,
+        loading,
+        loadingMore,
+        refreshing,
+        page,
+        onRefresh,
+        handleLoadMore
+    } = useTranslationHistory();
 
     const renderItem = ({ item }) => (
         <View style={styles.card}>
             <View style={styles.content}>
                 <View style={styles.langRow}>
-                    {/* Fallback to code/language strings safely if relation sub-objects exist */}
                     <Text style={styles.langLabel}>{item.source_lang?.code || item.source_language_id || 'Unknown'}</Text>
-                    {/* Yellow Arrow Icon */}
                     <Ionicons name="arrow-forward" size={12} color="#FFCC00" style={{ marginHorizontal: 4 }} />
                     <Text style={styles.langLabel}>{item.target_lang?.code || item.target_language_id || 'Unknown'}</Text>
                 </View>
                 <Text style={styles.sourceText}>{item.source_text}</Text>
                 <Text style={styles.translatedText}>{item.translated_text}</Text>
             </View>
-            {/* Bookmark button has been removed from here */}
         </View>
     );
 
@@ -90,15 +47,13 @@ export default function History() {
 
     return (
         <View style={styles.container}>
-            {/* Top Navigation Row featuring the Yellow Back Button */}
             <View style={styles.navigationRow}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color="#FFCC00" />
                     <Text style={styles.backButtonText}>Back</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Header Row featuring the Yellow Refresh Button */}
             <View style={styles.headerRow}>
                 <Text style={styles.header}>History</Text>
                 <TouchableOpacity onPress={onRefresh}>

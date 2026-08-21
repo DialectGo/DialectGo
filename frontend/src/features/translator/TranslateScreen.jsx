@@ -65,7 +65,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         titlePrimary="DialectGo" 
         titleSecondary="Translator" 
         screenType="translator"
-        onHistoryPress={() => router.push('/History/History')}
+        onHistoryPress={() => router.push('/Translator/TranslationHistory')}
       />
 
       <ScrollView 
