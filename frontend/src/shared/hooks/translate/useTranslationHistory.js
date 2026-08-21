@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Alert } from 'react-native';
 import { fetchHistory as fetchHistoryService } from '../../services/historyService';
 
@@ -35,9 +36,11 @@ export const useTranslationHistory = () => {
         }
     };
 
-    useEffect(() => {
-        fetchHistory(0);
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchHistory(0);
+        }, [])
+    );
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);

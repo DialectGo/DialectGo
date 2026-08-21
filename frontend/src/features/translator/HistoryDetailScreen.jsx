@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../shared/theme/colorPalette';
 import { LANGUAGES } from '../../shared/hooks/translate/constants';
+import { styles as translateStyles } from './styles/TranslateStyles';
 
 export default function HistoryDetailScreen() {
     const router = useRouter();
@@ -27,6 +28,8 @@ export default function HistoryDetailScreen() {
     const sourceLangName = item.source_lang?.name || sourceLang?.name || item.source_language_id || 'Unknown';
     const targetLangName = item.target_lang?.name || targetLang?.name || item.target_language_id || 'Unknown';
 
+    const isDocumentOrImage = item.source_type === 'document' || item.source_type === 'image';
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
@@ -39,36 +42,55 @@ export default function HistoryDetailScreen() {
 
                     <View style={styles.headerRight}>
                         <TouchableOpacity style={styles.headerIcon}>
-                            <Ionicons name="time-outline" size={24} color={colors.textPrimary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerIcon}>
                             <Ionicons name="bookmark-outline" size={24} color={colors.textPrimary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerIcon}>
-                            <Ionicons name="ellipsis-horizontal" size={24} color={colors.textPrimary} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                     {/* Source Section */}
-                    <Text style={styles.langName}>{sourceLangName}</Text>
-                    <Text style={styles.sourceText}>{item.source_text}</Text>
+                    <View style={translateStyles.translateCard}>
+                        <View style={translateStyles.cardHeader}>
+                            <Text style={translateStyles.inputLabel}>{sourceLangName.toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[translateStyles.mainInput, { fontSize: 16 }]} selectable>{item.source_text}</Text>
+                        </View>
 
-                    <View style={styles.actionRow}>
-                        <TouchableOpacity style={styles.actionIcon}>
-                            <Ionicons name="volume-high" size={24} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionIcon}>
-                            <Ionicons name="copy-outline" size={22} color={colors.textSecondary} />
-                        </TouchableOpacity>
+                        {/* No footer for source card in history, just like TranslateScreen which only has inputs there */}
                     </View>
 
-                    <View style={styles.divider} />
-
                     {/* Target Section */}
-                    <Text style={styles.langNameTarget}>{targetLangName}</Text>
-                    <Text style={styles.targetText}>{item.translated_text}</Text>
+                    <View style={[translateStyles.translateCard, translateStyles.resultCardExtra]}>
+                        <View style={translateStyles.cardHeader}>
+                            <Text style={translateStyles.inputLabel}>{targetLangName.toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[translateStyles.resultText, { fontSize: 16 }]} selectable>{item.translated_text}</Text>
+
+                            <View style={translateStyles.outputToolbar}>
+                                {!isDocumentOrImage && (
+                                    <TouchableOpacity style={translateStyles.outputToolbarBtn}>
+                                        <Ionicons name="volume-medium-outline" size={20} color="#1F2937" />
+                                    </TouchableOpacity>
+                                )}
+
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    {!isDocumentOrImage && (
+                                        <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]}>
+                                            <Ionicons name="copy-outline" size={20} color="#1F2937" />
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]}>
+                                        <MaterialIcons name="thumbs-up-down" size={20} color="#1F2937" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={translateStyles.outputToolbarBtn}>
+                                        <Ionicons name="ellipsis-horizontal" size={20} color="#1F2937" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
 
                     {/* Optional spacing at bottom */}
                     <View style={{ height: 100 }} />

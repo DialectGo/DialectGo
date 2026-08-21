@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Alert } from 'react-native';
 import { fetchSavedTranslations } from '../../services/translate/bookmarkService';
 
@@ -23,9 +24,11 @@ export const useSavedTranslations = () => {
         }
     }, []);
 
-    useEffect(() => {
-        loadBookmarks();
-    }, [loadBookmarks]);
+    useFocusEffect(
+        useCallback(() => {
+            loadBookmarks();
+        }, [loadBookmarks])
+    );
 
     const onRefresh = () => {
         loadBookmarks(true);

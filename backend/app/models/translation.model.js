@@ -10,18 +10,39 @@ export const TranslationModel = {
                 source_text: data.sourceText,
                 translated_text: data.translatedText,
                 source_language_id: data.sourceLanguageId,
-                target_language_id: data.targetLanguageId
+                target_language_id: data.targetLanguageId,
+                source_type: data.sourceType || 'text'
             }])
             .select();
     },
 
     getHistory: async (userId, token) => {
         const client = getAuthClient(token);
-        return await client
+        
+        // 1. Fetch translation history
+        const { data: history, error } = await client
             .from('translation_history')
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
+
+        if (error || !history) return { data: history, error };
+
+        // 2. Fetch saved translations for this user
+        const { data: saved } = await client
+            .from('saved_translations')
+            .select('translation_id')
+            .eq('user_id', userId);
+
+        const savedIds = new Set(saved?.map(s => s.translation_id) || []);
+
+        // 3. Attach is_bookmarked boolean to each record
+        const enrichedHistory = history.map(item => ({
+            ...item,
+            is_bookmarked: savedIds.has(item.id)
+        }));
+
+        return { data: enrichedHistory, error: null };
     },
 
     deleteHistory: async (id, userId, token) => {

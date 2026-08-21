@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { toggleBookmarkTranslation } from '../../services/translate/bookmarkService';
 
 export const useBookmarkTranslation = (initialBookmarked = false) => {
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsBookmarked(initialBookmarked);
+    }, [initialBookmarked]);
 
     const toggleBookmark = async (translationId) => {
         if (!translationId) return;

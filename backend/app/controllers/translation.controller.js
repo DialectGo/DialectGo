@@ -22,7 +22,8 @@ export const translateImage = async (req, res, next) => {
                 sourceText: text,
                 translatedText: result.translatedText,
                 sourceLanguageId: source_language_id,
-                targetLanguageId: target_language_id
+                targetLanguageId: target_language_id,
+                sourceType: 'image'
             }, req.token);
             if (!error) savedRecord = data?.[0];
         }
@@ -76,7 +77,8 @@ export const translateDocument = async (req, res, next) => {
                 sourceText: extractedText,
                 translatedText: result.translatedText,
                 sourceLanguageId: source_language_id,
-                targetLanguageId: target_language_id
+                targetLanguageId: target_language_id,
+                sourceType: 'document'
             }, req.token);
             if (!error) savedRecord = data?.[0];
             
@@ -198,7 +200,8 @@ export const translateAudio = async (req, res, next) => {
                 sourceText: result.transcript,
                 translatedText: finalTranslation,
                 sourceLanguageId: source_language_id || 1,
-                targetLanguageId: target_language_id || 2
+                targetLanguageId: target_language_id || 2,
+                sourceType: 'audio'
             };
 
             const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload, req.token);
@@ -257,7 +260,7 @@ export const translateText = async (req, res, next) => {
         let savedRecord = null;
         if (req.user?.id) {
             const { data, error } = await TranslationService.saveHistory(req.user.id, {
-                sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
+                sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id, sourceType: 'text'
             }, req.token);
 
             if (error) throw error;
