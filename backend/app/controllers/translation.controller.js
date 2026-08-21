@@ -22,7 +22,8 @@ export const translateImage = async (req, res, next) => {
                 sourceText: text,
                 translatedText: result.translatedText,
                 sourceLanguageId: source_language_id,
-                targetLanguageId: target_language_id
+                targetLanguageId: target_language_id,
+                sourceType: 'image'
             }, req.token);
             if (!error) savedRecord = data?.[0];
         }
@@ -76,7 +77,8 @@ export const translateDocument = async (req, res, next) => {
                 sourceText: extractedText,
                 translatedText: result.translatedText,
                 sourceLanguageId: source_language_id,
-                targetLanguageId: target_language_id
+                targetLanguageId: target_language_id,
+                sourceType: 'document'
             }, req.token);
             if (!error) savedRecord = data?.[0];
             
@@ -198,7 +200,8 @@ export const translateAudio = async (req, res, next) => {
                 sourceText: result.transcript,
                 translatedText: finalTranslation,
                 sourceLanguageId: source_language_id || 1,
-                targetLanguageId: target_language_id || 2
+                targetLanguageId: target_language_id || 2,
+                sourceType: 'audio'
             };
 
             const { data, error } = await TranslationService.saveHistory(req.user.id, historyPayload, req.token);
@@ -257,7 +260,7 @@ export const translateText = async (req, res, next) => {
         let savedRecord = null;
         if (req.user?.id) {
             const { data, error } = await TranslationService.saveHistory(req.user.id, {
-                sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id
+                sourceText, translatedText: result.translatedText, sourceLanguageId: source_language_id, targetLanguageId: target_language_id, sourceType: 'text'
             }, req.token);
 
             if (error) throw error;
@@ -549,4 +552,37 @@ export const textToSpeech = async (req, res, next) => {
         }
         res.status(200).json({ success: true, audioBase64 });
     } catch (err) { next(err); }
+};
+
+export const toggleBookmark = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const translationId = req.params.id;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!translationId) {
+            return res.status(400).json({ success: false, message: 'Translation ID is required' });
+        }
+        
+        const { bookmarked, error } = await TranslationService.toggleBookmark(userId, translationId, token);
+        if (error) throw error;
+        
+        res.status(200).json({ success: true, bookmarked });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getSavedTranslations = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        const { data, error } = await TranslationService.getSavedTranslations(userId, token);
+        if (error) throw error;
+        
+        res.status(200).json({ success: true, data: data || [] });
+    } catch (error) {
+        next(error);
+    }
 };

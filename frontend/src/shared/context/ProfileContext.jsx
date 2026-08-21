@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useCallback, useState, useRef } from 'react';
-import { useProfileData } from '../../hooks/profile/useProfileData';
-import { useProfileNetwork } from '../../hooks/profile/useProfileNetwork';
-import { getUserRoleAndMode, getAuthSession } from '../../services/profile/userService';
+import { useProfileData } from '../hooks/profile/useProfileData';
+import { useProfileNetwork } from '../hooks/profile/useProfileNetwork';
+import { getUserRoleAndMode, getAuthSession } from '../services/profile/userService';
 
 const ProfileContext = createContext();
 

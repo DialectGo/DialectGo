@@ -437,3 +437,21 @@ export const getHistory = async (userId, token) => await TranslationModel.getHis
 export const deleteHistory = async (id, userId, token) => await TranslationModel.deleteHistory(id, userId, token);
 export const addFeedback = async (userId, tId, rating, comment, token) => await TranslationModel.addFeedback(userId, tId, rating, comment, token);
 export const submitRecommendation = async (userId, data, token) => await TranslationModel.saveUserTranslation(userId, data, token);
+
+export const toggleBookmark = async (userId, translationId, token) => {
+    return await TranslationModel.toggleBookmark(userId, translationId, token);
+};
+
+export const getSavedTranslations = async (userId, token) => {
+    const result = await TranslationModel.getSavedTranslations(userId, token);
+    
+    // Transform result to match regular history structure so frontend doesn't need to change much
+    if (result.data) {
+        result.data = result.data.map(item => ({
+            ...item.translation_history,
+            is_bookmarked: true // Add flag
+        }));
+    }
+    
+    return result;
+};

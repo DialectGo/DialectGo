@@ -15,7 +15,7 @@ const availableAvatars = [
   { id: 5, name: '4.png', source: require('../../assets/avatars/4.png') },
 ];
 
-import { useProfileContext } from '../shared/contexts/profile/ProfileContext';
+import { useProfileContext } from '../shared/context/ProfileContext';
 
 const TopBar = ({
   titlePrimary,

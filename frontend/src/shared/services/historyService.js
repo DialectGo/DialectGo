@@ -3,7 +3,7 @@
  *
  * Handles all translation history API calls.
  */
-import { API_API_BASE } from '../api/client';
+import { TRANSLATION_API_BASE } from '../api/client';
 import { getValidSession } from './authService';
 
 const PAGE_SIZE = 10;
@@ -19,7 +19,7 @@ export const fetchHistory = async (page = 0, limit = PAGE_SIZE) => {
   const session = await getValidSession();
 
   const response = await fetch(
-    `${API_API_BASE}/history?page=${page}&limit=${limit}`,
+    `${TRANSLATION_API_BASE}/history?page=${page}&limit=${limit}`,
     {
       method: 'GET',
       headers: {

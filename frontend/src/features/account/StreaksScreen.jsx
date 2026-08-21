@@ -7,7 +7,7 @@ import { styles } from './styles/StreakStyles';
 import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { getWeeklyStatus } from '../../shared/utils/dateUtils';
-import { useProfileContext } from '../../shared/contexts/profile/ProfileContext';
+import { useProfileContext } from '../../shared/context/ProfileContext';
 
 export default function StreaksScreen() { 
   const router = useRouter(); 
