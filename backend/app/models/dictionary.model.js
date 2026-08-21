@@ -112,7 +112,7 @@ export const DictionaryModel = {
         // console.log("Attempting to insert:", { userId, term });
         const result = await client
             .from('search_history')
-            .insert([{ user_id: userId, search_term: term }])
+            .upsert([{ user_id: userId, search_term: term }], { onConflict: 'user_id, search_term' })
             .select();
         
         if (result.error) console.error("Database Insert Error:", result.error);

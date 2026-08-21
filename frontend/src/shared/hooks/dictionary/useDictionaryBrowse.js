@@ -1,7 +1,7 @@
 // shared/hooks/useDictionaryBrowse.js
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../shared/api/supabase';
-import { endpoints } from '../../../shared/api/client';
+import { supabase } from '../../api/supabase';
+import { endpoints } from '../../api/client';
 
 const BROWSE_API_URL = endpoints.DICTIONARY_BROWSE;
 
