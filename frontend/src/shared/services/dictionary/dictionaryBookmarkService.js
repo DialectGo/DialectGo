@@ -3,6 +3,8 @@ import { endpoints } from '../../api/client';
 
 const SAVE_API_URL = endpoints.DICTIONARY_SAVE;
 const CHECK_SAVED_API_URL = endpoints.DICTIONARY_CHECK_SAVED;
+const GET_SAVED_API_URL = `${endpoints.DICTIONARY_BASE}/saved`;
+const DELETE_MULTIPLE_API_URL = `${endpoints.DICTIONARY_BASE}/delete-multiple`;
 
 export const dictionaryBookmarkService = {
   checkBookmarkStatus: async (id) => {
@@ -47,5 +49,43 @@ export const dictionaryBookmarkService = {
     } else {
       throw new Error(result.message || 'Failed to save.');
     }
+  },
+
+  getSavedWords: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const response = await fetch(GET_SAVED_API_URL, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+    if (result.success && result.data && result.data.data) {
+      return result.data.data;
+    }
+    return [];
+  },
+
+  deleteSavedWords: async (ids) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await fetch(DELETE_MULTIPLE_API_URL, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete items.');
+    }
+    return true;
   }
 };
