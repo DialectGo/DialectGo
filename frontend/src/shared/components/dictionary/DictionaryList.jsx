@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlatList, View, Text, ActivityIndicator, RefreshControl } from 'react-native';
-import DictionaryEntryCard from '../../../shared/components/dictionary/DictionaryEntryCard';
+import DictionaryEntryCard from './DictionaryEntryCard';
 
 export default function DictionaryList({
     searchQuery,
