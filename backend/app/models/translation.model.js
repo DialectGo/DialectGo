@@ -33,11 +33,46 @@ export const TranslationModel = {
             .eq('user_id', userId);
     },
 
-    saveBookmark: async (userId, translationId, token) => {
+    toggleBookmark: async (userId, translationId, token) => {
+        const client = getAuthClient(token);
+        
+        // Check if bookmark exists
+        const { data: existing } = await client
+            .from('saved_translations')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('translation_id', translationId)
+            .maybeSingle();
+            
+        if (existing) {
+            // Remove bookmark
+            const { error } = await client
+                .from('saved_translations')
+                .delete()
+                .eq('id', existing.id);
+            return { bookmarked: false, error };
+        } else {
+            // Add bookmark
+            const { error } = await client
+                .from('saved_translations')
+                .insert([{ user_id: userId, translation_id: translationId }]);
+            return { bookmarked: true, error };
+        }
+    },
+
+    getSavedTranslations: async (userId, token) => {
         const client = getAuthClient(token);
         return await client
             .from('saved_translations')
-            .insert([{ user_id: userId, translation_id: translationId }]);
+            .select(`
+                id,
+                translation_id,
+                translation_history (
+                    *
+                )
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
     },
 
     addFeedback: async (userId, translationId, rating, comment, token) => {

@@ -3,7 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colorPalette'; // relative to shared/components/translator
 
+import { useBookmarkTranslation } from '../../hooks/translate/useBookmarkTranslation';
+
 export default function HistoryCard({ item, onPress }) {
+    const { isBookmarked, toggleBookmark, isLoading } = useBookmarkTranslation(item.is_bookmarked || false);
+
     return (
         <TouchableOpacity style={styles.card} onPress={onPress}>
             <View style={styles.content}>
@@ -14,8 +18,16 @@ export default function HistoryCard({ item, onPress }) {
                     {item.translated_text?.trim().replace(/\s+/g, ' ')}
                 </Text>
             </View>
-            <TouchableOpacity style={styles.bookmarkButton}>
-                <Ionicons name="bookmark-outline" size={24} color={colors.textMuted} />
+            <TouchableOpacity 
+                style={styles.bookmarkButton} 
+                onPress={() => toggleBookmark(item.id)}
+                disabled={isLoading}
+            >
+                <Ionicons 
+                    name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+                    size={24} 
+                    color={isBookmarked ? colors.primary : colors.textMuted} 
+                />
             </TouchableOpacity>
         </TouchableOpacity>
     );

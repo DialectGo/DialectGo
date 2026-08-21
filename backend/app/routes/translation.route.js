@@ -12,6 +12,8 @@ import {
     customizeTranslation,
     explainSegment,
     textToSpeech,
+    toggleBookmark,
+    getSavedTranslations,
     adminGetAllHistory, 
     adminGetAllRecommendations, 
     adminGetTranslationAnalytics 
@@ -41,6 +43,9 @@ router.use('/translate', translateRouter);
 // Other routes that don't fit under /translate
 router.get('/history', verifyToken, getUserHistory);
 router.post('/feedback', verifyToken, submitFeedback);
+
+router.post('/:id/bookmark', verifyToken, toggleBookmark);
+router.get('/bookmarks', verifyToken, getSavedTranslations);
 
 // --- DUAL-CONTROL WORKSPACE MANAGEMENT ENDPOINTS ---
 // Cleaned: Removed duplicate prefixes and standardized role string to lowercase 'admin'

@@ -550,3 +550,36 @@ export const textToSpeech = async (req, res, next) => {
         res.status(200).json({ success: true, audioBase64 });
     } catch (err) { next(err); }
 };
+
+export const toggleBookmark = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const translationId = req.params.id;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!translationId) {
+            return res.status(400).json({ success: false, message: 'Translation ID is required' });
+        }
+        
+        const { bookmarked, error } = await TranslationService.toggleBookmark(userId, translationId, token);
+        if (error) throw error;
+        
+        res.status(200).json({ success: true, bookmarked });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getSavedTranslations = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        const { data, error } = await TranslationService.getSavedTranslations(userId, token);
+        if (error) throw error;
+        
+        res.status(200).json({ success: true, data: data || [] });
+    } catch (error) {
+        next(error);
+    }
+};
