@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchDailyWord } from '../services/wordService';
 import { getWeeklyStatus } from '../utils/dateUtils';
-import { useProfileContext } from '../contexts/profile/ProfileContext';
+import { useProfileContext } from '../context/ProfileContext';
 
 export const useHomeData = () => {
   const [loading, setLoading] = useState(true);

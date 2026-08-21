@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { formatAddress, parseAddress } from '../../utils/stringUtils';
 import { fetchUserProfile, updateUserProfile } from '../../services/profile/userService';
 import { availableAvatars } from './constants';
-import { useProfileContext } from '../../contexts/profile/ProfileContext';
+import { useProfileContext } from '../../context/ProfileContext';
 
 export const useAccountInformation = (router) => {
   const [loading, setLoading] = useState(true);

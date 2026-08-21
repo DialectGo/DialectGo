@@ -1,4 +1,4 @@
-import { useProfileContext } from '../../contexts/profile/ProfileContext';
+import { useProfileContext } from '../../context/ProfileContext';
 import { useProfileAuth } from './useProfileAuth';
 
 export const useProfile = (onNavigate, router) => {

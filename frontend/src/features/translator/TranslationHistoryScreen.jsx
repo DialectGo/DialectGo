@@ -125,10 +125,11 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         padding: 4,
         marginBottom: 20,
+        alignSelf: 'flex-start',
     },
     pill: {
-        flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 24,
         alignItems: 'center',
         borderRadius: 20,
     },
