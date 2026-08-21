@@ -19,12 +19,12 @@ export default function TranslationHistoryScreen() {
     } = useTranslationHistory();
 
     const renderItem = ({ item }) => (
-        <HistoryCard 
-            item={item} 
-            onPress={() => router.push({ 
-                pathname: '/Translator/TranslationDetail', 
-                params: { itemString: JSON.stringify(item) } 
-            })} 
+        <HistoryCard
+            item={item}
+            onPress={() => router.push({
+                pathname: '/Translator/TranslationDetail',
+                params: { itemString: JSON.stringify(item) }
+            })}
         />
     );
 
@@ -52,15 +52,15 @@ export default function TranslationHistoryScreen() {
             <View style={styles.navigationRow}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-                    <Text style={styles.backButtonText}>Home</Text>
+                    <Text style={styles.backButtonText}>Translate</Text>
                 </TouchableOpacity>
-                <Text style={styles.header}>History</Text>
-                <TouchableOpacity onPress={onRefresh}>
-                    <Ionicons name="ellipsis-horizontal" size={24} color={colors.textPrimary} />
+                <Text style={styles.headerTitleAbsolute}>History</Text>
+                <TouchableOpacity onPress={onRefresh} style={styles.clearButton}>
+                    <Text style={styles.clearText}>Clear</Text>
                 </TouchableOpacity>
             </View>
-            
-            <SectionList 
+
+            <SectionList
                 sections={historySections}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={renderItem}
@@ -85,9 +85,11 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
     navigationRow: { marginTop: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-    backButton: { flexDirection: 'row', alignItems: 'center', marginLeft: -4 },
+    backButton: { flexDirection: 'row', alignItems: 'center', marginLeft: -4, zIndex: 1 },
     backButtonText: { color: colors.textPrimary, fontSize: 17, marginLeft: 2 },
-    header: { fontSize: 18, fontWeight: 'bold', color: colors.textPrimary },
+    headerTitleAbsolute: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontSize: 18, fontWeight: 'bold', color: colors.textPrimary, zIndex: 0 },
+    clearButton: { zIndex: 1, paddingRight: 4 },
+    clearText: { color: colors.textPrimary, fontSize: 17 },
     sectionHeader: {
         fontSize: 14,
         fontWeight: 'bold',
