@@ -1,10 +1,20 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Clipboard, Alert } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../shared/theme/colorPalette';
 import { LANGUAGES } from '../../shared/hooks/translate/constants';
 import { styles as translateStyles } from './styles/TranslateStyles';
+import { useTranslationAudio } from '../../shared/hooks/translate/useTranslationAudio';
+import { useTranslationFeedback } from '../../shared/hooks/translate/useTranslationFeedback';
+import { useTranslationMeta } from '../../shared/hooks/translate/useTranslationMeta';
+import { useBookmarkTranslation } from '../../shared/hooks/translate/useBookmarkTranslation';
+
+import ContributionModal from '../wiki/components/ContributionModal';
+import LoadingModal from '../../shared/components/LoadingModal';
+import CustomizeModal from '../../shared/components/CustomizeModal';
+import TranslateActionSheets from '../../shared/components/translate/TranslateActionSheets';
+import BreakdownPanel from '../../shared/components/translate/BreakdownPanel';
 
 export default function HistoryDetailScreen() {
     const router = useRouter();
@@ -30,6 +40,63 @@ export default function HistoryDetailScreen() {
 
     const isDocumentOrImage = item.source_type === 'document' || item.source_type === 'image';
 
+    const [localTranslation, setLocalTranslation] = useState(item.translated_text);
+    
+    // Modal states
+    const [rateModalVisible, setRateModalVisible] = useState(false);
+    const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+    const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+
+    // Bookmark hook
+    const { isBookmarked, toggleBookmark } = useBookmarkTranslation(item.is_bookmarked);
+
+    // Audio hook
+    const { playTranslatedAudio, isPlayingAudio } = useTranslationAudio();
+
+    // Feedback hook
+    const {
+        feedback,
+        setFeedback,
+        comment,
+        setComment,
+        suggestionText,
+        setSuggestionText,
+        handleQuickRating,
+        handleDetailedSubmit
+    } = useTranslationFeedback({
+        currentTranslationId: item.id,
+        inputText: item.source_text,
+        sourceLang: sourceLangName,
+        targetLang: targetLangName,
+    });
+
+    // Meta hook (Customize/Breakdown)
+    const {
+        breakdownData,
+        setBreakdownData,
+        isBreakdownLoading,
+        handleShowBreakdown,
+        isCustomizeLoading,
+        handleCustomizeSubmit,
+        showCustomize,
+        setShowCustomize,
+        breakdownPanelVisible,
+        setBreakdownPanelVisible
+    } = useTranslationMeta({
+        inputText: item.source_text,
+        translation: localTranslation,
+        setTranslation: setLocalTranslation,
+        sourceLang: sourceLangName,
+        targetLang: targetLangName,
+        targetDialect: null,
+    });
+
+    const handleCopy = () => {
+        if (!localTranslation) return;
+        Clipboard.setString(localTranslation);
+        Alert.alert('Copied!', 'Translation copied to clipboard.');
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
@@ -41,8 +108,8 @@ export default function HistoryDetailScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerRight}>
-                        <TouchableOpacity style={styles.headerIcon}>
-                            <Ionicons name="bookmark-outline" size={24} color={colors.textPrimary} />
+                        <TouchableOpacity style={styles.headerIcon} onPress={() => toggleBookmark(item.id)}>
+                            <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={24} color={isBookmarked ? colors.primary : colors.textPrimary} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -66,31 +133,41 @@ export default function HistoryDetailScreen() {
                             <Text style={translateStyles.inputLabel}>{targetLangName.toUpperCase()}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={[translateStyles.resultText, { fontSize: 16 }]} selectable>{item.translated_text}</Text>
+                            <Text style={[translateStyles.resultText, { fontSize: 16 }]} selectable>{localTranslation}</Text>
 
                             <View style={translateStyles.outputToolbar}>
                                 {!isDocumentOrImage && (
-                                    <TouchableOpacity style={translateStyles.outputToolbarBtn}>
-                                        <Ionicons name="volume-medium-outline" size={20} color="#1F2937" />
+                                    <TouchableOpacity style={translateStyles.outputToolbarBtn} onPress={() => playTranslatedAudio(localTranslation, targetLangName)}>
+                                        <Ionicons name={isPlayingAudio ? "volume-high" : "volume-medium-outline"} size={20} color={isPlayingAudio ? "#FBBF24" : "#1F2937"} />
                                     </TouchableOpacity>
                                 )}
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     {!isDocumentOrImage && (
-                                        <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]}>
+                                        <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]} onPress={handleCopy}>
                                             <Ionicons name="copy-outline" size={20} color="#1F2937" />
                                         </TouchableOpacity>
                                     )}
-                                    <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]}>
-                                        <MaterialIcons name="thumbs-up-down" size={20} color="#1F2937" />
+                                    <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]} onPress={() => setRateModalVisible(true)}>
+                                        <MaterialIcons name="thumbs-up-down" size={20} color={feedback ? '#FBBF24' : '#1F2937'} />
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={translateStyles.outputToolbarBtn}>
+                                    <TouchableOpacity style={translateStyles.outputToolbarBtn} onPress={() => setMoreMenuVisible(true)}>
                                         <Ionicons name="ellipsis-horizontal" size={20} color="#1F2937" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         </View>
                     </View>
+
+                    {breakdownData && !isBreakdownLoading && (
+                        <TouchableOpacity 
+                            style={translateStyles.reviewBreakdownBtn} 
+                            onPress={() => setBreakdownPanelVisible(true)}
+                        >
+                            <Ionicons name="bulb" size={20} color="#F59E0B" />
+                            <Text style={translateStyles.reviewBreakdownText}>Review AI Breakdown</Text>
+                        </TouchableOpacity>
+                    )}
 
                     {/* Optional spacing at bottom */}
                     <View style={{ height: 100 }} />
@@ -115,6 +192,58 @@ export default function HistoryDetailScreen() {
                 </View>
 
             </View>
+
+            {/* Interactive Modals */}
+            <LoadingModal visible={isBreakdownLoading} message="Analyzing translation..." />
+            
+            <TranslateActionSheets
+                rateModalVisible={rateModalVisible}
+                setRateModalVisible={setRateModalVisible}
+                handleQuickRating={handleQuickRating}
+                feedback={feedback}
+                moreMenuVisible={moreMenuVisible}
+                setMoreMenuVisible={setMoreMenuVisible}
+                setFeedbackModalVisible={setFeedbackModalVisible}
+                handleShowBreakdown={handleShowBreakdown}
+                setShowCustomize={setShowCustomize}
+                modalVisible={false}
+                setModalVisible={() => {}}
+                selectingFor="source"
+                sourceLang={sourceLangName}
+                targetLang={targetLangName}
+                selectLanguage={() => {}}
+            />
+
+            <ContributionModal
+                visible={feedbackModalVisible}
+                onClose={() => setFeedbackModalVisible(false)}
+                onSubmit={handleDetailedSubmit}
+                feedbackComment={comment}
+                setFeedbackComment={setComment}
+                suggestedTranslation={suggestionText}
+                setSuggestedTranslation={setSuggestionText}
+            />
+
+            <CustomizeModal
+                visible={showCustomize}
+                onClose={() => setShowCustomize(false)}
+                onSubmit={handleCustomizeSubmit}
+                isLoading={isCustomizeLoading}
+            />
+
+            {breakdownData && (
+                <BreakdownPanel
+                    visible={breakdownPanelVisible}
+                    onClose={() => setBreakdownPanelVisible(false)}
+                    breakdown={breakdownData}
+                    isLoading={isBreakdownLoading}
+                    onSelectAlternative={(text) => {
+                        setLocalTranslation(text);
+                        setBreakdownData(null);
+                        setBreakdownPanelVisible(false);
+                    }}
+                />
+            )}
         </SafeAreaView>
     );
 }
