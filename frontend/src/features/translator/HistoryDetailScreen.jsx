@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../shared/theme/colorPalette';
 
-export default function TranslationDetailScreen() {
+export default function HistoryDetailScreen() {
     const router = useRouter();
     const { itemString } = useLocalSearchParams();
     const item = itemString ? JSON.parse(itemString) : null;
@@ -32,7 +32,7 @@ export default function TranslationDetailScreen() {
                         <Ionicons name="chevron-back" size={28} color={colors.textPrimary} />
                         <Text style={styles.headerHome}>Home</Text>
                     </TouchableOpacity>
-                    
+
                     <View style={styles.headerRight}>
                         <TouchableOpacity style={styles.headerIcon}>
                             <Ionicons name="time-outline" size={24} color={colors.textPrimary} />
@@ -50,7 +50,7 @@ export default function TranslationDetailScreen() {
                     {/* Source Section */}
                     <Text style={styles.langName}>{sourceLangName}</Text>
                     <Text style={styles.sourceText}>{item.source_text}</Text>
-                    
+
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.actionIcon}>
                             <Ionicons name="volume-high" size={24} color={colors.textSecondary} />
@@ -65,15 +65,15 @@ export default function TranslationDetailScreen() {
                     {/* Target Section */}
                     <Text style={styles.langNameTarget}>{targetLangName}</Text>
                     <Text style={styles.targetText}>{item.translated_text}</Text>
-                    
+
                     {/* Optional spacing at bottom */}
                     <View style={{ height: 100 }} />
                 </ScrollView>
 
                 {/* FAB */}
-                <TouchableOpacity 
-                    style={styles.fab} 
-                    onPress={() => router.push('/Translator/Translate')} 
+                <TouchableOpacity
+                    style={styles.fab}
+                    onPress={() => router.push('/Translator/Translate')}
                 >
                     <Ionicons name="add" size={24} color={colors.textPrimary} />
                     <Text style={styles.fabText}>New translation</Text>
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     errorText: { color: colors.textPrimary, fontSize: 16, marginBottom: 20 },
     backBtn: { padding: 10, backgroundColor: colors.primary, borderRadius: 8 },
     backBtnText: { color: colors.textPrimary, fontWeight: 'bold' },
-    
+
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
