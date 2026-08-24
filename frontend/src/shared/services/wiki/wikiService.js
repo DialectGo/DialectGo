@@ -65,3 +65,73 @@ export const voteSubmission = async (submissionId, voteType) => {
   const json = await response.json();
   return json.success ? json : null;
 };
+
+/**
+ * Fetches a single submission's details.
+ *
+ * @param {string|number} id - Submission ID
+ * @returns {Promise<Object>} The submission object
+ */
+export const fetchSubmissionDetail = async (id) => {
+  const session = await getValidSession();
+  const response = await fetch(`${WIKI_API_BASE}/${id}`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  const json = await response.json();
+  return json.success ? json.data : null;
+};
+
+/**
+ * Fetches comments for a submission.
+ *
+ * @param {string|number} id - Submission ID
+ * @returns {Promise<Array>} Array of comments
+ */
+export const fetchSubmissionComments = async (id) => {
+  const session = await getValidSession();
+  const response = await fetch(`${WIKI_API_BASE}/${id}/comments`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  const json = await response.json();
+  return json.success ? json.data : [];
+};
+
+/**
+ * Toggles a bookmark for a submission.
+ *
+ * @param {string|number} id - Submission ID
+ * @returns {Promise<Object>} { success: true, bookmarked: boolean }
+ */
+export const bookmarkSubmission = async (id) => {
+  const session = await getValidSession();
+  const response = await fetch(`${WIKI_API_BASE}/${id}/bookmark`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+  const json = await response.json();
+  return json.success ? json : null;
+};
+
+/**
+ * Posts a new comment on a submission.
+ *
+ * @param {string|number} id - Submission ID
+ * @param {string} content - Comment content
+ * @returns {Promise<Object>} The posted comment object
+ */
+export const postSubmissionComment = async (id, content) => {
+  const session = await getValidSession();
+  const response = await fetch(`${WIKI_API_BASE}/${id}/comments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ content }),
+  });
+  const json = await response.json();
+  return json.success ? json : null;
+};

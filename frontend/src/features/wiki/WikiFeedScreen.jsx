@@ -6,8 +6,8 @@ import { useRouter, Stack } from 'expo-router';
 
 import TopBar from '../../components/TopBar';
 import BottomNav from '../../components/BottomNav';
-import SubmitTermModal from './components/SubmitTermModal';
-import GlobalWikiAssistantModal from './components/GlobalWikiAssistantModal';
+import SubmitTermModal from '../../shared/components/wiki/SubmitTermModal';
+import GlobalWikiAssistantModal from '../../shared/components/wiki/GlobalWikiAssistantModal';
 
 import { useWikiFeed } from '../../shared/hooks/wiki/useWikiFeed';
 import WikiFeedCard from '../../shared/components/wiki/WikiFeedCard';

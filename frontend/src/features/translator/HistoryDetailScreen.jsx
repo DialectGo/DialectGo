@@ -10,7 +10,7 @@ import { useTranslationFeedback } from '../../shared/hooks/translate/useTranslat
 import { useTranslationMeta } from '../../shared/hooks/translate/useTranslationMeta';
 import { useBookmarkTranslation } from '../../shared/hooks/translate/useBookmarkTranslation';
 
-import ContributionModal from '../wiki/components/ContributionModal';
+import ContributionModal from '../../shared/components/wiki/ContributionModal';
 import LoadingModal from '../../shared/components/LoadingModal';
 import CustomizeModal from '../../shared/components/CustomizeModal';
 import TranslateActionSheets from '../../shared/components/translate/TranslateActionSheets';

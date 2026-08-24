@@ -4,8 +4,8 @@ import {
   StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../../shared/api/supabase';
-import { WIKI_API_BASE } from '../../../shared/api/client';
+import { supabase } from '../../api/supabase';
+import { WIKI_API_BASE } from '../../api/client';
 
 const REGIONS = ['Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
 const TERM_CATEGORIES = ['Slang', 'Idiom', 'Colloquial', 'Literal'];
