@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import { dictionaryHistoryService } from '../../services/dictionary/dictionaryHistoryService';
 
 export function useDictionaryHistory() {
+  const { showToast } = useToast();
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,7 +60,7 @@ export function useDictionaryHistory() {
       setSelectedIds(new Set());
     } catch (error) {
       console.error("Deletion error:", error);
-      Alert.alert("Error", "An error occurred during deletion.");
+      showToast("An error occurred during deletion.", 'error', 'Error');
     } finally {
       setIsDeleting(false);
     }

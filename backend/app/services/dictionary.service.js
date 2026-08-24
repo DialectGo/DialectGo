@@ -19,7 +19,17 @@ export const getPaginatedWords = async (page, limit, languageId, letter, token) 
 };
 
 export const saveWord = async (userId, dictionaryId, token) => {
-    return await DictionaryModel.saveWord(userId, dictionaryId, token);
+    const isSaved = await DictionaryModel.isWordSaved(userId, dictionaryId, token);
+    
+    if (isSaved) {
+        const result = await DictionaryModel.deleteWordBookmark(userId, dictionaryId, token);
+        if (result.error) throw result.error;
+        return { isBookmarked: false, data: result.data };
+    } else {
+        const result = await DictionaryModel.saveWord(userId, dictionaryId, token);
+        if (result.error) throw result.error;
+        return { isBookmarked: true, data: result.data };
+    }
 };
 
 export const getSavedWords = async (userId, token) => {

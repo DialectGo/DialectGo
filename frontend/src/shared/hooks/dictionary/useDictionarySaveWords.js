@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import { dictionaryBookmarkService } from '../../services/dictionary/dictionaryBookmarkService';
 
 export function useDictionarySaveWords() {
+  const { showToast } = useToast();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,7 +60,7 @@ export function useDictionarySaveWords() {
       setSelectedIds(new Set());
     } catch (error) {
       console.error("Deletion error:", error);
-      Alert.alert("Error", "Failed to delete items.");
+      showToast("Failed to delete items.", 'error', 'Error');
     } finally {
       setIsDeleting(false);
     }

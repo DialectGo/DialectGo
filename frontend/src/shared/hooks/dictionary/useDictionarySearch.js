@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import { searchDictionary } from '../../services/dictionary/dictionarySearchService';
 
 export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }) => {
+    const { showToast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }
                 setSearchResults(results);
             } catch (err) {
                 if (err.message.includes('Authentication Required')) {
-                    Alert.alert('Authentication Required', 'Please log in to search.');
+                    showToast('Please log in to search.', 'error', 'Authentication Required');
                 } else {
                     setError('Could not connect to the server.');
                 }
