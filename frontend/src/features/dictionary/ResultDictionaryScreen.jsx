@@ -300,7 +300,7 @@ export default function ResultDictionaryScreen() {
 
             handleSaveWord();
           }}
-          disabled={isSaving || isBookmarked}
+          disabled={isSaving}
         >
           {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />

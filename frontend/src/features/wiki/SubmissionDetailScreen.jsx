@@ -1,0 +1,182 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+import TopBar from '../../components/TopBar';
+import WikiAssistantModal from '../../shared/components/wiki/WikiAssistantModal';
+import SubmissionDetailCard from '../../shared/components/wiki/SubmissionDetailCard';
+import SubmissionComments from '../../shared/components/wiki/SubmissionComments';
+import { useSubmissionDetail } from '../../shared/hooks/wiki/useSubmissionDetail';
+
+export default function SubmissionDetailScreen({ id }) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
+  const {
+    submission,
+    loading,
+    userVote,
+    bookmarked,
+    comments,
+    commentText,
+    setCommentText,
+    postingComment,
+    loadingComments,
+    showAssistant,
+    setShowAssistant,
+    handleVote,
+    handleBookmark,
+    handlePostComment,
+  } = useSubmissionDetail(id);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
+          <ActivityIndicator size="large" color="#FBBF24" />
+        </View>
+      </View>
+    );
+  }
+
+  if (!submission) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
+          <Text style={styles.errorText}>Submission not found</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
+
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 70 }]}>
+        <View style={styles.topRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={24} color="#1F2937" />
+            <Text style={styles.backText}>Back to Feed</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleBookmark} style={styles.bookmarkBtn}>
+            <Ionicons
+              name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+              size={24}
+              color={bookmarked ? '#FBBF24' : '#9CA3AF'}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <SubmissionDetailCard
+          submission={submission}
+          userVote={userVote}
+          handleVote={handleVote}
+          styles={styles}
+        />
+
+        <SubmissionComments
+          comments={comments}
+          commentText={commentText}
+          setCommentText={setCommentText}
+          postingComment={postingComment}
+          loadingComments={loadingComments}
+          handlePostComment={handlePostComment}
+          styles={styles}
+        />
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.aiFab}
+        activeOpacity={0.85}
+        onPress={() => setShowAssistant(true)}
+      >
+        <Ionicons name="sparkles" size={22} color="#1F2937" />
+        <Text style={styles.aiFabText}>Ask AI</Text>
+      </TouchableOpacity>
+
+      <WikiAssistantModal
+        visible={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        submissionId={id}
+        submissionTitle={submission.source_term}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontSize: 16, color: '#9CA3AF' },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 16 },
+  backBtn: { flexDirection: 'row', alignItems: 'center' },
+  backText: { fontSize: 15, fontWeight: '600', color: '#1F2937', marginLeft: 4 },
+  bookmarkBtn: { padding: 6 },
+  mainCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 22, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 3 }, shadowRadius: 10, elevation: 3 },
+  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  questionBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDE9FE', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, gap: 4 },
+  questionBadgeText: { fontSize: 11, fontWeight: '700', color: '#7C3AED' },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, gap: 4 },
+  verifiedStatus: { backgroundColor: '#D1FAE5' },
+  statusText: { fontSize: 11, fontWeight: '700', color: '#D97706' },
+  verifiedStatusText: { color: '#059669' },
+  sourceTerm: { fontSize: 24, fontWeight: '900', color: '#1F2937', marginBottom: 12 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  regionTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 4 },
+  regionTagText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  categoryTag: { backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  categoryTagText: { fontSize: 12, fontWeight: '700', color: '#D97706' },
+  sentimentTag: { backgroundColor: '#EDE9FE', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  sentimentTagText: { fontSize: 12, fontWeight: '700', color: '#7C3AED' },
+  section: { marginBottom: 18 },
+  sectionLabel: { fontSize: 11, fontWeight: '800', color: '#9CA3AF', letterSpacing: 1, marginBottom: 8 },
+  translationText: { fontSize: 17, fontWeight: '600', color: '#374151', lineHeight: 24 },
+  exampleBox: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderLeftWidth: 4, borderLeftColor: '#FBBF24' },
+  exampleText: { fontSize: 15, fontWeight: '500', color: '#4B5563', fontStyle: 'italic', lineHeight: 22 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', justifyContent: 'space-between' },
+  authorInfo: { flexDirection: 'row', alignItems: 'center' },
+  dateViewsInfo: { flexDirection: 'row', alignItems: 'center' },
+  authorText: { fontSize: 13, color: '#6B7280', marginLeft: 6 },
+  dateText: { fontSize: 12, color: '#9CA3AF' },
+  viewsText: { fontSize: 12, color: '#9CA3AF', marginLeft: 4 },
+  voteSection: { backgroundColor: '#F9FAFB', borderRadius: 20, padding: 22, marginTop: 18, alignItems: 'center' },
+  voteSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 18 },
+  voteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  voteButton: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, gap: 6 },
+  upvoteBtn: { backgroundColor: '#ECFDF5' },
+  downvoteBtn: { backgroundColor: '#FEF2F2' },
+  activeUpvote: { backgroundColor: '#10B981' },
+  activeDownvote: { backgroundColor: '#EF4444' },
+  voteBtnText: { fontSize: 12, fontWeight: '700', color: '#374151' },
+  activeVoteText: { color: '#FFFFFF' },
+  voteCountContainer: { alignItems: 'center' },
+  voteCountNumber: { fontSize: 32, fontWeight: '900', color: '#1F2937' },
+  voteCountLabel: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
+  voteHint: { fontSize: 12, color: '#9CA3AF', fontWeight: '500', marginTop: 14 },
+  commentsSection: { marginTop: 18 },
+  commentsSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 14 },
+  commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: 16 },
+  commentInput: { flex: 1, backgroundColor: '#F9FAFB', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: '#1F2937', fontWeight: '500', maxHeight: 100, borderWidth: 1, borderColor: '#F3F4F6' },
+  commentSendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FBBF24', justifyContent: 'center', alignItems: 'center' },
+  commentSendDisabled: { backgroundColor: '#F3F4F6' },
+  noComments: { alignItems: 'center', paddingVertical: 30 },
+  noCommentsText: { fontSize: 14, color: '#9CA3AF', marginTop: 8 },
+  commentCard: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#F3F4F6' },
+  commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  commentAuthor: { fontSize: 13, fontWeight: '700', color: '#374151', flex: 1 },
+  commentDate: { fontSize: 11, color: '#9CA3AF' },
+  commentContent: { fontSize: 14, fontWeight: '500', color: '#4B5563', lineHeight: 21 },
+  aiFab: { position: 'absolute', bottom: 30, right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBBF24', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 28, gap: 8, shadowColor: '#FBBF24', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  aiFabText: { fontSize: 14, fontWeight: '800', color: '#1F2937' },
+});

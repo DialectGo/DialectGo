@@ -4,8 +4,8 @@ import {
   StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../../shared/api/supabase';
-import { WIKI_API_BASE } from '../../../shared/api/client';
+import { supabase } from '../../api/supabase';
+import { WIKI_API_BASE } from '../../api/client';
 
 export default function GlobalWikiAssistantModal({ visible, onClose }) {
   const [messages, setMessages] = useState([]);

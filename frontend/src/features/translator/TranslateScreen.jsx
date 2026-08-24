@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomNav from '../../components/BottomNav';
 import TopBar from '../../components/TopBar';
-import ContributionModal from '../wiki/components/ContributionModal';
+import ContributionModal from '../../shared/components/wiki/ContributionModal';
 import LoadingModal from '../../shared/components/LoadingModal';
 import CustomizeModal from '../../shared/components/CustomizeModal';
 import { styles } from './styles/TranslateStyles';

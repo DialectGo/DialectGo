@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import { dictionaryBookmarkService } from '../../services/dictionary/dictionaryBookmarkService';
 
 export function useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm) {
+  const { showToast } = useToast();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -23,14 +25,15 @@ export function useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm) {
 
   const handleSaveWord = async () => {
     if (!id) {
-      Alert.alert('Error', 'ID is missing.');
+      showToast('ID is missing.', 'error', 'Error');
       return;
     }
 
     if (!isConnected) {
-      Alert.alert(
-        'Network Offline',
-        'You need an internet connection to save words.'
+      showToast(
+        'You need an internet connection to save words.',
+        'error',
+        'Network Offline'
       );
       return;
     }
@@ -38,11 +41,15 @@ export function useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm) {
     setIsSaving(true);
 
     try {
-      await dictionaryBookmarkService.saveWordBookmark(id);
-      setIsBookmarked(true);
-      Alert.alert('Saved!', `"${wordTerm}" has been added to your saved words.`);
+      const newStatus = await dictionaryBookmarkService.saveWordBookmark(id);
+      setIsBookmarked(newStatus);
+      if (newStatus) {
+        showToast(`"${wordTerm}" has been added to your saved words.`, 'success', 'Saved!');
+      } else {
+        showToast(`"${wordTerm}" has been removed from your saved words.`, 'info', 'Removed');
+      }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast(error.message, 'error', 'Error');
     } finally {
       setIsSaving(false);
     }

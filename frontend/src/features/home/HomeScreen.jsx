@@ -21,7 +21,7 @@ import TopBar from '../../components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import HomeSkeleton from '../../shared/components/HomeSkeleton';
 import HomeCard from '../../shared/components/HomeCard';
-import ToastMessage from '../../shared/components/ToastMessage';
+
 import WordOfDayOverlay from '../../shared/components/WordOfDayOverlay';
 import { styles } from './styles/HomeStyles';
 
@@ -30,7 +30,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
   const insets = useSafeAreaInsets();
   
   const [wotdModalVisible, setWotdModalVisible] = useState(false);
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+
   
   // Custom Hooks Encapsulating Business Logic
   const mascotAnim = useMascotAnimation(-8, 1200);
@@ -48,12 +48,6 @@ export default function HomeScreen({ onNavigate, activeTab }) {
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <Stack.Screen options={{ animation: "fade" }} />
       <TopBar titleMode="brand" />
-      <ToastMessage 
-        visible={toast.visible} 
-        message={toast.message} 
-        type={toast.type} 
-        topOffset={insets.top + 8} 
-      />
 
       <View style={[styles.container, { flex: 1, backgroundColor: '#FFFFFF' }]}>
         <RefreshContainer

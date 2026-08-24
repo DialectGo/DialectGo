@@ -76,6 +76,16 @@ export const DictionaryModel = {
             .select();
     },
 
+    async deleteWordBookmark(userId, dictionaryId, token) {
+        const client = getAuthClient(token);
+        return await client
+            .from('user_saved_words')
+            .delete()
+            .eq('user_id', userId)
+            .eq('dictionary_id', dictionaryId)
+            .select();
+    },
+
     async getSavedWordsByUserId(userId, token) {
         const client = getAuthClient(token);
         return await client
