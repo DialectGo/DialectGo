@@ -3,8 +3,8 @@
  *
  * Handles all community wiki (dialect submissions) API calls.
  */
-import { WIKI_API_BASE } from '../api/client';
-import { getValidSession } from './authService';
+import { WIKI_API_BASE } from '../../api/client';
+import { getValidSession } from '../authService';
 
 /**
  * Fetches a paginated, filtered list of wiki submissions.
