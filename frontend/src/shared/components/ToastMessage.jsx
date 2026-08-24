@@ -1,18 +1,24 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, StyleSheet } from 'react-native';
+import { Animated, Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../theme/colorPalette';
 
 /**
  * A global reusable Toast Notification component.
- * Drops down from the top of the screen to display success, error, or info messages.
+ * It is managed by ToastContext and drops down from the top of the screen.
  * 
  * @param {boolean} visible - Controls visibility
- * @param {string} message - Text to display
+ * @param {string} message - Main text to display
+ * @param {string} title - Optional title text
  * @param {string} type - 'success', 'error', 'info'
- * @param {number} topOffset - Dynamic offset from the top (usually safe area inset + some padding)
  */
-export default function ToastMessage({ visible, message, type = 'info', topOffset = 50 }) {
-  const translateY = useRef(new Animated.Value(-100)).current;
+export default function ToastMessage({ visible, message, title, type = 'info' }) {
+  const insets = useSafeAreaInsets();
+  const translateY = useRef(new Animated.Value(-150)).current;
+
+  // The distance it should drop down (status bar height + small padding)
+  const topOffset = Math.max(insets.top, 20) + 10;
 
   useEffect(() => {
     if (visible) {
@@ -24,21 +30,21 @@ export default function ToastMessage({ visible, message, type = 'info', topOffse
       }).start();
     } else {
       Animated.timing(translateY, {
-        toValue: -100,
+        toValue: -150,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
   }, [visible, topOffset]);
 
-  let bgColor = '#3B82F6'; // Default Blue
   let iconName = 'information-circle';
+  let themeColor = colors.info;
 
   if (type === 'success') {
-    bgColor = '#10B981'; // Green
+    themeColor = colors.success;
     iconName = 'checkmark-circle';
   } else if (type === 'error') {
-    bgColor = '#EF4444'; // Red
+    themeColor = colors.error;
     iconName = 'alert-circle';
   }
 
@@ -46,12 +52,19 @@ export default function ToastMessage({ visible, message, type = 'info', topOffse
     <Animated.View
       style={[
         styles.toastContainer,
-        { backgroundColor: bgColor, transform: [{ translateY }] }
+        {
+          transform: [{ translateY }],
+          borderLeftColor: themeColor,
+        }
       ]}
       pointerEvents={visible ? 'auto' : 'none'}
     >
-      <Ionicons name={iconName} size={24} color="#FFF" style={styles.icon} />
-      <Text style={styles.messageText}>{message}</Text>
+      <Ionicons name={iconName} size={28} color={themeColor} style={styles.icon} />
+      
+      <View style={styles.textContainer}>
+        {title ? <Text style={styles.titleText}>{title}</Text> : null}
+        <Text style={styles.messageText}>{message}</Text>
+      </View>
     </Animated.View>
   );
 }
@@ -65,19 +78,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: colors.surface,
     borderRadius: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    borderLeftWidth: 5,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    shadowColor: colors.shadowDark,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   icon: {
-    marginRight: 12,
+    marginRight: 14,
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  titleText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 3,
   },
   messageText: {
-    color: '#FFFFFF', // colors.white
+    color: colors.textSecondary,
     fontSize: 14,
-    flex: 1,
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });

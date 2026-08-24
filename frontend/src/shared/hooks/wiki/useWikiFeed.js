@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import { fetchSubmissions as fetchSubmissionsService, voteSubmission } from '../../services/wiki/wikiService';
 
 export function useWikiFeed() {
+  const { showToast } = useToast();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,7 +101,7 @@ export function useWikiFeed() {
         );
 
         if (result.promoted) {
-          Alert.alert('🎉 Verified!', 'This term has been added to the translation corpus!');
+          showToast('This term has been added to the translation corpus!', 'success', '🎉 Verified!');
         }
       }
     } catch (err) {

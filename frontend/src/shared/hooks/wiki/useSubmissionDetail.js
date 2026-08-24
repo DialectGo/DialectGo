@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import { useToast } from '../../context/ToastContext';
 import {
   fetchSubmissionDetail,
   fetchSubmissionComments,
@@ -9,6 +9,7 @@ import {
 } from '../../services/wiki/wikiService';
 
 export function useSubmissionDetail(id) {
+  const { showToast } = useToast();
   const [submission, setSubmission] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userVote, setUserVote] = useState(null);
@@ -68,7 +69,7 @@ export function useSubmissionDetail(id) {
         setUserVote(prev => prev === voteType ? null : voteType);
 
         if (result.promoted) {
-          Alert.alert('🎉 Verified!', 'This term has been added to the translation corpus!');
+          showToast('This term has been added to the translation corpus!', 'success', '🎉 Verified!');
         }
       }
     } catch (err) {
@@ -81,9 +82,10 @@ export function useSubmissionDetail(id) {
       const result = await bookmarkSubmission(id);
       if (result) {
         setBookmarked(result.bookmarked);
-        Alert.alert(
-          result.bookmarked ? 'Saved!' : 'Removed',
-          result.bookmarked ? 'This post has been added to your bookmarks.' : 'This post was removed from your bookmarks.'
+        showToast(
+          result.bookmarked ? 'This post has been added to your bookmarks.' : 'This post was removed from your bookmarks.',
+          result.bookmarked ? 'success' : 'info',
+          result.bookmarked ? 'Saved!' : 'Removed'
         );
       }
     } catch (err) {

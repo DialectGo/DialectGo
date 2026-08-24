@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal,
-  StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../api/supabase';
 import { WIKI_API_BASE } from '../../api/client';
+import { useToast } from '../../context/ToastContext';
 
 const REGIONS = ['Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
 const TERM_CATEGORIES = ['Slang', 'Idiom', 'Colloquial', 'Literal'];
@@ -13,6 +14,7 @@ const QUESTION_CATEGORIES = ['Cultural', 'General', 'Colloquial', 'Literal'];
 const SENTIMENTS = ['Casual', 'Humorous', 'Aggressive', 'Affectionate', 'Formal', 'Sarcastic'];
 
 export default function SubmitTermModal({ visible, onClose, onSuccess }) {
+  const { showToast } = useToast();
   const [sourceTerm, setSourceTerm] = useState('');
   const [region, setRegion] = useState('');
   const [category, setCategory] = useState('');
@@ -37,7 +39,7 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!sourceTerm.trim() || !region || !category || !translation.trim()) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields.');
+      showToast('Please fill in all required fields.', 'error', 'Missing Fields');
       return;
     }
 
@@ -45,7 +47,7 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        Alert.alert('Auth Required', 'Please log in to submit.');
+        showToast('Please log in to submit.', 'error', 'Auth Required');
         return;
       }
 
@@ -69,14 +71,14 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
       const json = await response.json();
 
       if (json.success) {
-        Alert.alert('Salamat! 🎉', 'Your contribution has been submitted for community review.');
+        showToast('Your contribution has been submitted for community review.', 'success', 'Salamat! 🎉');
         resetForm();
         onSuccess?.();
       } else {
-        Alert.alert('Oops', json.message || 'Submission failed.');
+        showToast(json.message || 'Submission failed.', 'error', 'Oops');
       }
     } catch (err) {
-      Alert.alert('Error', 'Network error. Please try again.');
+      showToast('Network error. Please try again.', 'error', 'Error');
     } finally {
       setIsSubmitting(false);
     }
