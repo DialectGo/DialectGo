@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
 import { formatAddress, parseAddress } from '../../utils/stringUtils';
 import { fetchUserProfile, updateUserProfile } from '../../services/profile/userService';
 import { availableAvatars } from './constants';
 import { useProfileContext } from '../../context/ProfileContext';
+import { useToast } from '../../context/ToastContext';
 
 export const useAccountInformation = (router) => {
   const [loading, setLoading] = useState(true);
   const { refreshProfile } = useProfileContext();
+  const { showToast } = useToast();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -33,11 +34,11 @@ export const useAccountInformation = (router) => {
           if (matched) setCurrentAvatar(matched);
         }
       } else {
-        Alert.alert('Error', 'Failed to load profile.');
+        showToast('Failed to load profile.', 'error', 'Error');
       }
     } catch (error) {
       console.error('Fetch Profile Error:', error);
-      Alert.alert('Error', 'Could not connect to the server.');
+      showToast('Could not connect to the server.', 'error', 'Error');
     } finally {
       setLoading(false);
     }
@@ -64,12 +65,13 @@ export const useAccountInformation = (router) => {
 
       if (success) {
         refreshProfile();
-        Alert.alert('Success', 'Information updated!', [{ text: 'OK', onPress: () => router.back() }]);
+        showToast('Information updated successfully!', 'success', 'Saved');
+        router.back();
       } else {
         throw new Error('Update failed');
       }
     } catch (error) {
-      Alert.alert('Error', error.message);
+      showToast(error.message, 'error', 'Error');
     } finally {
       setLoading(false);
     }
