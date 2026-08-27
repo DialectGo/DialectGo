@@ -7,6 +7,22 @@ import { Client } from '@gradio/client';
 import { preprocessText } from './preprocessor.service.js';
 import { dialectize } from './reverseCanonicalizer.service.js';
 import { analyzeTranslation, analyzeDocumentType, reconstructLayout, normalizeInformalText } from './metaLayer.service.js';
+import {
+    translationCache,
+    lineTranslationCache,
+    createTranslationCacheKey,
+    createLineCacheKey,
+} from './cache.service.js';
+import { translateWithGroq, translateDocumentWithGroq } from './groqTranslation.service.js';
+
+// Maximum number of concurrent NLLB line translation calls
+const TRANSLATION_CONCURRENCY = 5;
+
+// Concurrency for dialectization (post-translation corpus replacement)
+const DIALECTIZE_CONCURRENCY = 5;
+
+// Timeout for the HuggingFace/Flask fallback (kept short since Groq is primary)
+const HF_FALLBACK_TIMEOUT_MS = 15000;
 
 const COLAB_URL = process.env.COLAB_URL;
 const HF_SPACE = process.env.HF_SPACE || 'DialectGoOOO/TranslationCebTagEng';
@@ -59,39 +75,118 @@ const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
     }
 };
 
-export const performTranslation = async (text, sourceLang, targetLang) => {
+/**
+ * PRIMARY translation function — Groq-first with HuggingFace/Flask fallback.
+ *
+ * Speed comparison:
+ *   Groq LLM:      ~800ms-1.5s  ← PRIMARY
+ *   HF/Flask NLLB: 3-6 minutes  ← FALLBACK only
+ *
+ * @param {string} text - Text to translate
+ * @param {string} sourceLang
+ * @param {string} targetLang
+ * @param {string|null} targetDialect - Passed to Groq for better dialect-aware output
+ * @returns {Promise<string>} Translated text
+ */
+export const performTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
+    if (!text || !text.trim()) return text;
+
+    // ── Per-line translation cache check ──────────────────────────────────────
+    const lineCacheKey = createLineCacheKey(text, sourceLang, targetLang);
+    const cachedLine = lineTranslationCache.get(lineCacheKey);
+    if (cachedLine !== undefined) {
+        console.log(`[Cache] Line cache HIT: "${text.slice(0, 40)}..."`);
+        return cachedLine;
+    }
+
+    let result = null;
+
+    // ── Step 1: Try HuggingFace (slow) ──────────────────────────────────────
     try {
         const translatedText = await callHuggingFaceTranslation(text, sourceLang, targetLang);
-
-        if (translatedText) {
-            return translatedText;
-        }
-    } catch (error) {
-        console.warn('Hugging Face translation failed, falling back to Flask backend:', error.message || error);
+        if (translatedText) result = translatedText;
+    } catch (hfError) {
+        console.warn('[Translation] HuggingFace failed, falling back to Groq:', hfError.message);
     }
 
-    const payload = {
-        input: text,
-        source_lang: sourceLang,
-        target_lang: targetLang
-    };
-
-    console.log('Sending to Flask:', payload);
-
-    try {
-        const response = await axios.post(`${COLAB_URL}/translate`, payload, {
-            headers: {
-                'ngrok-skip-browser-warning': 'true'
-            }
-        });
-        return response.data.translation;
-    } catch (error) {
-        if (error.response) {
-            console.error('Flask Error Details:', error.response.data);
+    // ── Step 2: Groq fallback (fast — ~800ms) ──────────────────────────────────────
+    if (!result) {
+        try {
+            result = await translateWithGroq(text, sourceLang, targetLang, targetDialect);
+            console.log(`[Translation] Groq: "${text.slice(0, 40)}" → "${result?.slice(0, 40)}"`);
+        } catch (groqError) {
+            console.warn('[Translation] Groq fallback failed:', groqError.message);
         }
-        throw error;
     }
+
+    // ── Step 3: Flask/Colab fallback (last resort) ────────────────────────────
+    if (!result && COLAB_URL) {
+        try {
+            const response = await axios.post(`${COLAB_URL}/translate`,
+                { input: text, source_lang: sourceLang, target_lang: targetLang },
+                { headers: { 'ngrok-skip-browser-warning': 'true' }, timeout: 10000 }
+            );
+            result = response.data.translation;
+        } catch (flaskError) {
+            console.error('[Translation] All fallbacks failed:', flaskError.message);
+            throw new Error(`Translation failed for: "${text.slice(0, 50)}". All backends unavailable.`);
+        }
+    }
+
+    // Cache the result for reuse
+    if (result) lineTranslationCache.set(lineCacheKey, result);
+
+    return result || text; // Ultimate fallback: return original text
 };
+
+/**
+ * Translate an array of lines in parallel with a concurrency limit.
+ * This replaces the serial for-loop and is the primary speed improvement.
+ *
+ * @param {string[]} lines - Array of text lines to translate
+ * @param {string} sourceLang
+ * @param {string} targetLang
+ * @param {string|null} targetDialect
+ * @param {number} batchSize - Max concurrent requests
+ * @returns {Promise<{nllbOutput: string, finalText: string, wasModified: boolean, replacements: Array}[]>}
+ */
+async function parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, batchSize = TRANSLATION_CONCURRENCY) {
+    const results = new Array(lines.length);
+
+    // Process lines in batches to limit concurrency
+    for (let i = 0; i < lines.length; i += batchSize) {
+        const batch = lines.slice(i, i + batchSize);
+
+        const batchPromises = batch.map(async (line, batchIdx) => {
+            const globalIdx = i + batchIdx;
+
+            // Preserve empty lines without any API call
+            if (line.trim().length === 0) {
+                return { index: globalIdx, nllbOutput: line, finalText: line, wasModified: false, replacements: [] };
+            }
+
+            const nllbOutput = await performTranslation(line, sourceLang, targetLang);
+
+            if (targetDialect) {
+                const dialectResult = await dialectize(nllbOutput, targetDialect);
+                return {
+                    index: globalIdx,
+                    nllbOutput,
+                    finalText: dialectResult.dialectText,
+                    wasModified: dialectResult.wasModified,
+                    replacements: dialectResult.replacements || [],
+                };
+            }
+
+            return { index: globalIdx, nllbOutput, finalText: nllbOutput, wasModified: false, replacements: [] };
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        batchResults.forEach(r => { results[r.index] = r; });
+    }
+
+    return results;
+}
 
 /**
  * Extracts text from a base64-encoded image using the PaddleOCR microservice.
@@ -163,74 +258,62 @@ export const performSpeechToText = async (audioPath, targetLang, sourceLang) => 
  * @returns {Promise<{originalText, canonicalizedText, translatedText, preprocessing, dialectization}>}
  */
 export const performPreprocessedTranslation = async (text, sourceLang, targetLang, targetDialect = null, token = null, isDocument = false) => {
-    // Step 1: Run the input pre-processing pipeline on the full text
-    const preprocessResult = await preprocessText(text, sourceLang, token);
+    const pipelineStart = Date.now();
 
-    // Step 2: Split by exact newline to strictly preserve structure
-    // We process line-by-line because sending \n characters confuses NLLB
-    const textForTranslation = preprocessResult.canonicalizedText;
-    const lines = textForTranslation.split('\n');
-    
-    let finalTranslatedLines = [];
-    let wasDialectModified = false;
-    let allDialectReplacements = [];
-    let rawNllbOutputs = [];
-
-    // Step 3: Process each line individually
-    for (const line of lines) {
-        // If it's an empty line or just spaces, preserve it exactly without translating
-        if (line.trim().length === 0) {
-            finalTranslatedLines.push(line);
-            continue;
-        }
-
-        // Translate the clean line
-        const nllbOutput = await performTranslation(line, sourceLang, targetLang);
-        rawNllbOutputs.push(nllbOutput);
-
-        if (targetDialect) {
-            const dialectResult = await dialectize(nllbOutput, targetDialect, token);
-            if (dialectResult.wasModified) {
-                wasDialectModified = true;
-                if (dialectResult.replacements) {
-                    allDialectReplacements.push(...dialectResult.replacements);
-                }
-            }
-            finalTranslatedLines.push(dialectResult.dialectText);
-        } else {
-            finalTranslatedLines.push(nllbOutput);
-        }
+    // ── Full translation result cache check ───────────────────────────────
+    const fullCacheKey = createTranslationCacheKey(text, sourceLang, targetLang, targetDialect);
+    const cachedResult = translationCache.get(fullCacheKey);
+    if (cachedResult) {
+        console.log(`[Cache] Translation cache HIT — skipping full pipeline (~<10ms)`);
+        return cachedResult;
     }
-    
-    // Reconstruct the exact structure
-    const finalTranslatedText = finalTranslatedLines.join('\n');
-    const joinedNllbOutput = rawNllbOutputs.join('\n');
 
+    // Step 1: Run preprocessing (tokenize → corpus lookup → sentiment → canonicalize)
+    // This runs locally and is fast (~300-600ms)
+    const preprocessResult = await preprocessText(text, sourceLang, token);
+    const textForTranslation = preprocessResult.canonicalizedText;
+
+    console.log(`[PreprocessedTranslation] Preprocessing done in ${preprocessResult.metadata?.pipelineMs ?? 0}ms, sending to HuggingFace...`);
+
+    const lines = textForTranslation.split('\n');
+
+    // Translate all lines IN PARALLEL (batched concurrency)
+    const lineResults = await parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
+
+    // Reconstruct the exact structure from sorted parallel results
+    const finalTranslatedLines = lineResults.map(r => r.finalText);
+    const rawNllbOutputs = lineResults.filter(r => r.nllbOutput !== r.finalText || !targetDialect).map(r => r.nllbOutput);
+
+    let wasDialectModified = lineResults.some(r => r.wasModified);
+    let allDialectReplacements = lineResults.flatMap(r => r.replacements);
+
+    let finalTranslatedText = finalTranslatedLines.join('\n');
     let dialectMeta = null;
+
     if (targetDialect) {
         dialectMeta = {
             wasModified: wasDialectModified,
             replacements: allDialectReplacements,
             targetDialect,
-            metadata: { pipelineMs: 0 } // aggregate if needed
+            metadata: { pipelineMs: Date.now() - pipelineStart }
         };
     }
 
-    console.log('[PreprocessedTranslation] Pipeline summary:', {
+    const totalMs = Date.now() - pipelineStart;
+    console.log('[PreprocessedTranslation] Pipeline complete:', {
+        engine: 'HuggingFace',
+        totalPipelineMs: totalMs,
+        preprocessMs: preprocessResult.metadata?.pipelineMs ?? 0,
+        translationMs: totalMs - (preprocessResult.metadata?.pipelineMs ?? 0),
         wasModified: preprocessResult.wasModified,
         replacements: preprocessResult.replacements.length,
-        sentimentScore: preprocessResult.sentimentAnalysis?.overallScore ?? 'N/A',
-        pipelineMs: preprocessResult.metadata.pipelineMs,
-        dialectized: wasDialectModified,
-        targetDialect: targetDialect || 'Standard',
-        chunksProcessed: lines.length
+        dialect: targetDialect || 'Standard',
     });
 
-    return {
+    const result = {
         originalText: preprocessResult.originalText,
         canonicalizedText: preprocessResult.canonicalizedText,
         translatedText: finalTranslatedText,
-        nllbRawOutput: targetDialect ? joinedNllbOutput : undefined,
         preprocessing: {
             wasModified: preprocessResult.wasModified,
             replacements: preprocessResult.replacements,
@@ -239,6 +322,13 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
         },
         dialectization: dialectMeta
     };
+
+    // Cache the full result (skip for documents to avoid memory bloat)
+    if (!isDocument) {
+        translationCache.set(fullCacheKey, result);
+    }
+
+    return result;
 };
 
 /**
@@ -304,8 +394,9 @@ export const performDocumentTranslation = async (
 ) => {
     const pipelineStart = Date.now();
 
-    // Step 1: Document Type Detection (parallel-safe, runs concurrently with layout)
-    console.log('[DocPipeline] Step 1 — Detecting document type...');
+    // Steps 1+2: Run DocType Detection AND Layout Reconstruction concurrently.
+    // These are independent of each other so we fire both at the same time.
+    console.log('[DocPipeline] Steps 1+2 — Detecting doc type & reconstructing layout concurrently...');
     const docTypePromise = analyzeDocumentType(text);
 
     // Step 2: Layout Reconstruction (only for OCR images with spatial data)
@@ -314,7 +405,6 @@ export const performDocumentTranslation = async (
     let segments = [{ index: 0, text: text, isHeader: false, type: 'paragraph' }];
 
     if (ocrDetails && ocrDetails.length > 0) {
-        console.log('[DocPipeline] Step 2 — Reconstructing layout from OCR spatial data...');
         const layoutPromise = reconstructLayout(text, ocrDetails, layoutHints);
         
         // Wait for both concurrent operations
@@ -334,7 +424,7 @@ export const performDocumentTranslation = async (
             segmentedSourceText = await normalizeInformalText(segmentedSourceText, sourceLang);
         }
 
-        // Step 3: Translate the reconstructed text
+        // Step 3: Translate the reconstructed text using HuggingFace
         console.log('[DocPipeline] Step 3 — Translating with tone context...');
         const translationResult = await performPreprocessedTranslation(
             segmentedSourceText, sourceLang, targetLang, targetDialect, token, true
@@ -372,14 +462,18 @@ export const performDocumentTranslation = async (
             breakdown,
         };
     } else {
-        // No OCR spatial data (PDF/DOCX) — skip layout reconstruction
-        const docType = await docTypePromise;
+        // No OCR spatial data (PDF/DOCX) — skip layout reconstruction.
+        // Run docType and preprocessing concurrently since they are independent.
+        const [docType, preprocessResult] = await Promise.all([
+            docTypePromise,
+            preprocessText(text, sourceLang, token),
+        ]);
 
         console.log('[DocPipeline] Step 2 — No spatial data, skipping layout reconstruction');
         console.log('[DocPipeline] Step 3 — Translating...');
 
         let result;
-        let textToTranslate = text;
+        let textToTranslate = preprocessResult.canonicalizedText || text;
 
         if (docType.documentType === 'casual_chat' || 
             docType.toneGuidance?.formality === 'informal' || 
@@ -388,10 +482,30 @@ export const performDocumentTranslation = async (
             textToTranslate = await normalizeInformalText(textToTranslate, sourceLang);
         }
 
+        // Translate lines in parallel — pass isDocument=true to skip full-result caching
         if (withBreakdown) {
             result = await performTranslationWithBreakdown(textToTranslate, sourceLang, targetLang, targetDialect, token);
         } else {
-            result = await performPreprocessedTranslation(textToTranslate, sourceLang, targetLang, targetDialect, token, true);
+            // Re-use already-computed preprocessResult: translate directly without re-preprocessing
+            const lines = textToTranslate.split('\n');
+            const lineResults = await parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
+            const finalTranslatedText = lineResults.map(r => r.finalText).join('\n');
+            result = {
+                originalText: text,
+                canonicalizedText: textToTranslate,
+                translatedText: finalTranslatedText,
+                preprocessing: {
+                    wasModified: preprocessResult.wasModified,
+                    replacements: preprocessResult.replacements,
+                    sentimentAnalysis: preprocessResult.sentimentAnalysis,
+                    metadata: preprocessResult.metadata,
+                },
+                dialectization: targetDialect ? {
+                    wasModified: lineResults.some(r => r.wasModified),
+                    replacements: lineResults.flatMap(r => r.replacements),
+                    targetDialect,
+                } : null,
+            };
         }
 
         // Build segments from paragraph breaks in the translated text

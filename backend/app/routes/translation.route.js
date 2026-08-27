@@ -12,6 +12,7 @@ import {
     customizeTranslation,
     explainSegment,
     textToSpeech,
+    streamBreakdown,
     toggleBookmark,
     getSavedTranslations,
     adminGetAllHistory, 
@@ -36,6 +37,10 @@ translateRouter.post('/download', verifyToken, downloadDocument);
 translateRouter.post('/customize', verifyToken, validateCustomizeRequest, customizeTranslation);
 translateRouter.post('/explain-segment', verifyToken, explainSegment);
 translateRouter.post('/tts', verifyToken, textToSpeech);
+
+// SSE endpoint: decoupled LLM breakdown (async, non-blocking)
+// Client calls this AFTER receiving the translated text to get the linguistic breakdown
+translateRouter.post('/breakdown', verifyToken, streamBreakdown);
 
 // Mount the translate router under /translate
 router.use('/translate', translateRouter);
