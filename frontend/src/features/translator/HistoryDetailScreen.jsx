@@ -109,7 +109,7 @@ export default function HistoryDetailScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerRight}>
-                        <TouchableOpacity style={styles.headerIcon} onPress={() => toggleBookmark(item.id)}>
+                        <TouchableOpacity style={styles.headerIcon} onPress={() => toggleBookmark(item.id, item.source_text)}>
                             <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={24} color={isBookmarked ? colors.primary : colors.textPrimary} />
                         </TouchableOpacity>
                     </View>

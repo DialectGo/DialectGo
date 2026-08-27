@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Alert } from 'react-native';
 import { fetchSavedTranslations } from '../../services/translate/bookmarkService';
+import { useToast } from '../../context/ToastContext';
 
 export const useSavedTranslations = () => {
     const [savedTranslations, setSavedTranslations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const { showToast } = useToast();
 
     const loadBookmarks = useCallback(async (isRefresh = false) => {
         try {
@@ -17,7 +18,7 @@ export const useSavedTranslations = () => {
             setSavedTranslations(data);
         } catch (error) {
             console.error('Fetch Saved Translations Error:', error.message);
-            Alert.alert('Error', 'Failed to load saved translations. Please try again.');
+            showToast('Failed to load saved translations. Please try again.', 'error', 'Error');
         } finally {
             setLoading(false);
             setRefreshing(false);
