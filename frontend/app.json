@@ -23,7 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.DialectGo"
+      "package": "com.ralph.dialectgo.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,7 +37,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "39758670-e393-4a78-b40d-34dbcc73e25f"
+        "projectId": "28545f87-164b-4a85-85b6-dfcd440fd6c0"
       }
     }
   }

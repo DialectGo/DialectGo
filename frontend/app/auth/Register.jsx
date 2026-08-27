@@ -19,10 +19,12 @@ import { useRouter } from 'expo-router';
 import { endpoints } from '../../src/shared/api/client';
 import { supabase } from '../../src/shared/api/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { deriveUsername } from '../../src/shared/utils/stringUtils';
+import { formatBirthDate } from '../../src/shared/utils/dateUtils';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { formatBirthDate, deriveUsername } from '../../src/shared/utils/stringUtils';
+import { useProfileContext } from '../../src/shared/context/ProfileContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,6 +32,7 @@ const API_URL = endpoints.USER_REGISTER;
 
 export default function SignUp({ onSwitch, onSuccess }) {
   const router = useRouter(); 
+  const { refreshProfile } = useProfileContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -97,65 +100,59 @@ export default function SignUp({ onSwitch, onSuccess }) {
     }
   };
 
-  const handleOAuthLogin = async (provider) => {
+  const handleGoogleSignIn = async () => {
     if (loading) return;
     setLoading(true);
     try {
       const redirectUrl = makeRedirectUri();
-      console.log("Generated Redirect URL:", redirectUrl);
-      
+
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
+        provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          skipBrowserRedirect: true,
         },
       });
-      
-      console.log("Supabase OAuth URL:", data?.url);
 
       if (error) throw error;
 
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+        
         if (result.type === 'success' && result.url) {
-          const url = result.url;
-          
-          const accessTokenMatch = url.match(/access_token=([^&]+)/);
-          const refreshTokenMatch = url.match(/refresh_token=([^&]+)/);
-          
-          if (accessTokenMatch && refreshTokenMatch) {
-             const access_token = accessTokenMatch[1];
-             const refresh_token = refreshTokenMatch[1];
-             
-             const { error: sessionError } = await supabase.auth.setSession({
-                access_token,
-                refresh_token,
-             });
-             
-             if (sessionError) throw sessionError;
-             
-             await AsyncStorage.removeItem('@guest_mode');
-             await AsyncStorage.setItem('@user_role', 'authenticated');
-             if (onSuccess) {
-                onSuccess();
-             } else {
-                router.replace('/(tabs)/Home'); 
-             }
-          } else {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              await AsyncStorage.removeItem('@guest_mode');
-              await AsyncStorage.setItem('@user_role', 'authenticated');
-              if (onSuccess) onSuccess();
-              else router.replace('/(tabs)/Home'); 
+          console.log("Supabase WebBrowser Google Login success!");
+
+          // Extract tokens from the URL hash
+          const hashSplit = result.url.split('#');
+          if (hashSplit.length > 1) {
+            const params = {};
+            hashSplit[1].split('&').forEach(param => {
+              const [key, value] = param.split('=');
+              params[key] = decodeURIComponent(value);
+            });
+
+            if (params.access_token && params.refresh_token) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: params.access_token,
+                refresh_token: params.refresh_token,
+              });
+              if (sessionError) throw sessionError;
+              console.log("Successfully set Supabase OAuth session!");
             }
           }
+          
+          await AsyncStorage.removeItem('@guest_mode');
+          await AsyncStorage.setItem('@user_role', 'authenticated');
+
+          refreshProfile();
+
+          if (onSuccess) onSuccess();
+          else router.replace('../(tabs)/Home');
         }
       }
+
     } catch (error) {
-      console.error("OAuth Error:", error);
-      Alert.alert("OAuth Error", error.message || 'Authentication failed');
+      console.error("Google Sign-In Error:", error);
+      Alert.alert("Google Sign-In Error", error.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -265,15 +262,12 @@ export default function SignUp({ onSwitch, onSuccess }) {
               <View style={styles.line} />
             </View>
 
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('google')} disabled={loading}>
-                <FontAwesome5 name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
-                <Text style={styles.socialText}>Google</Text>
+            <View style={styles.googleBtnContainer}>
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignIn} disabled={loading}>
+                <FontAwesome5 name="google" size={20} color="#DB4437" />
+                <Text style={styles.googleBtnText}>Sign Up with Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={() => handleOAuthLogin('facebook')} disabled={loading}>
-                <FontAwesome5 name="facebook" size={20} color="#4267B2" style={{ marginRight: 10 }} />
-                <Text style={styles.socialText}>Facebook</Text>
-              </TouchableOpacity>
+              <Text style={styles.soonText}>More sign-up options coming soon...</Text>
             </View>
 
             <View style={[styles.footer, { marginTop: 20 }]}>

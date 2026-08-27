@@ -21,6 +21,24 @@ export const registerUser = async (data) => {
   });
 
   if (error) throw error;
+
+  // Explicitly sync additional metadata into the public.profiles table
+  // because the Postgres trigger misses these non-standard camelCase keys.
+  if (result.user) {
+    try {
+      await updateUser(result.user.id, {
+        birth_date: meta.birthDate || null,
+        country: meta.country || null,
+        province: meta.province || null,
+        city: meta.city || null,
+        username: meta.username || null,
+        preferred_language_code: meta.preferredLanguageCode || null
+      });
+    } catch (syncError) {
+      console.error("Warning: Could not sync additional profile data:", syncError);
+    }
+  }
+
   return result.user;
 };
 

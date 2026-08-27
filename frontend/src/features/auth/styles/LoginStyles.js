@@ -124,38 +124,39 @@ export const styles = StyleSheet.create({
     fontStyle:'bold',
   },
 
-  // --- SOCIAL BUTTONS WITH LOGOS ---
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
+  // --- FULL WIDTH GOOGLE BUTTON ---
+  googleBtnContainer: {
+    width: '100%',
+    marginBottom: 10,
   },
-  bubbleSocialBtn: {
-    flex: 0.47,
+  googleBtn: {
     flexDirection: 'row',
-    paddingVertical: 14,
-    borderRadius: 25, 
-    borderWidth: 4,
-    borderColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
-    elevation: 4,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
-  socialIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 10,
-    resizeMode: 'contain',
-  },
-  socialText: {
+  googleBtnText: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 15,
-    color: '#555',
+    fontSize: 16,
+    color: '#374151',
+    marginLeft: 10,
+  },
+  soonText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 15,
+    marginBottom: 25,
   },
 
   divider: {
