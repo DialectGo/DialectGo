@@ -7,6 +7,10 @@
   "scripts": {
     "dev": "node --watch app/index.js",
     "start": "node app/index.js",
+    "cluster": "npx pm2 start ecosystem.config.cjs --env development",
+    "cluster:stop": "npx pm2 stop dialectgo-api",
+    "cluster:logs": "npx pm2 logs dialectgo-api",
+    "cluster:reload": "npx pm2 reload dialectgo-api",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -39,6 +43,7 @@
     "https-proxy-agent": "^9.1.0",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
+    "lru-cache": "^11.5.2",
     "mammoth": "^1.12.1",
     "multer": "^2.1.1",
     "pdf-parse": "^1.1.1",
@@ -47,6 +52,7 @@
   },
   "devDependencies": {
     "@gradio/client": "^2.2.1",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "pm2": "^7.0.4"
   }
 }
