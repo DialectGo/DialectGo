@@ -228,11 +228,12 @@ export default function LogIn({ onSwitch, onSuccess }) {
               <View style={styles.line} />
             </View>
 
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.bubbleSocialBtn} onPress={handleGoogleSignIn} disabled={loading}>
-                <FontAwesome5 name="google" size={20} color="#DB4437" style={{ marginRight: 10 }} />
-                <Text style={styles.socialText}>Google</Text>
+            <View style={styles.googleBtnContainer}>
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleSignIn} disabled={loading}>
+                <FontAwesome5 name="google" size={20} color="#DB4437" />
+                <Text style={styles.googleBtnText}>Sign In with Google</Text>
               </TouchableOpacity>
+              <Text style={styles.soonText}>More sign-in options coming soon...</Text>
             </View>
 
             <View style={styles.footer}>
