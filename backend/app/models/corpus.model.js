@@ -23,7 +23,7 @@ export const CorpusModel = {
         const client = getAuthClient(token);
         let query = client
             .from('dialect_corpus')
-            .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech, syntactic_pattern')
+            .select('id, source_text, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech')
             .in('source_text', normalizedTerms)
             .eq('status', 'validated');
 
@@ -93,7 +93,7 @@ export const CorpusModel = {
         const client = getAuthClient(token);
         const { data, error } = await client
             .from('dialect_corpus')
-            .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech, syntactic_pattern')
+            .select('id, source_text, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech')
             .in('standard_term', normalizedTerms)
             .eq('region', targetDialect)
             .eq('status', 'validated');

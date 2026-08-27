@@ -150,8 +150,8 @@ export async function dialectize(text, targetDialect, token = null) {
             .filter(token => {
                 if (token.type !== 'word') return false;
                 const match = allMatches.get(token.normalized);
-                return match && match.dialect_translation &&
-                    match.dialect_translation.toLowerCase() !== token.normalized;
+                return match && match.source_text &&
+                    match.source_text.toLowerCase() !== token.normalized;
             })
             .sort((a, b) => b.startIndex - a.startIndex);
 
@@ -175,7 +175,7 @@ export async function dialectize(text, targetDialect, token = null) {
 
         for (const token of tokensToReplace) {
             const match = allMatches.get(token.normalized);
-            const dialectWord = match.dialect_translation;
+            const dialectWord = match.source_text;
             const casePreserved = preserveCasing(token.original, dialectWord);
 
             replacements.push({
