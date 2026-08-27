@@ -20,7 +20,7 @@ export default function HistoryCard({ item, onPress }) {
             </View>
             <TouchableOpacity 
                 style={styles.bookmarkButton} 
-                onPress={() => toggleBookmark(item.id)}
+                onPress={() => toggleBookmark(item.id, item.source_text)}
                 disabled={isLoading}
             >
                 <Ionicons 

@@ -24,6 +24,19 @@ import { canonicalize } from './canonicalization.service.js';
  */
 
 /**
+ * Map incoming UI language labels to the standardized database dialect groups.
+ */
+function mapDialect(region) {
+    if (!region) return 'General Tagalog';
+    const lower = region.toLowerCase();
+    if (lower.includes('batang')) return 'Batangeño';
+    if (lower.includes('bohol')) return 'Boholano';
+    if (lower.includes('cebu')) return 'General Cebuano';
+    if (lower.includes('english')) return 'English';
+    return 'General Tagalog'; // Default for Tagalog, Slang, Bading, etc.
+}
+
+/**
  * Run the full pre-processing pipeline on user input text.
  * 
  * @param {string} text - Raw user input text
@@ -33,6 +46,7 @@ import { canonicalize } from './canonicalization.service.js';
  */
 export const preprocessText = async (text, sourceLang = 'Tagalog', token = null) => {
     const startTime = Date.now();
+    const dbDialect = mapDialect(sourceLang);
 
     // Guard: empty/invalid input passes through unchanged
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -52,7 +66,7 @@ export const preprocessText = async (text, sourceLang = 'Tagalog', token = null)
 
     try {
         // ─── Stage 1: Tokenization ──────────────────────────────────────
-        const multiWordPhrases = await getMultiWordPhrases(sourceLang, token);
+        const multiWordPhrases = await getMultiWordPhrases(dbDialect, token);
         const tokens = tokenize(text, multiWordPhrases);
 
         // ─── Stage 1.5: POS Inferencing (VSO Structure) ─────────────────
@@ -105,7 +119,7 @@ export const preprocessText = async (text, sourceLang = 'Tagalog', token = null)
         }
 
         // ─── Stage 2: Corpus Lookup ─────────────────────────────────────
-        const enrichedTokens = await lookupTokens(tokens, sourceLang, token);
+        const enrichedTokens = await lookupTokens(tokens, dbDialect, token);
 
         const matchedCount = enrichedTokens.filter(t => t.corpusMatches !== null).length;
         console.log(`[Preprocessor] Stage 2 — Found ${matchedCount} corpus matches out of ${uniqueWords.length} unique words`);

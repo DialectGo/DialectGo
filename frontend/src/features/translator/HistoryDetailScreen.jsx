@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Clipboard, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Clipboard, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../shared/theme/colorPalette';
@@ -108,7 +109,7 @@ export default function HistoryDetailScreen() {
                     </TouchableOpacity>
 
                     <View style={styles.headerRight}>
-                        <TouchableOpacity style={styles.headerIcon} onPress={() => toggleBookmark(item.id)}>
+                        <TouchableOpacity style={styles.headerIcon} onPress={() => toggleBookmark(item.id, item.source_text)}>
                             <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={24} color={isBookmarked ? colors.primary : colors.textPrimary} />
                         </TouchableOpacity>
                     </View>

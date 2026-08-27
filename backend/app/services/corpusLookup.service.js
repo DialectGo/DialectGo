@@ -56,11 +56,10 @@ export const getMultiWordPhrases = async (sourceLang = null, token = null) => {
  * @typedef {Object} CorpusMatch
  * @property {number} id
  * @property {string} source_text
- * @property {string} dialect_translation
  * @property {string|null} standard_term
  * @property {number} sentiment_score
  * @property {number} weight
- * @property {string} region
+ * @property {string} dialect
  * @property {string} context_tag
  */
 
