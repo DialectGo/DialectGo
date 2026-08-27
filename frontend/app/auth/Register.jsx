@@ -20,9 +20,11 @@ import { endpoints } from '../../src/shared/api/client';
 import { supabase } from '../../src/shared/api/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { formatBirthDate, deriveUsername } from '../../src/shared/utils/stringUtils';
+import { deriveUsername } from '../../src/shared/utils/stringUtils';
+import { formatBirthDate } from '../../src/shared/utils/dateUtils';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { useProfileContext } from '../../src/shared/context/ProfileContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,6 +32,7 @@ const API_URL = endpoints.USER_REGISTER;
 
 export default function SignUp({ onSwitch, onSuccess }) {
   const router = useRouter(); 
+  const { refreshProfile } = useProfileContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -139,6 +142,8 @@ export default function SignUp({ onSwitch, onSuccess }) {
           
           await AsyncStorage.removeItem('@guest_mode');
           await AsyncStorage.setItem('@user_role', 'authenticated');
+
+          refreshProfile();
 
           if (onSuccess) onSuccess();
           else router.replace('../(tabs)/Home');

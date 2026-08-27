@@ -22,6 +22,7 @@ import axios from 'axios';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { useProfileContext } from '../src/shared/context/ProfileContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,6 +30,7 @@ const LOGIN_URL = endpoints.USER_LOGIN;
 
 export default function LogIn({ onSwitch, onSuccess }) {
   const router = useRouter(); 
+  const { refreshProfile } = useProfileContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,8 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
         await AsyncStorage.removeItem('@guest_mode');
         await AsyncStorage.setItem('@user_role', 'authenticated');
+
+        refreshProfile();
 
         if (onSuccess) {
           onSuccess();
@@ -129,6 +133,8 @@ export default function LogIn({ onSwitch, onSuccess }) {
           
           await AsyncStorage.removeItem('@guest_mode');
           await AsyncStorage.setItem('@user_role', 'authenticated');
+
+          refreshProfile();
 
           if (onSuccess) onSuccess();
           else router.replace('../(tabs)/Home');
