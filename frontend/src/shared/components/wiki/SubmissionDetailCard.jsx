@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../../theme/colorPalette';
 
 export default function SubmissionDetailCard({
   submission,
   userVote,
   handleVote,
+  commentsCount,
   styles
 }) {
   const isQuestion = submission.type === 'Question';
@@ -68,43 +70,26 @@ export default function SubmissionDetailCard({
         </View>
       </View>
 
-      <View style={styles.voteSection}>
-        <Text style={styles.voteSectionTitle}>Community Rating</Text>
-        <View style={styles.voteRow}>
-          <TouchableOpacity
-            style={[styles.voteButton, styles.upvoteBtn, userVote === 1 && styles.activeUpvote]}
-            onPress={() => handleVote(1)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={userVote === 1 ? 'arrow-up-circle' : 'arrow-up-circle-outline'}
-              size={28}
-              color={userVote === 1 ? '#FFFFFF' : '#10B981'}
-            />
-            <Text style={[styles.voteBtnText, userVote === 1 && styles.activeVoteText]}>Upvote</Text>
-          </TouchableOpacity>
+      {/* Engagement Row (Likes, Comments, Views) */}
+      <View style={styles.engagementRow}>
+        <TouchableOpacity style={styles.engagementBtn} onPress={() => handleVote(userVote === 1 ? 0 : 1)}>
+          <Ionicons 
+            name={userVote === 1 ? 'thumbs-up' : 'thumbs-up-outline'} 
+            size={20} 
+            color={userVote === 1 ? colors.primaryDeep : colors.textHint} 
+          />
+          <Text style={styles.engagementText}>{submission.upvotes || 0}</Text>
+        </TouchableOpacity>
 
-          <View style={styles.voteCountContainer}>
-            <Text style={styles.voteCountNumber}>{submission.upvotes || 0}</Text>
-            <Text style={styles.voteCountLabel}>votes</Text>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.voteButton, styles.downvoteBtn, userVote === -1 && styles.activeDownvote]}
-            onPress={() => handleVote(-1)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={userVote === -1 ? 'arrow-down-circle' : 'arrow-down-circle-outline'}
-              size={28}
-              color={userVote === -1 ? '#FFFFFF' : '#EF4444'}
-            />
-            <Text style={[styles.voteBtnText, userVote === -1 && styles.activeVoteText]}>Downvote</Text>
-          </TouchableOpacity>
+        <View style={styles.engagementBtn}>
+          <Ionicons name="chatbubble-outline" size={20} color={colors.textHint} />
+          <Text style={styles.engagementText}>{commentsCount || 0}</Text>
         </View>
-        {!isQuestion && (
-          <Text style={styles.voteHint}>10 upvotes = auto-verified into the corpus</Text>
-        )}
+
+        <View style={styles.engagementBtn}>
+          <Ionicons name="eye-outline" size={20} color={colors.textHint} />
+          <Text style={styles.engagementText}>{submission.views || 0}</Text>
+        </View>
       </View>
     </View>
   );

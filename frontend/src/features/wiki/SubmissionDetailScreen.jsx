@@ -92,6 +92,7 @@ export default function SubmissionDetailScreen({ id }) {
           submission={submission}
           userVote={userVote}
           handleVote={handleVote}
+          commentsCount={comments.length}
           styles={styles}
         />
 
@@ -175,22 +176,11 @@ const styles = StyleSheet.create({
   },
   tagText: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
 
-  voteSection: { backgroundColor: '#F9FAFB', borderRadius: 20, padding: 22, marginTop: 24, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
-  voteSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 18 },
-  voteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
-  voteButton: { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, gap: 6 },
-  upvoteBtn: { backgroundColor: '#ECFDF5' },
-  downvoteBtn: { backgroundColor: '#FEF2F2' },
-  activeUpvote: { backgroundColor: '#10B981' },
-  activeDownvote: { backgroundColor: '#EF4444' },
-  voteBtnText: { fontSize: 12, fontWeight: '700', color: '#374151' },
-  activeVoteText: { color: '#FFFFFF' },
-  voteCountContainer: { alignItems: 'center' },
-  voteCountNumber: { fontSize: 32, fontWeight: '900', color: '#1F2937' },
-  voteCountLabel: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
-  voteHint: { fontSize: 12, color: '#9CA3AF', fontWeight: '500', marginTop: 14 },
+  engagementRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 4, gap: 24, paddingBottom: 16 },
+  engagementBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  engagementText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
-  commentsSection: { marginTop: 24 },
+  commentsSection: { marginTop: 16 },
   commentsSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 14 },
   commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: 16 },
   commentInput: { flex: 1, backgroundColor: '#F9FAFB', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: '#1F2937', fontWeight: '500', maxHeight: 100, borderWidth: 1, borderColor: '#F3F4F6' },
