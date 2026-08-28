@@ -87,10 +87,23 @@ export default function WikiFeedCard({ item, router, handleVote, styles }) {
 
       {/* Footer: Engagement Icons */}
       <View style={styles.cardFooter}>
-        <View style={styles.engagementBtn}>
-          <Text style={styles.engagementEmoji}>👍</Text>
-          <Text style={styles.engagementText}>{item.upvotes || 0}</Text>
-        </View>
+        <TouchableOpacity 
+          style={styles.engagementBtn}
+          onPress={() => handleVote(item.id, 1)}
+          activeOpacity={0.6}
+        >
+          <Ionicons 
+            name={item.userVote === 1 ? "thumbs-up" : "thumbs-up-outline"} 
+            size={18} 
+            color={item.userVote === 1 ? "#FBBF24" : "#9CA3AF"} 
+          />
+          <Text style={[
+            styles.engagementText,
+            item.userVote === 1 && { color: '#FBBF24' }
+          ]}>
+            {item.upvotes || 0}
+          </Text>
+        </TouchableOpacity>
         
         <View style={styles.engagementBtn}>
           <Ionicons name="chatbubble-outline" size={16} color="#9CA3AF" />

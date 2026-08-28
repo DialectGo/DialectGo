@@ -95,7 +95,12 @@ export function useWikiFeed() {
         setSubmissions(prev =>
           prev.map(s =>
             s.id === submissionId
-              ? { ...s, upvotes: result.upvotes, status: result.promoted ? 'verified' : s.status }
+              ? { 
+                  ...s, 
+                  upvotes: result.upvotes, 
+                  status: result.promoted ? 'verified' : s.status,
+                  userVote: s.userVote === voteType ? null : voteType
+                }
               : s
           )
         );
