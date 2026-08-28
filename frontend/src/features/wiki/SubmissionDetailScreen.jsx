@@ -43,8 +43,14 @@ export default function SubmissionDetailScreen({ id }) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
-        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
+        <View style={[styles.fixedHeaderRow, { paddingTop: insets.top + 10 }]}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={28} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FBBF24" />
         </View>
       </View>
@@ -55,8 +61,14 @@ export default function SubmissionDetailScreen({ id }) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
-        <View style={[styles.loadingContainer, { paddingTop: insets.top + 70 }]}>
+        <View style={[styles.fixedHeaderRow, { paddingTop: insets.top + 10 }]}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+              <Ionicons name="chevron-back" size={28} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Submission not found</Text>
         </View>
       </View>
@@ -69,42 +81,42 @@ export default function SubmissionDetailScreen({ id }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar barStyle="dark-content" />
-      <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 70 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={28} color="#1F2937" />
-            </TouchableOpacity>
-            <View style={styles.authorAvatar}>
-              {getAvatarSource(submission.profiles?.profile_avatar_url) ? (
-                <Image 
-                  source={getAvatarSource(submission.profiles.profile_avatar_url)} 
-                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E5E7EB' }} 
-                />
-              ) : (
-                <Ionicons name="person-circle" size={40} color="#D1D5DB" />
-              )}
-            </View>
-            <View style={styles.headerAuthorInfo}>
-              <Text style={styles.headerAuthorName}>
-                {submission.profiles?.username || `${submission.profiles?.first_name || ''} ${submission.profiles?.last_name || ''}`.trim() || 'Anonymous'}
-              </Text>
-              <Text style={styles.headerAuthorDate}>
-                {new Date(submission.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={handleBookmark} style={styles.bookmarkBtn}>
-            <Ionicons
-              name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-              size={24}
-              color={bookmarked ? '#FBBF24' : '#9CA3AF'}
-            />
+      {/* Fixed Header */}
+      <View style={[styles.fixedHeaderRow, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#1F2937" />
           </TouchableOpacity>
+          <View style={styles.authorAvatar}>
+            {getAvatarSource(submission.profiles?.profile_avatar_url) ? (
+              <Image 
+                source={getAvatarSource(submission.profiles.profile_avatar_url)} 
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E5E7EB' }} 
+              />
+            ) : (
+              <Ionicons name="person-circle" size={40} color="#D1D5DB" />
+            )}
+          </View>
+          <View style={styles.headerAuthorInfo}>
+            <Text style={styles.headerAuthorName}>
+              {submission.profiles?.username || `${submission.profiles?.first_name || ''} ${submission.profiles?.last_name || ''}`.trim() || 'Anonymous'}
+            </Text>
+            <Text style={styles.headerAuthorDate}>
+              {new Date(submission.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
         </View>
+        <TouchableOpacity onPress={handleBookmark} style={styles.bookmarkBtn}>
+          <Ionicons
+            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={24}
+            color={bookmarked ? '#FBBF24' : '#9CA3AF'}
+          />
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <SubmissionDetailCard
           submission={submission}
           userVote={userVote}
@@ -172,11 +184,21 @@ export default function SubmissionDetailScreen({ id }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16, color: '#9CA3AF' },
   
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 20 },
+  fixedHeaderRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    zIndex: 10
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   backBtn: { paddingVertical: 8, paddingRight: 12, justifyContent: 'center' },
   authorAvatar: { marginRight: 10 },
