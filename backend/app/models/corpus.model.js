@@ -23,13 +23,13 @@ export const CorpusModel = {
         const client = getAuthClient(token);
         let query = client
             .from('dialect_corpus')
-            .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech, syntactic_pattern')
+            .select('id, source_text, standard_term, sentiment_score, weight, dialect, context_tag, status, part_of_speech')
             .in('source_text', normalizedTerms)
             .eq('status', 'validated');
 
-        // Optionally filter by source language/region
+        // Optionally filter by source language/dialect
         if (sourceLang) {
-            query = query.eq('region', sourceLang);
+            query = query.eq('dialect', sourceLang);
         }
 
         const { data, error } = await query;
@@ -59,7 +59,7 @@ export const CorpusModel = {
             .eq('status', 'validated');
 
         if (sourceLang) {
-            query = query.eq('region', sourceLang);
+            query = query.eq('dialect', sourceLang);
         }
 
         const { data, error } = await query;
@@ -93,9 +93,9 @@ export const CorpusModel = {
         const client = getAuthClient(token);
         const { data, error } = await client
             .from('dialect_corpus')
-            .select('id, source_text, dialect_translation, standard_term, sentiment_score, weight, region, context_tag, status, part_of_speech, syntactic_pattern')
+            .select('id, source_text, standard_term, sentiment_score, weight, dialect, context_tag, status, part_of_speech')
             .in('standard_term', normalizedTerms)
-            .eq('region', targetDialect)
+            .eq('dialect', targetDialect)
             .eq('status', 'validated');
 
         if (error) {

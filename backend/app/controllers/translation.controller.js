@@ -238,18 +238,16 @@ export const translateAudio = async (req, res, next) => {
 
 export const translateText = async (req, res, next) => {
     try {
-        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
+        const { sourceText, sourceLang, targetLang, source_language_id, target_language_id, targetDialect } = req.body;
 
         // Ensure sourceText is a clean string
         if (!sourceText) return res.status(400).json({ message: "No text provided" });
 
-        // Choose pipeline: with or without LLM breakdown
-        let result;
-        if (withBreakdown) {
-            result = await TranslationService.performTranslationWithBreakdown(sourceText, sourceLang, targetLang, targetDialect || null, req.token);
-        } else {
-            result = await TranslationService.performPreprocessedTranslation(sourceText, sourceLang, targetLang, targetDialect || null, req.token);
-        }
+        // Fast path: always use the pre-processed pipeline.
+        // Breakdown is now decoupled and served via the /translate/breakdown SSE endpoint.
+        const result = await TranslationService.performPreprocessedTranslation(
+            sourceText, sourceLang, targetLang, targetDialect || null, req.token
+        );
 
         // Log the result here to verify if it's "clean" before saving to Supabase
         console.log("Raw AI Output:", result.translatedText);
@@ -267,34 +265,14 @@ export const translateText = async (req, res, next) => {
             savedRecord = data?.[0];
         }
 
-        // If breakdown was requested, save the report to Supabase
-        if (withBreakdown && result.breakdown) {
-            try {
-                if (req.user?.id) {
-                    await ReportModel.saveReport(req.user.id, {
-                        translationId: savedRecord?.id || null,
-                        sourceText,
-                        translatedText: result.translatedText,
-                        sourceLang,
-                        targetLang,
-                        targetDialect: targetDialect || null,
-                        breakdown: result.breakdown,
-                        sentimentAnalysis: result.preprocessing?.sentimentAnalysis || {},
-                    }, req.token);
-                }
-            } catch (reportErr) {
-                console.warn('[translateText] Failed to save breakdown report:', reportErr.message);
-                // Non-fatal — continue with the response
-            }
-        }
-
         res.status(200).json({
             success: true,
             translatedText: result.translatedText,
             historyRecord: savedRecord,
             preprocessing: result.preprocessing,
             dialectization: result.dialectization,
-            breakdown: result.breakdown || null,
+            // breakdown is intentionally omitted — use POST /translate/breakdown
+            breakdown: null,
         });
     } catch (err) { next(err); }
 };
@@ -552,6 +530,83 @@ export const textToSpeech = async (req, res, next) => {
         }
         res.status(200).json({ success: true, audioBase64 });
     } catch (err) { next(err); }
+};
+
+/**
+ * SSE Breakdown Endpoint — POST /translate/breakdown
+ * 
+ * Decouples the LLM meta-layer analysis from the core translation response.
+ * Instead of blocking for 6-7 minutes, the client calls this endpoint
+ * separately and receives the breakdown via Server-Sent Events once ready.
+ *
+ * The client should:
+ *   1. Call POST /translate (fast: returns translation in ~1-2s)
+ *   2. Immediately display the translated text
+ *   3. Call POST /translate/breakdown (async SSE: breakdown arrives in ~3-8s)
+ *   4. Render the breakdown panel when the SSE data event arrives
+ */
+export const streamBreakdown = async (req, res, next) => {
+    const { sourceText, translatedText, sourceLang, targetLang, targetDialect, preprocessingMeta } = req.body;
+
+    if (!sourceText || !translatedText) {
+        return res.status(400).json({ success: false, message: 'sourceText and translatedText are required' });
+    }
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.flushHeaders();
+
+    // Send a heartbeat immediately so the client knows the connection is alive
+    res.write('event: ping\ndata: {"status":"processing"}\n\n');
+
+    // Set a hard timeout — if Groq takes too long, send an error event and close
+    const hardTimeout = setTimeout(() => {
+        res.write(`event: error\ndata: ${JSON.stringify({ success: false, message: 'Breakdown analysis timed out. Please try again.' })}\n\n`);
+        res.end();
+    }, 40000); // 40s hard limit — matches 35s LLM timeout + buffer
+
+    try {
+        const breakdown = await MetaLayerService.analyzeTranslation({
+            sourceText,
+            translatedText,
+            sourceLang,
+            targetLang,
+            targetDialect: targetDialect || null,
+            preprocessingMeta: preprocessingMeta || null,
+        });
+
+        clearTimeout(hardTimeout);
+
+        // Optionally save the breakdown report
+        if (req.user?.id && breakdown.success) {
+            try {
+                await ReportModel.saveReport(req.user.id, {
+                    translationId: req.body.translationId || null,
+                    sourceText,
+                    translatedText,
+                    sourceLang,
+                    targetLang,
+                    targetDialect: targetDialect || null,
+                    breakdown,
+                    sentimentAnalysis: preprocessingMeta?.sentimentAnalysis || {},
+                }, req.token);
+            } catch (reportErr) {
+                console.warn('[streamBreakdown] Report save failed (non-fatal):', reportErr.message);
+            }
+        }
+
+        // Send the complete breakdown as a single SSE data event
+        res.write(`event: breakdown\ndata: ${JSON.stringify({ success: true, breakdown })}\n\n`);
+        res.end();
+    } catch (err) {
+        clearTimeout(hardTimeout);
+        console.error('[streamBreakdown] Error:', err.message);
+        res.write(`event: error\ndata: ${JSON.stringify({ success: false, message: err.message })}\n\n`);
+        res.end();
+    }
 };
 
 export const toggleBookmark = async (req, res, next) => {

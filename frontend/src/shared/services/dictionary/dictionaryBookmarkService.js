@@ -45,8 +45,7 @@ export const dictionaryBookmarkService = {
 
     const result = await response.json();
     if (response.ok && result.success) {
-      // Return the new boolean state that the backend provides via toggle
-      return result.data.isBookmarked;
+      return true;
     } else {
       throw new Error(result.message || 'Failed to save.');
     }

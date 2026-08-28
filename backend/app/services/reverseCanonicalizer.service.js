@@ -41,13 +41,26 @@ export function clearReverseCache() {
  */
 
 /**
+ * Map incoming UI language labels to the standardized database dialect groups.
+ */
+function mapDialect(region) {
+    if (!region) return 'General Tagalog';
+    const lower = region.toLowerCase();
+    if (lower.includes('batang')) return 'Batangeño';
+    if (lower.includes('bohol')) return 'Boholano';
+    if (lower.includes('cebu')) return 'General Cebuano';
+    if (lower.includes('english')) return 'English';
+    return 'General Tagalog'; // Default for Tagalog, Slang, Bading, etc.
+}
+
+/**
  * Transform NLLB standardized text into a regional dialect variant.
  * 
  * Algorithm:
  * 1. Tokenize the NLLB output
  * 2. Collect unique word tokens
  * 3. Batch reverse-lookup: find dialect_corpus entries where standard_term matches
- *    and region = targetDialect
+ *    and dialect = targetDialect
  * 4. Replace each matched standard word with its dialect_translation
  * 5. Return the dialectized text
  * 
@@ -57,6 +70,7 @@ export function clearReverseCache() {
  */
 export async function dialectize(text, targetDialect, token = null) {
     const startTime = Date.now();
+    const dbDialect = mapDialect(targetDialect);
 
     // Guard: empty input or no dialect
     if (!text || typeof text !== 'string' || text.trim().length === 0 || !targetDialect) {
@@ -91,7 +105,7 @@ export async function dialectize(text, targetDialect, token = null) {
         const cachedResults = new Map();
 
         for (const word of uniqueWords) {
-            const cacheKey = `${word}|${targetDialect}`;
+            const cacheKey = `${word}|${dbDialect}`;
             const cached = reverseCache.get(cacheKey);
             if (isCacheValid(cached)) {
                 if (cached.entry) {
@@ -106,7 +120,7 @@ export async function dialectize(text, targetDialect, token = null) {
         let dbResults = new Map();
 
         if (wordsToLookup.length > 0) {
-            const { data, error } = await CorpusModel.reverseLookup(wordsToLookup, targetDialect, token);
+            const { data, error } = await CorpusModel.reverseLookup(wordsToLookup, dbDialect, token);
 
             if (error) {
                 console.error('[ReverseCanonicalizer] Reverse lookup failed:', error.message);
@@ -123,7 +137,7 @@ export async function dialectize(text, targetDialect, token = null) {
                 // Cache results (including misses)
                 for (const term of wordsToLookup) {
                     const entry = dbResults.get(term) || null;
-                    reverseCache.set(`${term}|${targetDialect}`, { entry, timestamp: Date.now() });
+                    reverseCache.set(`${term}|${dbDialect}`, { entry, timestamp: Date.now() });
                 }
             }
         }
@@ -150,8 +164,8 @@ export async function dialectize(text, targetDialect, token = null) {
             .filter(token => {
                 if (token.type !== 'word') return false;
                 const match = allMatches.get(token.normalized);
-                return match && match.dialect_translation &&
-                    match.dialect_translation.toLowerCase() !== token.normalized;
+                return match && match.source_text &&
+                    match.source_text.toLowerCase() !== token.normalized;
             })
             .sort((a, b) => b.startIndex - a.startIndex);
 
@@ -175,7 +189,7 @@ export async function dialectize(text, targetDialect, token = null) {
 
         for (const token of tokensToReplace) {
             const match = allMatches.get(token.normalized);
-            const dialectWord = match.dialect_translation;
+            const dialectWord = match.source_text;
             const casePreserved = preserveCasing(token.original, dialectWord);
 
             replacements.push({

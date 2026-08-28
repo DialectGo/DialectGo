@@ -16,6 +16,9 @@ import Groq from 'groq-sdk';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = 'openai/gpt-oss-120b';
 
+// Default LLM timeout — prevents 6-7 min hangs on slow Groq responses
+const LLM_TIMEOUT_MS = 35000; // 35 seconds — gpt-oss-120b can take 20-30s for breakdowns
+
 let groqClient = null;
 
 /**
@@ -32,6 +35,22 @@ function getGroqClient() {
     return groqClient;
 }
 
+/**
+ * Wrap a promise with a timeout. Rejects with a clear error if the promise
+ * does not resolve within `ms` milliseconds.
+ *
+ * @param {Promise} promise
+ * @param {number} ms - Timeout in milliseconds
+ * @param {string} label - Used in the error message
+ * @returns {Promise}
+ */
+function withTimeout(promise, ms = LLM_TIMEOUT_MS, label = 'LLM call') {
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`[MetaLayer] ${label} timed out after ${ms}ms`)), ms)
+    );
+    return Promise.race([promise, timeoutPromise]);
+}
+
 // ─── Analysis Prompt Builder ────────────────────────────────────────────────
 
 /**
@@ -39,49 +58,20 @@ function getGroqClient() {
  * Instructs the LLM to return structured JSON only.
  */
 function buildAnalysisSystemPrompt() {
-    return `You are a Filipino linguistics expert specializing in Tagalog, Cebuano, and regional Philippine dialects (Boholano, Batangeño, etc.).
+    return `You are a Filipino linguistics expert (Tagalog, Cebuano, regional dialects).
+Respond ONLY with valid JSON — no markdown, no text outside the JSON.
 
-Your task is to analyze a translation pair and produce a detailed JSON breakdown. You MUST respond with ONLY valid JSON — no markdown, no explanations outside the JSON.
-
-The JSON schema you must follow:
+Schema:
 {
   "wordByWord": [
-    {
-      "sourceWord": "string (the word from the source text)",
-      "translatedWord": "string (the corresponding word in the translation)",
-      "partOfSpeech": "string (noun, verb, pronoun, adjective, adverb, particle, preposition, conjunction, interjection)",
-      "morphology": "string (explain root words, prefixes, suffixes, infixes, reduplication, etc.)",
-      "usage": "string (how this word is typically used in conversation)",
-      "dialectNote": "string or null (any regional dialect variation worth noting)"
-    }
+    {"sourceWord": "string", "translatedWord": "string", "partOfSpeech": "string", "morphology": "string", "usage": "string", "dialectNote": "string or null"}
   ],
-  "sentimentEvaluation": {
-    "detectedTone": "string (e.g., Romantic, Casual, Formal, Angry, Playful, Neutral)",
-    "confidenceScore": "number between 0 and 1",
-    "explanation": "string (why this tone was detected)",
-    "emotionalWeight": "string (light, medium, heavy)"
-  },
-  "constructionAnalysis": {
-    "sentenceStructure": "string (e.g., VSO, SVO, Topic-Comment)",
-    "explanation": "string (explain how the sentence is constructed grammatically)",
-    "culturalNote": "string or null (any cultural context that affects meaning or usage)"
-  },
-  "alternativeSuggestions": [
-    {
-      "text": "string (an alternative translation)",
-      "tone": "string (what tone this alternative carries)",
-      "explanation": "string (why someone might prefer this alternative)"
-    }
-  ]
+  "sentimentEvaluation": {"detectedTone": "string", "confidenceScore": "number 0-1", "explanation": "string", "emotionalWeight": "string"},
+  "constructionAnalysis": {"sentenceStructure": "string", "explanation": "string", "culturalNote": "string or null"},
+  "alternativeSuggestions": [{"text": "string", "tone": "string", "explanation": "string"}]
 }
 
-Rules:
-- Map source words to translated words as closely as possible. If one source word maps to multiple target words (or vice versa), group them.
-- For particles (na, pa, nga, ba, etc.) explain their grammatical function.
-- If the target language is a dialect (Boholano, Batangeño), note how it differs from the standard form.
-- Provide 1-3 alternative suggestions with different tones.
-- Keep explanations concise but educational. Assume the reader is a language learner.
-- ALWAYS respond in valid JSON only.`;
+Rules: Map source to translated words closely. Explain particles (na, pa, nga, ba). Note dialect differences. Provide 1-3 alternatives. Keep explanations concise. ALWAYS respond in valid JSON only.`;
 }
 
 /**
@@ -182,15 +172,19 @@ export async function analyzeTranslation({ sourceText, translatedText, sourceLan
     try {
         const client = getGroqClient();
 
-        const completion = await client.chat.completions.create({
-            model: GROQ_MODEL,
-            max_tokens: 2000,
-            temperature: 0.3, // Low temperature for consistent, factual output
-            messages: [
-                { role: 'system', content: buildAnalysisSystemPrompt() },
-                { role: 'user', content: buildAnalysisUserPrompt({ sourceText, translatedText, sourceLang, targetLang, targetDialect, preprocessingMeta }) },
-            ],
-        });
+        const completion = await withTimeout(
+            client.chat.completions.create({
+                model: GROQ_MODEL,
+                max_tokens: 1200, // Reduced from 2000 — faster, still detailed enough
+                temperature: 0.3,
+                messages: [
+                    { role: 'system', content: buildAnalysisSystemPrompt() },
+                    { role: 'user', content: buildAnalysisUserPrompt({ sourceText, translatedText, sourceLang, targetLang, targetDialect, preprocessingMeta }) },
+                ],
+            }),
+            20000,
+            'analyzeTranslation'
+        );
 
         const rawContent = completion.choices?.[0]?.message?.content;
 
@@ -262,15 +256,19 @@ export async function customizeTranslation({ sourceText, translatedText, sourceL
     try {
         const client = getGroqClient();
 
-        const completion = await client.chat.completions.create({
-            model: GROQ_MODEL,
-            max_tokens: 1000,
-            temperature: 0.5, // Slightly more creative for customization
-            messages: [
-                { role: 'system', content: buildCustomizationSystemPrompt() },
-                { role: 'user', content: buildCustomizationUserPrompt({ sourceText, translatedText, sourceLang, targetLang, tone, audience, context, style }) },
-            ],
-        });
+        const completion = await withTimeout(
+            client.chat.completions.create({
+                model: GROQ_MODEL,
+                max_tokens: 800,
+                temperature: 0.5,
+                messages: [
+                    { role: 'system', content: buildCustomizationSystemPrompt() },
+                    { role: 'user', content: buildCustomizationUserPrompt({ sourceText, translatedText, sourceLang, targetLang, tone, audience, context, style }) },
+                ],
+            }),
+            20000,
+            'customizeTranslation'
+        );
 
         const rawContent = completion.choices?.[0]?.message?.content;
 
@@ -327,32 +325,36 @@ export async function analyzeDocumentType(sourceText) {
     try {
         const client = getGroqClient();
 
-        const completion = await client.chat.completions.create({
-            model: GROQ_MODEL,
-            max_tokens: 500,
-            temperature: 0.2,
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a document classification expert. Analyze the given text and classify its document type. Respond with ONLY valid JSON:
+        const completion = await withTimeout(
+            client.chat.completions.create({
+                model: GROQ_MODEL,
+                max_tokens: 300,  // Reduced from 500 — doc type detection needs very little output
+                temperature: 0.2,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a document classification expert. Analyze the given text and classify its document type. Respond with ONLY valid JSON:
 {
   "documentType": "string (one of: academic, legal, medical, culinary, personal_letter, news, technical, casual_chat, religious, government_form, literary, advertisement, other)",
-  "displayLabel": "string (human-readable label, e.g., '📄 Academic', '📋 Legal Notice', '💌 Personal Letter', '🍳 Recipe', '📰 News Article')",
+  "displayLabel": "string (human-readable label, e.g., '📄 Academic')",
   "confidence": "number 0-1",
   "toneGuidance": {
     "formality": "string (formal, semi-formal, informal, colloquial)",
-    "register": "string (brief description of the language register to use)",
-    "vocabularyNotes": "string (specific vocabulary considerations for this document type)"
+    "register": "string",
+    "vocabularyNotes": "string"
   },
-  "summary": "string (1-2 sentence summary of what this document appears to be about)"
+  "summary": "string (1-2 sentence summary)"
 }`
-                },
-                {
-                    role: 'user',
-                    content: `Classify this document:\n\n"${sourceText.slice(0, 2000)}"\n\nRespond with JSON only.`
-                }
-            ],
-        });
+                    },
+                    {
+                        role: 'user',
+                        content: `Classify this document:\n\n"${sourceText.slice(0, 1500)}"\n\nRespond with JSON only.`
+                    }
+                ],
+            }),
+            15000,
+            'analyzeDocumentType'
+        );
 
         const rawContent = completion.choices?.[0]?.message?.content;
         if (!rawContent) throw new Error('Empty response from Groq');

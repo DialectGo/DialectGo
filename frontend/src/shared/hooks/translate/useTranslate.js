@@ -14,18 +14,25 @@ export const useTranslate = () => {
   const callbacksRef = useRef({
     setBreakdownData: null,
     setFeedback: null,
+    setPreprocessing: null,
   });
+  // Stores the latest preprocessing metadata so the SSE breakdown endpoint can use it
+  const preprocessingRef = useRef(null);
 
   const audioProps = useTranslationAudio();
 
   const coreProps = useTranslationCore({
     skipDebounceRef,
     onTranslateSuccess: (data) => {
-      if (data.breakdown && callbacksRef.current.setBreakdownData) {
-        callbacksRef.current.setBreakdownData(data.breakdown);
+      // Store preprocessing metadata so SSE breakdown endpoint can reference it
+      preprocessingRef.current = data.preprocessing || null;
+      // Clear stale breakdown when a new translation arrives
+      if (callbacksRef.current.setBreakdownData) {
+        callbacksRef.current.setBreakdownData(null);
       }
     },
     onTranslateClear: () => {
+      preprocessingRef.current = null;
       if (callbacksRef.current.setBreakdownData) {
         callbacksRef.current.setBreakdownData(null);
       }
@@ -49,6 +56,8 @@ export const useTranslate = () => {
     sourceLang: coreProps.sourceLang,
     targetLang: coreProps.targetLang,
     targetDialect: coreProps.targetDialect,
+    currentTranslationId: coreProps.currentTranslationId,
+    preprocessing: preprocessingRef, // Pass the ref so it always has latest value
   });
 
   const documentProps = useTranslationDocument({
