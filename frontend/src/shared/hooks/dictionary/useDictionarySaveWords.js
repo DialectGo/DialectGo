@@ -61,6 +61,7 @@ export function useDictionarySaveWords() {
       setBookmarks(prev => prev.filter(item => !selectedIds.has(item.id)));
       setSelectedIds(new Set());
       setShowConfirmModal(false);
+      showToast('Items successfully deleted', 'success', 'Success');
     } catch (error) {
       console.error("Deletion error:", error);
       showToast("Failed to delete items.", 'error', 'Error');

@@ -61,6 +61,7 @@ export function useDictionaryHistory() {
       setHistoryItems(prev => prev.filter(item => !selectedIds.has(item.id)));
       setSelectedIds(new Set());
       setShowConfirmModal(false);
+      showToast('Items successfully deleted', 'success', 'Success');
     } catch (error) {
       console.error("Deletion error:", error);
       showToast("An error occurred during deletion.", 'error', 'Error');
