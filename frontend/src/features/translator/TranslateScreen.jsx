@@ -52,7 +52,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     docUploadVisible, setDocUploadVisible,
     docResultVisible, setDocResultVisible,
     isDocTranslating, docResult, docError,
-    playTranslatedAudio, playBase64Audio, handleCopy,
+    playTranslatedAudio, playBase64Audio, handleCopy, isCopied,
     handleQuickRating, handleDetailedSubmit, handleShowBreakdown,
     handleCustomizeSubmit, handleDocumentSelected, selectLanguage
   } = useTranslate();
@@ -107,6 +107,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               isPlayingAudio={isPlayingAudio}
               playTranslatedAudio={playTranslatedAudio}
               handleCopy={handleCopy}
+              isCopied={isCopied}
               setRateModalVisible={setRateModalVisible}
               feedback={feedback}
               setMoreMenuVisible={setMoreMenuVisible}

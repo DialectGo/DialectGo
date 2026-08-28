@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Clipboard } from 'react-native';
 
 import { useTranslationCore } from './useTranslationCore';
@@ -66,6 +66,8 @@ export const useTranslate = () => {
     targetDialect: coreProps.targetDialect,
   });
 
+  const [isCopied, setIsCopied] = useState(false);
+
   // Keeping refs synced with latest setters
   callbacksRef.current.setBreakdownData = metaProps.setBreakdownData;
   callbacksRef.current.setFeedback = feedbackProps.setFeedback;
@@ -73,12 +75,16 @@ export const useTranslate = () => {
   const handleCopy = () => {
     if (!coreProps.translation) return;
     Clipboard.setString(coreProps.translation);
-    Alert.alert('Copied!', 'Translation copied to clipboard.');
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 3000);
   };
 
   return {
     skipDebounceRef,
     handleCopy,
+    isCopied,
     ...coreProps,
     ...audioProps,
     ...feedbackProps,

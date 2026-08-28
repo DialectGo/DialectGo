@@ -92,10 +92,15 @@ export default function HistoryDetailScreen() {
         targetDialect: null,
     });
 
+    const [isCopied, setIsCopied] = useState(false);
+
     const handleCopy = () => {
         if (!localTranslation) return;
         Clipboard.setString(localTranslation);
-        Alert.alert('Copied!', 'Translation copied to clipboard.');
+        setIsCopied(true);
+        setTimeout(() => {
+            setIsCopied(false);
+        }, 3000);
     };
 
     return (
@@ -146,7 +151,7 @@ export default function HistoryDetailScreen() {
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     {!isDocumentOrImage && (
                                         <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]} onPress={handleCopy}>
-                                            <Ionicons name="copy-outline" size={20} color="#1F2937" />
+                                            <Ionicons name={isCopied ? "checkmark" : "copy-outline"} size={20} color={isCopied ? "#10B981" : "#1F2937"} />
                                         </TouchableOpacity>
                                     )}
                                     <TouchableOpacity style={[translateStyles.outputToolbarBtn, { marginRight: 10 }]} onPress={() => setRateModalVisible(true)}>
