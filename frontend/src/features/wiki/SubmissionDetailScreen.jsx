@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import TopBar from '../../components/TopBar';
+import { colors } from '../../shared/theme/colorPalette';
 import WikiAssistantModal from '../../shared/components/wiki/WikiAssistantModal';
 import SubmissionDetailCard from '../../shared/components/wiki/SubmissionDetailCard';
 import SubmissionComments from '../../shared/components/wiki/SubmissionComments';
@@ -137,26 +138,42 @@ const styles = StyleSheet.create({
   backBtn: { paddingVertical: 8, paddingRight: 12, justifyContent: 'center' },
   authorAvatar: { marginRight: 10 },
   headerAuthorInfo: { justifyContent: 'center' },
-  headerAuthorName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  headerAuthorDate: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  headerAuthorName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  headerAuthorDate: { fontSize: 11, color: colors.textHint, marginTop: 2 },
   bookmarkBtn: { padding: 6 },
 
-  contentContainer: { paddingVertical: 10, justifyContent: 'center', minHeight: 180 },
+  contentContainer: { 
+    backgroundColor: colors.surface,
+    padding: 24, 
+    justifyContent: 'center', 
+    minHeight: 180,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 8
+  },
   contentHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  contentTitle: { fontSize: 13, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  contentTitle: { fontSize: 13, fontWeight: '700', color: colors.textHint, letterSpacing: 0.5 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   verifiedStatus: { backgroundColor: '#D1FAE5' },
-  statusText: { fontSize: 11, fontWeight: '700', color: '#D97706' },
+  statusText: { fontSize: 11, fontWeight: '700', color: colors.primaryDeep },
   verifiedStatusText: { color: '#059669' },
   
-  mainTerm: { fontSize: 28, fontWeight: '900', color: '#1F2937', marginBottom: 16 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  translationText: { fontSize: 18, fontWeight: '600', color: '#374151', lineHeight: 26, marginBottom: 12 },
-  exampleText: { fontSize: 16, fontWeight: '500', color: '#4B5563', fontStyle: 'italic', lineHeight: 24 },
+  mainTerm: { fontSize: 28, fontWeight: '900', color: colors.textPrimary, marginBottom: 16 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.textHint, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  translationText: { fontSize: 18, fontWeight: '600', color: colors.textSecondary, lineHeight: 26, marginBottom: 12 },
+  exampleText: { fontSize: 16, fontWeight: '500', color: colors.textSecondary, fontStyle: 'italic', lineHeight: 24 },
   
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 },
-  tagBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  tagText: { fontSize: 12, fontWeight: '600', color: '#4B5563' },
+  tagBadge: { 
+    backgroundColor: colors.surfaceLight, 
+    paddingHorizontal: 12, 
+    paddingVertical: 6, 
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.borderGold
+  },
+  tagText: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
 
   voteSection: { backgroundColor: '#F9FAFB', borderRadius: 20, padding: 22, marginTop: 24, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
   voteSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 18 },
