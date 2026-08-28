@@ -48,9 +48,12 @@ export const WikiModel = {
             return { data: [], error, count: 0 };
         }
 
-        // Fetch profiles separately
+        // Fetch profiles and comment counts separately
         if (data && data.length > 0) {
             const userIds = [...new Set(data.map(item => item.user_id))];
+            const submissionIds = data.map(item => item.id);
+
+            // Fetch profiles
             const { data: profiles } = await client
                 .from('profiles')
                 .select('id, username, first_name, last_name, profile_avatar_url')
@@ -63,8 +66,50 @@ export const WikiModel = {
                 });
             }
 
+            // Fetch comment counts
+            const { data: comments } = await client
+                .from('wiki_comments')
+                .select('submission_id')
+                .in('submission_id', submissionIds);
+            
+            const commentCountMap = {};
+            if (comments) {
+                comments.forEach(c => {
+                    commentCountMap[c.submission_id] = (commentCountMap[c.submission_id] || 0) + 1;
+                });
+            }
+
             data.forEach(item => {
                 item.profiles = profileMap[item.user_id] || null;
+                item.comments_count = commentCountMap[item.id] || 0;
+            });
+        }
+
+        // Fetch user votes if token is provided
+        let userId = null;
+        if (token) {
+            try {
+                const { data: { user } } = await client.auth.getUser();
+                userId = user?.id;
+            } catch (e) {
+                console.error('[WikiModel.getSubmissions] Auth error:', e.message);
+            }
+        }
+
+        if (data && data.length > 0 && userId) {
+            const submissionIds = data.map(item => item.id);
+            const { data: votes } = await client
+                .from('submission_votes')
+                .select('submission_id, vote_type')
+                .eq('user_id', userId)
+                .in('submission_id', submissionIds);
+            
+            const voteMap = {};
+            if (votes) {
+                votes.forEach(v => { voteMap[v.submission_id] = v.vote_type; });
+            }
+            data.forEach(item => {
+                item.userVote = voteMap[item.id] || null;
             });
         }
 
