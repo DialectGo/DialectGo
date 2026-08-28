@@ -6,8 +6,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load service-account credentials directly from the JSON key file
-const keyFilePath = path.resolve(__dirname, '../config/gcp-key.json');
+const keyFilePath = process.env.RENDER
+  ? '/etc/secrets/gcp-key.json'
+  : path.resolve(__dirname, '../config/gcp-key.json');
+
 const serviceAccount = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
 
 const client = new textToSpeech.TextToSpeechClient({
