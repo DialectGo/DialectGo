@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { availableAvatars } from '../../hooks/profile/constants';
 
 export default function WikiFeedCard({ item, router, handleVote, styles }) {
   const authorName =
@@ -10,12 +11,19 @@ export default function WikiFeedCard({ item, router, handleVote, styles }) {
 
   const isQuestion = item.type === 'Question';
 
+  const getAvatarSource = (avatarName) => {
+    if (!avatarName || avatarName === 'null') return null;
+    const matched = availableAvatars.find(a => a.name === avatarName);
+    return matched ? matched.source : null;
+  };
+
+  const formattedDate = new Date(item.created_at).toLocaleDateString(undefined, { 
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        isQuestion && styles.questionCard,
-      ]}
+      style={styles.card}
       activeOpacity={0.75}
       onPress={() =>
         router.push({
@@ -24,29 +32,42 @@ export default function WikiFeedCard({ item, router, handleVote, styles }) {
         })
       }
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.termContainer}>
-          {isQuestion && (
-            <Ionicons name="help-circle" size={18} color="#7C3AED" />
+      {/* Header: Avatar, Name, Date */}
+      <View style={styles.cardHeaderRow}>
+        <View style={styles.authorAvatar}>
+          {getAvatarSource(item.profiles?.profile_avatar_url) ? (
+            <Image 
+              source={getAvatarSource(item.profiles.profile_avatar_url)} 
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E5E7EB' }} 
+            />
+          ) : (
+            <Ionicons name="person-circle" size={36} color="#D1D5DB" />
           )}
-
-          <Text style={styles.sourceTerm} numberOfLines={2}>
-            {item.source_term}
-          </Text>
         </View>
+        <View style={styles.headerAuthorInfo}>
+          <Text style={styles.headerAuthorName}>{authorName}</Text>
+          <Text style={styles.headerAuthorDate}>{formattedDate}</Text>
+        </View>
+      </View>
 
+      {/* Content: Term/Question */}
+      <View style={styles.termContainer}>
+        {isQuestion && (
+          <Ionicons name="help-circle" size={18} color="#7C3AED" style={{marginRight: 6}} />
+        )}
+        <Text style={styles.sourceTerm} numberOfLines={2}>
+          {item.source_term}
+        </Text>
+      </View>
+
+      {/* Flags/Tags */}
+      <View style={styles.tagsRow}>
         <View style={[styles.regionBadge, item.status === 'verified' && styles.verifiedBadge]}>
           <Text style={[styles.regionBadgeText, item.status === 'verified' && styles.verifiedBadgeText]}>
             {item.status === 'verified' ? '✓ Verified' : item.region}
           </Text>
         </View>
-      </View>
 
-      <Text style={styles.translation} numberOfLines={2}>
-        {item.translation}
-      </Text>
-
-      <View style={styles.tagsRow}>
         {isQuestion && (
           <View style={styles.questionChip}>
             <Text style={styles.questionChipText}>Question</Text>
@@ -64,21 +85,22 @@ export default function WikiFeedCard({ item, router, handleVote, styles }) {
         )}
       </View>
 
+      {/* Footer: Engagement Icons */}
       <View style={styles.cardFooter}>
-        <View style={styles.voteSection}>
-          <TouchableOpacity style={styles.voteBtn} onPress={() => handleVote(item.id, 1)}>
-            <Ionicons name="arrow-up-circle-outline" size={21} color="#10B981" />
-            <Text style={styles.voteCount}>{item.upvotes || 0}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.voteBtn} onPress={() => handleVote(item.id, -1)}>
-            <Ionicons name="arrow-down-circle-outline" size={21} color="#EF4444" />
-          </TouchableOpacity>
+        <View style={styles.engagementBtn}>
+          <Text style={styles.engagementEmoji}>👍</Text>
+          <Text style={styles.engagementText}>{item.upvotes || 0}</Text>
         </View>
-
-        <Text style={styles.authorText} numberOfLines={1}>
-          by @{authorName}
-        </Text>
+        
+        <View style={styles.engagementBtn}>
+          <Ionicons name="chatbubble-outline" size={16} color="#9CA3AF" />
+          <Text style={styles.engagementText}>{item.comments_count || 0}</Text>
+        </View>
+        
+        <View style={styles.engagementBtn}>
+          <Ionicons name="eye-outline" size={18} color="#9CA3AF" />
+          <Text style={styles.engagementText}>{item.views || 0}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
