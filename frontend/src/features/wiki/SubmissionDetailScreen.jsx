@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -57,7 +57,10 @@ export default function SubmissionDetailScreen({ id }) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <StatusBar barStyle="dark-content" />
       <TopBar titlePrimary="Dialect" titleSecondary="Wiki" />
 
@@ -98,19 +101,16 @@ export default function SubmissionDetailScreen({ id }) {
 
         <SubmissionComments
           comments={comments}
-          commentText={commentText}
-          setCommentText={setCommentText}
-          postingComment={postingComment}
           loadingComments={loadingComments}
-          handlePostComment={handlePostComment}
           styles={styles}
         />
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
 
+      {/* Floating AI Fab positioned above the bottom input */}
       <TouchableOpacity
-        style={styles.aiFab}
+        style={[styles.aiFab, { bottom: insets.bottom + 80 }]}
         activeOpacity={0.85}
         onPress={() => setShowAssistant(true)}
       >
@@ -118,13 +118,41 @@ export default function SubmissionDetailScreen({ id }) {
         <Text style={styles.aiFabText}>Ask AI</Text>
       </TouchableOpacity>
 
+      {/* Facebook style fixed comment input */}
+      <View style={[styles.bottomInputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={styles.commentInputWrapperFb}>
+          <TextInput
+            style={styles.commentInputFb}
+            placeholder="Share your thoughts, perspectives, or suggestions..."
+            placeholderTextColor="#9CA3AF"
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline={commentText.length > 0}
+            maxLength={2000}
+          />
+          {commentText.trim().length > 0 && (
+            <TouchableOpacity
+              style={styles.commentSendBtnFb}
+              onPress={handlePostComment}
+              disabled={postingComment}
+            >
+              {postingComment ? (
+                <ActivityIndicator size="small" color={colors.primaryDeep} />
+              ) : (
+                <Ionicons name="send" size={20} color={colors.primaryDeep} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <WikiAssistantModal
         visible={showAssistant}
         onClose={() => setShowAssistant(false)}
         submissionId={id}
         submissionTitle={submission.source_term}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -182,10 +210,6 @@ const styles = StyleSheet.create({
 
   commentsSection: { marginTop: 16 },
   commentsSectionTitle: { fontSize: 16, fontWeight: '800', color: '#1F2937', marginBottom: 14 },
-  commentInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: 16 },
-  commentInput: { flex: 1, backgroundColor: '#F9FAFB', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, color: '#1F2937', fontWeight: '500', maxHeight: 100, borderWidth: 1, borderColor: '#F3F4F6' },
-  commentSendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FBBF24', justifyContent: 'center', alignItems: 'center' },
-  commentSendDisabled: { backgroundColor: '#F3F4F6' },
   noComments: { alignItems: 'center', paddingVertical: 30 },
   noCommentsText: { fontSize: 14, color: '#9CA3AF', marginTop: 8 },
   commentCard: { backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#F3F4F6' },
@@ -194,6 +218,12 @@ const styles = StyleSheet.create({
   commentDate: { fontSize: 11, color: '#9CA3AF' },
   commentContent: { fontSize: 14, fontWeight: '500', color: '#4B5563', lineHeight: 21 },
 
-  aiFab: { position: 'absolute', bottom: 30, right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBBF24', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 28, gap: 8, shadowColor: '#FBBF24', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
+  bottomInputContainer: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingTop: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  commentAvatarFb: { marginRight: 10, paddingBottom: 4 },
+  commentInputWrapperFb: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 14, minHeight: 40, maxHeight: 100 },
+  commentInputFb: { flex: 1, fontSize: 15, color: '#1F2937', paddingTop: 10, paddingBottom: 10, paddingRight: 8 },
+  commentSendBtnFb: { paddingLeft: 8, paddingVertical: 8 },
+
+  aiFab: { position: 'absolute', right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBBF24', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 28, gap: 8, shadowColor: '#FBBF24', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
   aiFabText: { fontSize: 14, fontWeight: '800', color: '#1F2937' },
 });
