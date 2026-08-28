@@ -52,12 +52,15 @@ export function useDictionaryHistory() {
     }
   };
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const processDeletion = async () => {
     setIsDeleting(true);
     try {
       await dictionaryHistoryService.deleteDictionaryHistory(selectedIds);
       setHistoryItems(prev => prev.filter(item => !selectedIds.has(item.id)));
       setSelectedIds(new Set());
+      setShowConfirmModal(false);
     } catch (error) {
       console.error("Deletion error:", error);
       showToast("An error occurred during deletion.", 'error', 'Error');
@@ -68,15 +71,7 @@ export function useDictionaryHistory() {
 
   const confirmDelete = () => {
     if (selectedIds.size === 0) return;
-
-    Alert.alert(
-      "Confirm Deletion",
-      `Are you sure you want to delete ${selectedIds.size} history item(s)?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Yes", style: "destructive", onPress: processDeletion }
-      ]
-    );
+    setShowConfirmModal(true);
   };
 
   return {
@@ -88,6 +83,9 @@ export function useDictionaryHistory() {
     handleRefresh,
     toggleSelect,
     toggleSelectAll,
-    confirmDelete
+    confirmDelete,
+    showConfirmModal,
+    setShowConfirmModal,
+    processDeletion
   };
 }
