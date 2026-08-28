@@ -1,12 +1,19 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { availableAvatars } from '../../hooks/profile/constants';
 
 export default function SubmissionComments({
   comments,
   loadingComments,
   styles
 }) {
+  const getAvatarSource = (avatarName) => {
+    if (!avatarName || avatarName === 'null') return null;
+    const matched = availableAvatars.find(a => a.name === avatarName);
+    return matched ? matched.source : null;
+  };
+
   return (
     <View style={styles.commentsSection}>
       <Text style={styles.commentsSectionTitle}>
@@ -29,7 +36,14 @@ export default function SubmissionComments({
           return (
             <View key={comment.id} style={styles.commentItem}>
               <View style={styles.commentAvatarCol}>
-                <Ionicons name="person-circle" size={32} color="#D1D5DB" />
+                {getAvatarSource(comment.profiles?.profile_avatar_url) ? (
+                  <Image 
+                    source={getAvatarSource(comment.profiles.profile_avatar_url)} 
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#E5E7EB' }} 
+                  />
+                ) : (
+                  <Ionicons name="person-circle" size={32} color="#D1D5DB" />
+                )}
               </View>
               <View style={styles.commentContentWrapper}>
                 <View style={styles.commentHeaderRow}>

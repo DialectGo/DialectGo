@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,10 +10,17 @@ import WikiAssistantModal from '../../shared/components/wiki/WikiAssistantModal'
 import SubmissionDetailCard from '../../shared/components/wiki/SubmissionDetailCard';
 import SubmissionComments from '../../shared/components/wiki/SubmissionComments';
 import { useSubmissionDetail } from '../../shared/hooks/wiki/useSubmissionDetail';
+import { availableAvatars } from '../../shared/hooks/profile/constants';
 
 export default function SubmissionDetailScreen({ id }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  
+  const getAvatarSource = (avatarName) => {
+    if (!avatarName || avatarName === 'null') return null;
+    const matched = availableAvatars.find(a => a.name === avatarName);
+    return matched ? matched.source : null;
+  };
   
   const {
     submission,
@@ -71,7 +78,14 @@ export default function SubmissionDetailScreen({ id }) {
               <Ionicons name="chevron-back" size={28} color="#1F2937" />
             </TouchableOpacity>
             <View style={styles.authorAvatar}>
-               <Ionicons name="person-circle" size={40} color="#D1D5DB" />
+              {getAvatarSource(submission.profiles?.profile_avatar_url) ? (
+                <Image 
+                  source={getAvatarSource(submission.profiles.profile_avatar_url)} 
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E5E7EB' }} 
+                />
+              ) : (
+                <Ionicons name="person-circle" size={40} color="#D1D5DB" />
+              )}
             </View>
             <View style={styles.headerAuthorInfo}>
               <Text style={styles.headerAuthorName}>

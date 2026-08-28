@@ -53,7 +53,7 @@ export const WikiModel = {
             const userIds = [...new Set(data.map(item => item.user_id))];
             const { data: profiles } = await client
                 .from('profiles')
-                .select('id, username, first_name, last_name')
+                .select('id, username, first_name, last_name, profile_avatar_url')
                 .in('id', userIds);
             
             const profileMap = {};
@@ -97,7 +97,7 @@ export const WikiModel = {
         if (data) {
             const { data: profile } = await client
                 .from('profiles')
-                .select('username, first_name, last_name')
+                .select('username, first_name, last_name, profile_avatar_url')
                 .eq('id', data.user_id)
                 .single();
             data.profiles = profile || null;
@@ -322,7 +322,7 @@ export const WikiModel = {
             const userIds = [...new Set(data.map(c => c.user_id))];
             const { data: profiles } = await supabaseAdmin
                 .from('profiles')
-                .select('id, username, first_name, last_name')
+                .select('id, username, first_name, last_name, profile_avatar_url')
                 .in('id', userIds);
 
             const profileMap = {};
