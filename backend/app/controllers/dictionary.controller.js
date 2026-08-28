@@ -68,14 +68,17 @@ export const deleteSelectedWords = async (req, res, next) => {
     try {
         const { ids } = req.body;
         const userId = req.user.id;
+        console.log("DELETE SAVED WORDS INITIATED. IDs:", ids, "User:", userId);
 
-        await DictionaryService.deleteSavedWords(userId, ids, req.token);
+        const result = await DictionaryService.deleteSavedWords(userId, ids, req.token);
+        console.log("DELETE SAVED WORDS RESULT:", result);
 
         res.status(200).json({ 
             success: true, 
             message: 'Items deleted successfully' 
         });
     } catch (err) {
+        console.error("DELETE SAVED WORDS ERROR:", err);
         // If the error comes from the service check, send 400, else 500 via next(err)
         if (err.message === 'No items selected for deletion') {
             return res.status(400).json({ success: false, message: err.message });
@@ -97,14 +100,17 @@ export const deleteSelectedHistory = async (req, res, next) => {
     try {
         const { ids } = req.body;
         const userId = req.user.id;
+        console.log("DELETE HISTORY INITIATED. IDs:", ids, "User:", userId);
 
-        await DictionaryService.deleteHistoryItems(userId, ids, req.token);
+        const result = await DictionaryService.deleteHistoryItems(userId, ids, req.token);
+        console.log("DELETE HISTORY RESULT:", result);
 
         res.status(200).json({ 
             success: true, 
             message: 'History items deleted successfully' 
         });
     } catch (err) {
+        console.error("DELETE HISTORY ERROR:", err);
         if (err.message === 'No history items selected') {
             return res.status(400).json({ success: false, message: err.message });
         }

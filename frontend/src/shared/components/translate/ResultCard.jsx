@@ -10,6 +10,7 @@ export default function ResultCard({
   isPlayingAudio,
   playTranslatedAudio,
   handleCopy,
+  isCopied,
   setRateModalVisible,
   feedback,
   setMoreMenuVisible,
@@ -41,7 +42,7 @@ export default function ResultCard({
 
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity onPress={handleCopy} style={[styles.outputToolbarBtn, { marginRight: 10 }]}>
-                  <Ionicons name="copy-outline" size={20} color="#1F2937" />
+                  <Ionicons name={isCopied ? "checkmark" : "copy-outline"} size={20} color={isCopied ? "#10B981" : "#1F2937"} />
                 </TouchableOpacity>
 
                 <TouchableOpacity

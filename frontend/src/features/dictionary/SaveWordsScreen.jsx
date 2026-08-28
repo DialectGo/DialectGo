@@ -5,6 +5,7 @@ import RefreshContainer from '../../shared/components/RefreshContainer';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { useDictionarySaveWords } from '../../shared/hooks/dictionary/useDictionarySaveWords';
 import DictionarySaveWordsCard from '../../shared/components/dictionary/DictionarySaveWordsCard';
+import ConfirmOverlay from '../../shared/components/ConfirmOverlay';
 
 export default function SaveWordsScreen() {
   const router = useRouter();
@@ -18,7 +19,10 @@ export default function SaveWordsScreen() {
     handleRefresh,
     toggleSelect,
     toggleSelectAll,
-    confirmDelete
+    confirmDelete,
+    showConfirmModal,
+    setShowConfirmModal,
+    processDeletion
   } = useDictionarySaveWords();
 
   const renderItem = (item, index) => {
@@ -61,6 +65,7 @@ export default function SaveWordsScreen() {
             )}
           </RefreshContainer>
 
+          {/* FOOTER FIXED SELECTION NAVIGATION */}
           {bookmarks.length > 0 && (
             <View style={styles.footerNav}>
               <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
@@ -85,6 +90,15 @@ export default function SaveWordsScreen() {
           )}
         </View>
       )}
+      
+      <ConfirmOverlay 
+        visible={showConfirmModal}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete ${selectedIds.size} saved word(s)?`}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={processDeletion}
+        isConfirming={isDeleting}
+      />
     </View>
   );
 }

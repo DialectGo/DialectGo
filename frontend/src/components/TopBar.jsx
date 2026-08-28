@@ -164,8 +164,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
     zIndex: 100,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   safeArea: {
     backgroundColor: 'transparent',

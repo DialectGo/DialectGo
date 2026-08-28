@@ -114,7 +114,8 @@ export const DictionaryModel = {
             .from('user_saved_words')
             .delete()
             .eq('user_id', userId)
-            .in('id', ids);
+            .in('id', ids)
+            .select();
     },
 
     async addSearchHistory(userId, term, token) {
@@ -146,7 +147,8 @@ export const DictionaryModel = {
             .from('search_history')
             .delete()
             .eq('user_id', userId)
-            .in('id', ids);
+            .in('id', ids)
+            .select();
     },
     
     async getRandomCebuanoWord(token) {

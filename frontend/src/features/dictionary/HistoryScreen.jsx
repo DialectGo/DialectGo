@@ -13,6 +13,7 @@ import RefreshContainer from '../../shared/components/RefreshContainer';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { useDictionaryHistory } from '../../shared/hooks/dictionary/useDictionaryHistory';
 import DictionaryHistoryCard from '../../shared/components/dictionary/DictionaryHistoryCard';
+import ConfirmOverlay from '../../shared/components/ConfirmOverlay';
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -26,7 +27,10 @@ export default function HistoryScreen() {
     handleRefresh,
     toggleSelect,
     toggleSelectAll,
-    confirmDelete
+    confirmDelete,
+    showConfirmModal,
+    setShowConfirmModal,
+    processDeletion
   } = useDictionaryHistory();
 
   const renderItem = (item, index) => {
@@ -76,6 +80,7 @@ export default function HistoryScreen() {
           </RefreshContainer>
 
           {/* FOOTER FIXED SELECTION NAVIGATION */}
+          {/* FOOTER FIXED SELECTION NAVIGATION */}
           {historyItems.length > 0 && (
             <View style={styles.footerNav}>
               <TouchableOpacity style={styles.selectAllContainer} onPress={toggleSelectAll}>
@@ -105,6 +110,15 @@ export default function HistoryScreen() {
           )}
         </View>
       )}
+      
+      <ConfirmOverlay 
+        visible={showConfirmModal}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete ${selectedIds.size} history item(s)?`}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={processDeletion}
+        isConfirming={isDeleting}
+      />
     </View>
   );
 }
