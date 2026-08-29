@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal,
-  StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../api/supabase';
 import { WIKI_API_BASE } from '../../api/client';
+
+const BEE_LOGO = require('../../../../assets/logo/bee.png');
 
 export default function GlobalWikiAssistantModal({ visible, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible && messages.length === 0) {
@@ -19,7 +23,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: `Kamusta! 👋 I'm your Global AI Assistant. Ask me anything about Philippine languages, regional dialects, or Filipino culture!`,
+        content: `Kamusta! 👋 I'm Dialect Wiki. Ask me anything about Philippine languages, regional dialects, or Filipino culture!`,
       }]);
     }
   }, [visible]);
@@ -96,7 +100,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
       <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
         {!isUser && (
           <View style={styles.aiAvatar}>
-            <Ionicons name="sparkles" size={14} color="#FBBF24" />
+            <Image source={BEE_LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
           </View>
         )}
         <View style={[styles.messageContent, isUser ? styles.userContent : styles.aiContent]}>
@@ -119,10 +123,10 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.aiIcon}>
-                <Ionicons name="sparkles" size={18} color="#FBBF24" />
+                <Image source={BEE_LOGO} style={{ width: 22, height: 22 }} resizeMode="contain" />
               </View>
               <View>
-                <Text style={styles.headerTitle}>Global AI Assistant</Text>
+                <Text style={styles.headerTitle}>Dialect Wiki</Text>
                 <Text style={styles.headerSubtitle} numberOfLines={1}>
                   Ask about dialects & culture
                 </Text>
@@ -146,7 +150,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
               isLoading ? (
                 <View style={[styles.messageBubble, styles.aiBubble]}>
                   <View style={styles.aiAvatar}>
-                    <Ionicons name="sparkles" size={14} color="#FBBF24" />
+                    <Image source={BEE_LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
                   </View>
                   <View style={[styles.messageContent, styles.aiContent]}>
                     <View style={styles.typingRow}>
@@ -160,7 +164,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
           />
 
           {/* Input */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { paddingBottom: Math.max(16, insets.bottom + 8) }]}>
             <TextInput
               style={styles.input}
               placeholder="Ask a general question..."
@@ -306,7 +310,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
   },
   input: {
     flex: 1,
