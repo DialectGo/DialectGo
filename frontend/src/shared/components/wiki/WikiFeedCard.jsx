@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { availableAvatars } from '../../hooks/profile/constants';
 
-export default function WikiFeedCard({ item, router, handleVote, styles }) {
+export default function WikiFeedCard({ item, router, handleVote, styles, isBookmarked }) {
   const authorName =
     item.profiles?.username ||
     `${item.profiles?.first_name || ''} ${item.profiles?.last_name || ''}`.trim() ||
@@ -48,6 +48,12 @@ export default function WikiFeedCard({ item, router, handleVote, styles }) {
           <Text style={styles.headerAuthorName}>{authorName}</Text>
           <Text style={styles.headerAuthorDate}>{formattedDate}</Text>
         </View>
+        
+        {isBookmarked && (
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Ionicons name="bookmark" size={20} color="#FBBF24" />
+          </View>
+        )}
       </View>
 
       {/* Content: Term/Question */}
