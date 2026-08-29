@@ -12,6 +12,19 @@ export const ActivityModel = {
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(limit);
+        
+        if (data && data.length > 0) {
+            const userIds = [...new Set(data.map(item => item.user_id))];
+            const { data: profiles } = await client
+                .from('profiles')
+                .select('id, username, first_name, last_name, profile_avatar_url')
+                .in('id', userIds);
+            
+            const profileMap = {};
+            if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+            data.forEach(item => { item.profiles = profileMap[item.user_id] || null; });
+        }
+
         return { data: data || [], error };
     },
 
@@ -40,6 +53,25 @@ export const ActivityModel = {
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(limit);
+        
+        if (data && data.length > 0) {
+            const userIds = [...new Set(data.map(item => item.dialect_submissions?.user_id).filter(Boolean))];
+            if (userIds.length > 0) {
+                const { data: profiles } = await client
+                    .from('profiles')
+                    .select('id, username, first_name, last_name, profile_avatar_url')
+                    .in('id', userIds);
+                
+                const profileMap = {};
+                if (profiles) profiles.forEach(p => { profileMap[p.id] = p; });
+                data.forEach(item => { 
+                    if (item.dialect_submissions) {
+                        item.dialect_submissions.profiles = profileMap[item.dialect_submissions.user_id] || null; 
+                    }
+                });
+            }
+        }
+
         return { data: data || [], error };
     },
 
