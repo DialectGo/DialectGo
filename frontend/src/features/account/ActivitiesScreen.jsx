@@ -27,16 +27,42 @@ export default function ActivitiesScreen() {
   );
 
   const renderTranslation = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Ionicons name="language-outline" size={16} color={colors.primaryDeep} />
-        <Text style={styles.cardTitle}>{item.source_text}</Text>
+    <View style={{ 
+      paddingVertical: 12, 
+      paddingHorizontal: 16,
+      backgroundColor: '#FFFFFF',
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E7EB',
+    }}>
+      <View style={{ 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 6,
+      }}>
+        <Text style={{ fontSize: 11, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 }}>
+          {item.source_text.toUpperCase()}
+        </Text>
+        <View style={[
+          { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+          item.status === 'approved' ? { backgroundColor: '#D1FAE5' } : { backgroundColor: '#FEF3C7' }
+        ]}>
+          <Text style={[
+            { fontSize: 9, fontWeight: '700' },
+            item.status === 'approved' ? { color: '#059669' } : { color: '#D97706' }
+          ]}>
+            {item.status.toUpperCase()}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.cardSubtitle}>{item.user_translation}</Text>
-      <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
-        <Text style={[styles.statusText, item.status === 'approved' && { color: colors.success }]}>
-          {item.status.toUpperCase()}
+      
+      <Text style={{ fontSize: 15, color: '#1F2937', fontWeight: '600', marginBottom: 8 }}>
+        {item.user_translation}
+      </Text>
+      
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: '500' }}>
+          {formatDateDisplay(item.created_at)}
         </Text>
       </View>
     </View>
