@@ -175,8 +175,9 @@ export async function analyzeTranslation({ sourceText, translatedText, sourceLan
         const completion = await withTimeout(
             client.chat.completions.create({
                 model: GROQ_MODEL,
-                max_tokens: 1200, // Reduced from 2000 — faster, still detailed enough
+                max_tokens: 2500, // Increased to prevent JSON truncation
                 temperature: 0.3,
+                response_format: { type: 'json_object' },
                 messages: [
                     { role: 'system', content: buildAnalysisSystemPrompt() },
                     { role: 'user', content: buildAnalysisUserPrompt({ sourceText, translatedText, sourceLang, targetLang, targetDialect, preprocessingMeta }) },
