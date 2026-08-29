@@ -157,10 +157,13 @@ function resolveAllTokens(enrichedTokens) {
         // Single match — straightforward
         if (token.corpusMatches.length === 1) {
             const match = token.corpusMatches[0];
+            const scoreKey = Number(match.sentiment_score).toFixed(1);
+            const category = categories[scoreKey];
+            const truePolarity = category && category.polarity !== undefined ? category.polarity : 0;
             return {
                 ...token,
                 resolvedMatch: match,
-                effectiveScore: match.sentiment_score || 0,
+                effectiveScore: truePolarity,
                 effectiveWeight: match.weight || 1,
                 status: 'keep'
             };
@@ -170,10 +173,14 @@ function resolveAllTokens(enrichedTokens) {
         const contextWindow = extractContextWindow(enrichedTokens, index, 3);
         const bestMatch = disambiguateToken(token, contextWindow);
 
+        const scoreKey = Number(bestMatch.sentiment_score).toFixed(1);
+        const category = categories[scoreKey];
+        const truePolarity = category && category.polarity !== undefined ? category.polarity : 0;
+
         return {
             ...token,
             resolvedMatch: bestMatch,
-            effectiveScore: bestMatch.sentiment_score || 0,
+            effectiveScore: truePolarity,
             effectiveWeight: bestMatch.weight || 1,
             status: 'keep'
         };

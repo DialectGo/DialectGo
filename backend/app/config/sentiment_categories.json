@@ -2,6 +2,7 @@
   "categories": {
     "1.0": {
       "label": "Flirty / Romantic",
+      "polarity": 0.4,
       "keywords": [
         "gusto",
         "crush",
@@ -37,6 +38,7 @@
     },
     "2.0": {
       "label": "Internet Slang / Gen-Z",
+      "polarity": 0.1,
       "keywords": [
         "lol",
         "omg",
@@ -102,6 +104,7 @@
     },
     "3.0": {
       "label": "Happy / Positive",
+      "polarity": 0.8,
       "keywords": [
         "masaya",
         "galing",
@@ -134,6 +137,7 @@
     },
     "4.0": {
       "label": "Angry / Negative",
+      "polarity": -0.8,
       "keywords": [
         "galit",
         "inis",
@@ -169,6 +173,7 @@
     },
     "5.0": {
       "label": "Regional / Dialectal",
+      "polarity": 0.0,
       "keywords": [
         "ala eh",
         "ga",
@@ -200,6 +205,7 @@
     },
     "6.0": {
       "label": "Gambling / Betting",
+      "polarity": -0.3,
       "keywords": [
         "pusta",
         "manok",
@@ -226,6 +232,7 @@
     },
     "7.0": {
       "label": "Food / Cooking",
+      "polarity": 0.3,
       "keywords": [
         "luto",
         "sarap",
@@ -258,6 +265,7 @@
     },
     "8.0": {
       "label": "School / Academic",
+      "polarity": 0.0,
       "keywords": [
         "exam",
         "thesis",
@@ -293,6 +301,7 @@
     },
     "9.0": {
       "label": "Work / Hustle",
+      "polarity": 0.0,
       "keywords": [
         "sahod",
         "trabaho",
@@ -325,6 +334,7 @@
     },
     "10.0": {
       "label": "Gaming / Esports",
+      "polarity": -0.1,
       "keywords": [
         "gg",
         "noob",
@@ -359,6 +369,7 @@
     },
     "11.0": {
       "label": "Social Media",
+      "polarity": 0.0,
       "keywords": [
         "post",
         "viral",
@@ -393,6 +404,7 @@
     },
     "12.0": {
       "label": "Family / Kinship",
+      "polarity": 0.2,
       "keywords": [
         "nanay",
         "tatay",
@@ -425,6 +437,7 @@
     },
     "13.0": {
       "label": "Greetings / Pleasantries",
+      "polarity": 0.5,
       "keywords": [
         "kamusta",
         "ingat",
@@ -453,6 +466,7 @@
     },
     "14.0": {
       "label": "Sadness / Regret",
+      "polarity": -0.6,
       "keywords": [
         "lungkot",
         "sayang",
@@ -480,6 +494,7 @@
     },
     "15.0": {
       "label": "Profanity / Vulgar",
+      "polarity": -0.8,
       "keywords": [
         "putang",
         "gago",
