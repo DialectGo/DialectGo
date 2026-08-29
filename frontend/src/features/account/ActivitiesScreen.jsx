@@ -6,26 +6,24 @@ import ProfileTopBar from '../../components/ProfileTopBar';
 import { formatDateDisplay } from '../../shared/utils/dateUtils';
 import { useActivities } from '../../shared/hooks/profile/useActivities';
 import { colors } from '../../shared/theme/colorPalette';
+import WikiFeedCard from '../../shared/components/wiki/WikiFeedCard';
+import { useRouter } from 'expo-router';
 
 const TABS = ['Posts', 'Translations', 'Comments', 'Bookmarks'];
 
 export default function ActivitiesScreen() {
   const { activities, loading, activeTab, setActiveTab, navigateToWiki } = useActivities();
+  const router = useRouter();
+
+  const handleVoteStub = () => {}; // No-op for activities screen, or implement if needed
 
   const renderPost = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.id)}>
-      <View style={styles.cardHeader}>
-        <Ionicons name="document-text-outline" size={16} color={colors.info} />
-        <Text style={styles.cardTitle}>{item.source_term}</Text>
-      </View>
-      <Text style={styles.cardSubtitle}>{item.translation}</Text>
-      <View style={styles.cardFooter}>
-        <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
-        <Text style={[styles.statusText, item.status === 'verified' && { color: colors.success }]}>
-          {item.status.toUpperCase()}
-        </Text>
-      </View>
-    </TouchableOpacity>
+    <WikiFeedCard
+      item={item}
+      router={router}
+      handleVote={handleVoteStub}
+      styles={wikiStyles}
+    />
   );
 
   const renderTranslation = ({ item }) => (
@@ -56,13 +54,12 @@ export default function ActivitiesScreen() {
   );
 
   const renderBookmark = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.id)}>
-      <View style={styles.cardHeader}>
-        <Ionicons name="bookmark-outline" size={16} color={colors.primaryDark} />
-        <Text style={styles.cardTitle}>{item.source_term}</Text>
-      </View>
-      <Text style={styles.cardSubtitle}>{item.translation}</Text>
-    </TouchableOpacity>
+    <WikiFeedCard
+      item={item}
+      router={router}
+      handleVote={handleVoteStub}
+      styles={wikiStyles}
+    />
   );
 
   const getActiveData = () => {
@@ -121,6 +118,32 @@ export default function ActivitiesScreen() {
     </View>
   );
 }
+
+const wikiStyles = StyleSheet.create({
+  card: { paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#F3F4F6', backgroundColor: '#FFFFFF', borderRadius: 10, marginBottom: 8, shadowColor: colors.shadowGold, shadowOpacity: 0.05, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2, borderWidth: 1, borderColor: colors.borderLight },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  authorAvatar: { marginRight: 8 },
+  headerAuthorInfo: { justifyContent: 'center' },
+  headerAuthorName: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
+  headerAuthorDate: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
+  termContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  sourceTerm: { flex: 1, fontSize: 15, fontWeight: '800', color: '#1F2937' },
+  tagsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
+  regionBadge: { backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  regionBadgeText: { fontSize: 10, fontWeight: '700', color: '#6B7280' },
+  verifiedBadge: { backgroundColor: '#D1FAE5' },
+  verifiedBadgeText: { color: '#059669' },
+  questionChip: { backgroundColor: '#EDE9FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  questionChipText: { fontSize: 10, fontWeight: '700', color: '#7C3AED' },
+  categoryChip: { backgroundColor: '#FFF4D6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  categoryChipText: { fontSize: 10, fontWeight: '700', color: '#D97706' },
+  sentimentChip: { backgroundColor: '#F3E8FF', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  sentimentChipText: { fontSize: 10, fontWeight: '700', color: '#7C3AED' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 24 },
+  engagementBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  engagementEmoji: { fontSize: 14 },
+  engagementText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -217,7 +240,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 14,
     color: colors.textGray,
   }
 });
