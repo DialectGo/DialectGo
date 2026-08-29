@@ -48,6 +48,7 @@ export default function ActivitiesScreen() {
       router={router}
       handleVote={handleVoteStub}
       styles={wikiStyles}
+      isBookmarked={true}
     />
   );
 
