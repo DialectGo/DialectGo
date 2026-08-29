@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileTopBar from '../../components/ProfileTopBar';
@@ -7,6 +7,7 @@ import { formatDateDisplay } from '../../shared/utils/dateUtils';
 import { useActivities } from '../../shared/hooks/profile/useActivities';
 import { colors } from '../../shared/theme/colorPalette';
 import WikiFeedCard from '../../shared/components/wiki/WikiFeedCard';
+import ViewSuggestionModal from '../../shared/components/translate/ViewSuggestionModal';
 import { useRouter } from 'expo-router';
 
 const TABS = ['Posts', 'Translations', 'Bookmarks'];
@@ -14,6 +15,7 @@ const TABS = ['Posts', 'Translations', 'Bookmarks'];
 export default function ActivitiesScreen() {
   const { activities, loading, activeTab, setActiveTab, navigateToWiki } = useActivities();
   const router = useRouter();
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
 
   const handleVoteStub = () => {}; // No-op for activities screen, or implement if needed
 
@@ -27,20 +29,24 @@ export default function ActivitiesScreen() {
   );
 
   const renderTranslation = ({ item }) => (
-    <View style={{ 
-      paddingVertical: 12, 
-      paddingHorizontal: 16,
-      backgroundColor: '#FFFFFF',
-      borderBottomWidth: 1,
-      borderBottomColor: '#E5E7EB',
-    }}>
+    <TouchableOpacity 
+      activeOpacity={0.7}
+      onPress={() => setSelectedSuggestion(item)}
+      style={{ 
+        paddingVertical: 12, 
+        paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+      }}
+    >
       <View style={{ 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         marginBottom: 6,
       }}>
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 }}>
+        <Text numberOfLines={1} style={{ flex: 1, fontSize: 11, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5, marginRight: 8 }}>
           {item.source_text.toUpperCase()}
         </Text>
         <View style={[
@@ -56,7 +62,7 @@ export default function ActivitiesScreen() {
         </View>
       </View>
       
-      <Text style={{ fontSize: 15, color: '#1F2937', fontWeight: '600', marginBottom: 8 }}>
+      <Text numberOfLines={2} style={{ fontSize: 15, color: '#1F2937', fontWeight: '600', marginBottom: 8 }}>
         {item.user_translation}
       </Text>
       
@@ -65,7 +71,7 @@ export default function ActivitiesScreen() {
           {formatDateDisplay(item.created_at)}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderBookmark = ({ item }) => (
@@ -130,6 +136,12 @@ export default function ActivitiesScreen() {
           )}
         />
       )}
+      
+      <ViewSuggestionModal 
+        visible={!!selectedSuggestion} 
+        suggestion={selectedSuggestion} 
+        onClose={() => setSelectedSuggestion(null)} 
+      />
     </View>
   );
 }
