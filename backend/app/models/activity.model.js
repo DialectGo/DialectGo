@@ -28,19 +28,6 @@ export const ActivityModel = {
         return { data: data || [], error };
     },
 
-    /**
-     * Get user's Wiki Comments
-     */
-    getUserComments: async (token, userId, limit = 50) => {
-        const client = getAuthClient(token);
-        const { data, error } = await client
-            .from('wiki_comments')
-            .select('id, submission_id, content, created_at, dialect_submissions(source_term)')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-        return { data: data || [], error };
-    },
 
     /**
      * Get user's Bookmarked Wiki Posts

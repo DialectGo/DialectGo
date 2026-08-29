@@ -24,10 +24,9 @@ export const fetchActivities = async () => {
     return {
       posts: json.data.posts || [],
       translations: json.data.translations || [],
-      comments: json.data.comments || [],
       bookmarks: json.data.bookmarks || [],
     };
   }
 
-  return { posts: [], translations: [], comments: [], bookmarks: [] };
+  return { posts: [], translations: [], bookmarks: [] };
 };

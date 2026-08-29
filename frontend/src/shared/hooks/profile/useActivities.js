@@ -6,7 +6,6 @@ export const useActivities = () => {
   const [activities, setActivities] = useState({
     posts: [],
     translations: [],
-    comments: [],
     bookmarks: [],
   });
   const [loading, setLoading] = useState(true);

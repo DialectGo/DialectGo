@@ -9,7 +9,7 @@ import { colors } from '../../shared/theme/colorPalette';
 import WikiFeedCard from '../../shared/components/wiki/WikiFeedCard';
 import { useRouter } from 'expo-router';
 
-const TABS = ['Posts', 'Translations', 'Comments', 'Bookmarks'];
+const TABS = ['Posts', 'Translations', 'Bookmarks'];
 
 export default function ActivitiesScreen() {
   const { activities, loading, activeTab, setActiveTab, navigateToWiki } = useActivities();
@@ -42,17 +42,6 @@ export default function ActivitiesScreen() {
     </View>
   );
 
-  const renderComment = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.submission_id)}>
-      <View style={styles.cardHeader}>
-        <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.success} />
-        <Text style={styles.cardTitle}>On: {item.dialect_submissions?.source_term}</Text>
-      </View>
-      <Text style={styles.cardSubtitle}>{item.content}</Text>
-      <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
-    </TouchableOpacity>
-  );
-
   const renderBookmark = ({ item }) => (
     <WikiFeedCard
       item={item}
@@ -66,7 +55,6 @@ export default function ActivitiesScreen() {
     switch (activeTab) {
       case 'Posts': return { data: activities.posts, render: renderPost };
       case 'Translations': return { data: activities.translations, render: renderTranslation };
-      case 'Comments': return { data: activities.comments, render: renderComment };
       case 'Bookmarks': return { data: activities.bookmarks, render: renderBookmark };
       default: return { data: [], render: () => null };
     }
