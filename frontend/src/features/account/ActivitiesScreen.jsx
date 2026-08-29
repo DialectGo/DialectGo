@@ -1,10 +1,11 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  StatusBar, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { formatDateDisplay } from '../../shared/utils/dateUtils';
 import { useActivities } from '../../shared/hooks/profile/useActivities';
+import { colors } from '../../shared/theme/colorPalette';
 
 const TABS = ['Posts', 'Translations', 'Comments', 'Bookmarks'];
 
@@ -14,13 +15,13 @@ export default function ActivitiesScreen() {
   const renderPost = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.id)}>
       <View style={styles.cardHeader}>
-        <Ionicons name="document-text-outline" size={20} color="#3B82F6" />
+        <Ionicons name="document-text-outline" size={16} color={colors.info} />
         <Text style={styles.cardTitle}>{item.source_term}</Text>
       </View>
       <Text style={styles.cardSubtitle}>{item.translation}</Text>
       <View style={styles.cardFooter}>
         <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
-        <Text style={[styles.statusText, item.status === 'verified' && { color: '#059669' }]}>
+        <Text style={[styles.statusText, item.status === 'verified' && { color: colors.success }]}>
           {item.status.toUpperCase()}
         </Text>
       </View>
@@ -30,13 +31,13 @@ export default function ActivitiesScreen() {
   const renderTranslation = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Ionicons name="language-outline" size={20} color="#8B5CF6" />
+        <Ionicons name="language-outline" size={16} color={colors.primaryDeep} />
         <Text style={styles.cardTitle}>{item.source_text}</Text>
       </View>
       <Text style={styles.cardSubtitle}>{item.user_translation}</Text>
       <View style={styles.cardFooter}>
         <Text style={styles.dateText}>{formatDateDisplay(item.created_at)}</Text>
-        <Text style={[styles.statusText, item.status === 'approved' && { color: '#059669' }]}>
+        <Text style={[styles.statusText, item.status === 'approved' && { color: colors.success }]}>
           {item.status.toUpperCase()}
         </Text>
       </View>
@@ -46,7 +47,7 @@ export default function ActivitiesScreen() {
   const renderComment = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.submission_id)}>
       <View style={styles.cardHeader}>
-        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#10B981" />
+        <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.success} />
         <Text style={styles.cardTitle}>On: {item.dialect_submissions?.source_term}</Text>
       </View>
       <Text style={styles.cardSubtitle}>{item.content}</Text>
@@ -57,7 +58,7 @@ export default function ActivitiesScreen() {
   const renderBookmark = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigateToWiki(item.id)}>
       <View style={styles.cardHeader}>
-        <Ionicons name="bookmark-outline" size={20} color="#F59E0B" />
+        <Ionicons name="bookmark-outline" size={16} color={colors.primaryDark} />
         <Text style={styles.cardTitle}>{item.source_term}</Text>
       </View>
       <Text style={styles.cardSubtitle}>{item.translation}</Text>
@@ -78,24 +79,30 @@ export default function ActivitiesScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
+      <StatusBar backgroundColor={colors.primary} barStyle="dark-content" />
       <ProfileTopBar title="My Activities" />
 
-      <View style={styles.tabsContainer}>
-        {TABS.map(tab => (
-          <TouchableOpacity 
-            key={tab} 
-            style={[styles.tabBtn, activeTab === tab && styles.activeTabBtn]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.tabsWrapper}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {TABS.map(tab => (
+            <TouchableOpacity 
+              key={tab} 
+              style={[styles.tabBtn, activeTab === tab && styles.activeTabBtn]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#FFD54F" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -105,7 +112,7 @@ export default function ActivitiesScreen() {
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
-              <Ionicons name="folder-open-outline" size={48} color="#D1D5DB" />
+              <Ionicons name="folder-open-outline" size={36} color={colors.textGray} />
               <Text style={styles.emptyText}>No {activeTab.toLowerCase()} found.</Text>
             </View>
           )}
@@ -118,33 +125,35 @@ export default function ActivitiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.background,
+  },
+  tabsWrapper: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
   tabsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   tabBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: '#F3F4F6',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginRight: 6,
+    backgroundColor: colors.surfaceGray,
   },
   activeTabBtn: {
-    backgroundColor: '#1F2937',
+    backgroundColor: colors.accent,
   },
   tabText: {
-    fontSize: 14,
-    color: '#4B5563',
+    fontSize: 12,
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#FFF',
+    color: colors.white,
   },
   center: {
     flex: 1,
@@ -152,53 +161,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContainer: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    shadowColor: colors.shadowGold,
     shadowOpacity: 0.05,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 6,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.textPrimary,
     flex: 1,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginBottom: 12,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 12,
+    borderTopColor: colors.divider,
+    paddingTop: 8,
   },
   dateText: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 10,
+    color: colors.textGray,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#D97706',
+    color: colors.primaryDeep,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -207,6 +218,6 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#9CA3AF',
+    color: colors.textGray,
   }
 });
