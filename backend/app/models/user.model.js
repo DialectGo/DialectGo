@@ -147,6 +147,11 @@ export const deleteUser = async (id) => {
 export const calculateAndSyncStreak = async (userId, token) => {
   const client = getAuthClient(token);
   // 1. Fetch all translation timestamps for this user
+  // Helper to reliably get Manila date in YYYY-MM-DD
+  const getManilaDateString = (dateObj) => {
+    return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+  };
+
   const { data, error } = await client
     .from('translation_history')
     .select('created_at')
@@ -158,8 +163,8 @@ export const calculateAndSyncStreak = async (userId, token) => {
   // 2. Map translations to unique dates and count them
   const dayCounts = {};
   data.forEach(row => {
-    // Convert timestamp to local date string (YYYY-MM-DD)
-    const date = new Date(row.created_at).toISOString().split('T')[0];
+    // Convert UTC timestamp from DB to Manila local date string (YYYY-MM-DD)
+    const date = getManilaDateString(new Date(row.created_at));
     dayCounts[date] = (dayCounts[date] || 0) + 1;
   });
 
@@ -175,10 +180,12 @@ export const calculateAndSyncStreak = async (userId, token) => {
 
   // 4. Calculate consecutive days
   let streak = 0;
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const todayObj = new Date();
+  const today = getManilaDateString(todayObj);
+  
+  const yesterdayObj = new Date();
+  yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+  const yesterdayStr = getManilaDateString(yesterdayObj);
 
   // Check if the user is active today or was at least active yesterday
   // If not, the streak has already broken.
