@@ -59,15 +59,30 @@ const getGradioClient = async () => {
 const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
     try {
         const client = await getGradioClient();
+        
+        let inputText = String(text || '').trim();
+        // Check if the text is fully uppercase (has uppercase characters and no lowercase characters)
+        const isAllCaps = inputText.length > 0 && inputText === inputText.toUpperCase() && inputText !== inputText.toLowerCase();
+        
+        // Normalize to sentence case to prevent NLLB hallucination
+        if (isAllCaps) {
+            inputText = inputText.charAt(0).toUpperCase() + inputText.slice(1).toLowerCase();
+        }
+
         const result = await client.predict('/translate', {
-            text: String(text || '').trim(),
+            text: inputText,
             audio_path: null,
             source_lang_name: normalizeLanguageName(sourceLang),
             target_lang_name: normalizeLanguageName(targetLang),
         });
 
         if (Array.isArray(result?.data)) {
-            return typeof result.data[1] === 'string' ? result.data[1].trim() : '';
+            let translated = typeof result.data[1] === 'string' ? result.data[1].trim() : '';
+            // Restore ALL CAPS if the original text was ALL CAPS
+            if (isAllCaps && translated) {
+                translated = translated.toUpperCase();
+            }
+            return translated;
         }
         return '';
     } catch (e) {
