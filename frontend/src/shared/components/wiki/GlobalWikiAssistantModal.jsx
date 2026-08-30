@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal,
-  StyleSheet, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform, Image
+  StyleSheet, FlatList, ActivityIndicator, Platform, Image,
+  Keyboard, Animated, TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,9 +18,15 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
 
+  // Track focus to guard against spurious keyboardWillHide during typing
+  const inputFocusedRef = useRef(false);
+
+  // Animated values for keyboard handling
+  const keyboardAnim = useRef(new Animated.Value(0)).current; // iOS modal offset
+  const paddingBottomAnim = useRef(new Animated.Value(Math.max(16, insets.bottom + 8))).current;
+
   useEffect(() => {
     if (visible && messages.length === 0) {
-      // Add welcome message
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -28,13 +35,78 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
     }
   }, [visible]);
 
+  // iOS: keyboard listeners for modal margin offset
+  // Android: adjustResize handles it, no listeners needed
+  // iOS: keyboard listeners for modal margin offset
+  // Android: adjustResize handles it natively now that edgeToEdge is false
+  useEffect(() => {
+    if (Platform.OS !== 'ios' || !visible) return;
+
+    const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+      Animated.timing(keyboardAnim, {
+        toValue: e.endCoordinates.height,
+        duration: e.duration || 250,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+      // Only animate down if input lost focus — prevents bounce during typing
+      if (!inputFocusedRef.current) {
+        Animated.timing(keyboardAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: false,
+        }).start();
+      }
+    });
+
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, [visible]);
+
+  // Reset when modal closes
+  useEffect(() => {
+    if (!visible) {
+      keyboardAnim.setValue(0);
+      paddingBottomAnim.setValue(Math.max(16, insets.bottom + 8));
+      inputFocusedRef.current = false;
+    }
+  }, [visible]);
+
+  // When input gains focus, reduce bottom padding (keyboard covers safe area)
+  const handleInputFocus = () => {
+    inputFocusedRef.current = true;
+    Animated.timing(paddingBottomAnim, {
+      toValue: 8,
+      duration: Platform.OS === 'ios' ? 250 : 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // When input loses focus, restore safe area bottom padding + reset keyboard offset
+  const handleInputBlur = () => {
+    inputFocusedRef.current = false;
+    Animated.timing(paddingBottomAnim, {
+      toValue: Math.max(16, insets.bottom + 8),
+      duration: Platform.OS === 'ios' ? 250 : 200,
+      useNativeDriver: false,
+    }).start();
+    // On iOS, also reset keyboard offset (in case keyboardWillHide already fired while focused)
+    if (Platform.OS === 'ios') {
+      Animated.timing(keyboardAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
     setInput('');
 
-    // Add user message to chat
     const userMsg = { id: `user-${Date.now()}`, role: 'user', content: userMessage };
     setMessages(prev => [...prev, userMsg]);
 
@@ -43,7 +115,6 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Build conversation history (exclude welcome message)
       const history = messages
         .filter(m => m.id !== 'welcome')
         .map(m => ({ role: m.role, content: m.content }));
@@ -88,6 +159,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
   };
 
   const handleClose = () => {
+    Keyboard.dismiss();
     setMessages([]);
     setInput('');
     onClose();
@@ -114,11 +186,18 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.container}>
+      <View style={styles.overlay}>
+        {/* Tappable backdrop to dismiss keyboard */}
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.backdropTouchable} />
+        </TouchableWithoutFeedback>
+
+        <Animated.View style={[
+          styles.container,
+          // iOS: manually push modal up by keyboard height
+          // Android: adjustResize handles it naturally
+          Platform.OS === 'ios' && { marginBottom: keyboardAnim }
+        ]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -146,6 +225,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
             contentContainerStyle={styles.messageList}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            keyboardShouldPersistTaps="handled"
             ListFooterComponent={
               isLoading ? (
                 <View style={[styles.messageBubble, styles.aiBubble]}>
@@ -164,7 +244,7 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
           />
 
           {/* Input */}
-          <View style={[styles.inputContainer, { paddingBottom: Math.max(16, insets.bottom + 8) }]}>
+          <Animated.View style={[styles.inputContainer, { paddingBottom: paddingBottomAnim }]}>
             <TextInput
               style={styles.input}
               placeholder="Ask a general question..."
@@ -174,6 +254,8 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
               multiline
               maxLength={500}
               editable={!isLoading}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
             <TouchableOpacity
               style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendBtnDisabled]}
@@ -182,9 +264,9 @@ export default function GlobalWikiAssistantModal({ visible, onClose }) {
             >
               <Ionicons name="send" size={20} color={input.trim() && !isLoading ? '#1F2937' : '#D1D5DB'} />
             </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+          </Animated.View>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -194,6 +276,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+  },
+  backdropTouchable: {
+    flex: 1,
   },
   container: {
     backgroundColor: '#FFFFFF',
@@ -307,7 +392,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },

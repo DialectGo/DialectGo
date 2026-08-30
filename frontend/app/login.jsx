@@ -33,6 +33,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
   const { refreshProfile } = useProfileContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
 
   // --- LOGIN LOGIC ---
@@ -194,14 +195,19 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Password</Text>
-              <TextInput 
-                style={styles.bubbleInput} 
-                placeholder="••••••••" 
-                placeholderTextColor="#BDBDBD" 
-                secureTextEntry 
-                value={password}
-                onChangeText={setPassword}
-              />
+              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }]}>
+                <TextInput 
+                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }} 
+                  placeholder="••••••••" 
+                  placeholderTextColor="#BDBDBD" 
+                  secureTextEntry={secureTextEntry}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
+                  <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity style={styles.forgotBtn}
