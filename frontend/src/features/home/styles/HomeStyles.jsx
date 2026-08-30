@@ -606,13 +606,13 @@ largeWeekRow: {
 largeDayBox: {
   alignItems: 'center',
   justifyContent: 'center',
-  minWidth: 35,
+  flex: 1,
 },
 
 dayCircleLarge: {
-  width: 34,
-  height: 34,
-  borderRadius: 17,
+  width: 28,
+  height: 28,
+  borderRadius: 14,
   justifyContent: 'center',
   alignItems: 'center',
   marginBottom: 5,
@@ -639,7 +639,7 @@ dayInactive: {
 },
 
 checkMarkLarge: {
-  fontSize: 15,
+  fontSize: 13,
   color: colors.accent,
   fontFamily: fonts.bold,
 },
