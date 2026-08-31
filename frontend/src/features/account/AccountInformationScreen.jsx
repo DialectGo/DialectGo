@@ -6,12 +6,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { styles } from './styles/AccountInformationStyles';
 import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { useAccountInformation } from '../../shared/hooks/profile/useAccountInformation';
-import AvatarSelector from '../../shared/components/profile/AvatarSelector';
+import { useProfileContext } from '../../shared/context/ProfileContext';
 import AccountFormInput from '../../shared/components/profile/AccountFormInput';
 
 export default function AccountInformationScreen() {
@@ -24,12 +25,10 @@ export default function AccountInformationScreen() {
     birthDate, setBirthDate,
     email,
     address, setAddress,
-    currentAvatar,
-    isModalVisible, setIsModalVisible,
     handleSave,
-    handleAvatarSelect,
-    availableAvatars
   } = useAccountInformation(router);
+
+  const { userAvatar } = useProfileContext();
 
   if (loading) return <ActivityIndicator size="large" color="#FFD54F" style={{flex:1}} />;
 
@@ -39,14 +38,17 @@ export default function AccountInformationScreen() {
       <ProfileTopBar title="Account Information" />
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        <AvatarSelector 
-          currentAvatar={currentAvatar}
-          availableAvatars={availableAvatars}
-          isModalVisible={isModalVisible}
-          setIsModalVisible={setIsModalVisible}
-          onSelect={handleAvatarSelect}
-        />
-
+        <View style={{ alignItems: 'center', marginTop: 30, marginBottom: 10 }}>
+          <View style={{
+            width: 130, height: 130, borderRadius: 65, backgroundColor: '#FFFFFF',
+            justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#FFFFFF',
+            elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1, shadowRadius: 10,
+          }}>
+            <Image source={userAvatar} style={{ width: 120, height: 120, borderRadius: 60 }} />
+          </View>
+        </View>
+        
         <View style={styles.settingsContainer}>
           <AccountFormInput label="First Name" value={firstName} onChangeText={setFirstName} />
           <AccountFormInput label="Last Name" value={lastName} onChangeText={setLastName} />

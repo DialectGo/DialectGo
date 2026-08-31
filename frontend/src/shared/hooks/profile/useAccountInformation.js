@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatAddress, parseAddress } from '../../utils/stringUtils';
 import { fetchUserProfile, updateUserProfile } from '../../services/profile/userService';
-import { availableAvatars } from './constants';
 import { useProfileContext } from '../../context/ProfileContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -16,8 +15,6 @@ export const useAccountInformation = (router) => {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState(''); 
 
-  const [currentAvatar, setCurrentAvatar] = useState(availableAvatars[0]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -29,10 +26,7 @@ export const useAccountInformation = (router) => {
         setEmail(user.email || '');
         setAddress(formatAddress(user.country, user.province, user.city));
 
-        if (user.profile_avatar_url) {
-          const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
-          if (matched) setCurrentAvatar(matched);
-        }
+
       } else {
         showToast('Failed to load profile.', 'error', 'Error');
       }
@@ -60,7 +54,6 @@ export const useAccountInformation = (router) => {
         country,
         province,
         city,
-        profile_avatar_url: currentAvatar.name,
       });
 
       if (success) {
@@ -77,10 +70,7 @@ export const useAccountInformation = (router) => {
     }
   };
 
-  const handleAvatarSelect = (avatarObj) => {
-    setCurrentAvatar(avatarObj);
-    setIsModalVisible(false);
-  };
+
 
   return {
     loading,
@@ -89,10 +79,6 @@ export const useAccountInformation = (router) => {
     birthDate, setBirthDate,
     email,
     address, setAddress,
-    currentAvatar,
-    isModalVisible, setIsModalVisible,
-    handleSave,
-    handleAvatarSelect,
-    availableAvatars
+    handleSave
   };
 };
