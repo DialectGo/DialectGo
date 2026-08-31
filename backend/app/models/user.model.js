@@ -1,5 +1,6 @@
 import { supabase, supabaseAdmin, getAuthClient } from '../config/db.js';
 import { createClient } from '@supabase/supabase-js';
+import { sendWelcomeEmail } from '../services/email.service.js';
 
 const getAuthenticatedClient = (token) => {
   return createClient(
@@ -21,6 +22,9 @@ export const registerUser = async (data) => {
   });
 
   if (error) throw error;
+
+  // Send the customized Nodemailer welcome email
+  await sendWelcomeEmail(email, meta.firstName || 'User');
 
   // Explicitly sync additional metadata into the public.profiles table
   // because the Postgres trigger misses these non-standard camelCase keys.

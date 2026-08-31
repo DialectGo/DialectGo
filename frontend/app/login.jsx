@@ -89,7 +89,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
     if (loading) return;
     setLoading(true);
     try {
-      const redirectUrl = makeRedirectUri();
+      const redirectUrl = makeRedirectUri({ scheme: 'dialectgo' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
