@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard,
+  ScrollView 
+} from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
 import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
+import ConfirmOverlay from '../../src/shared/components/ConfirmOverlay';
+import newPassImg from '../../assets/beelogo/new_pass_screen.png';
 
 export default function ChangePassword() {
   const router = useRouter();
   const [form, setForm] = useState({ password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleChangePassword = async () => {
     setError('');
+    Keyboard.dismiss();
+
     if (!form.password || form.password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -33,59 +46,93 @@ export default function ChangePassword() {
     setLoading(false);
 
     if (sbError) {
-      Alert.alert("Error", sbError.message);
+      setError(sbError.message);
     } else {
-      Alert.alert("Success", "Password changed successfully. Please log in.");
-      await supabase.auth.signOut();
-      router.replace('/login');
+      setShowSuccessModal(true);
     }
   };
 
+  const handleSuccessClose = async () => {
+    setShowSuccessModal(false);
+    await supabase.auth.signOut();
+    router.replace('/login');
+  };
+
   return (
-    <AuthLayout
-      title="Create Pass"
-      description="Your new password must be different from your previous password."
-      step={3}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : null}
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
     >
-      <View className="space-y-4">
-        <AuthInput 
-          label="Enter your new password"
-          onChangeText={(v) => setForm({...form, password: v})}
-          secureTextEntry
-          style={error ? styles.errorInput : styles.authArea}
-        />
-        
-        <AuthInput 
-          label="Confirm your new password"
-          onChangeText={(v) => setForm({...form, confirmPassword: v})}
-          secureTextEntry
-          style={error ? styles.errorInput : styles.authArea}
-        />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#FFFFFF' }} keyboardShouldPersistTaps="handled">
+          <AuthLayout
+            title="Create New Password"
+            description="Your new password must be different from your previous password."
+            step={3}
+            logoSource={newPassImg}
+          >
+            <View style={styles.formContainer}>
+              <AuthInput 
+                label="Enter your new password"
+                onChangeText={(v) => {
+                  setError('');
+                  setForm({...form, password: v});
+                }}
+                secureTextEntry
+                style={error ? styles.errorInput : styles.authArea}
+              />
+              
+              <AuthInput 
+                label="Confirm your new password"
+                onChangeText={(v) => {
+                  setError('');
+                  setForm({...form, confirmPassword: v});
+                }}
+                secureTextEntry
+                style={error ? styles.errorInput : styles.authArea}
+              />
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <CustomButton 
-          title="Confirm Change" 
-          onPress={handleChangePassword} 
-          loading={loading}
-          style={styles.actionBtn}
-        />
-      </View>
-    </AuthLayout>
+              <CustomButton 
+                title="Confirm Change" 
+                onPress={handleChangePassword} 
+                loading={loading}
+                style={styles.actionBtn}
+              />
+            </View>
+          </AuthLayout>
+
+          <ConfirmOverlay
+            visible={showSuccessModal}
+            title="Success"
+            message="Password changed successfully. Please log in."
+            confirmText="OK"
+            type="success"
+            hideCancel={true}
+            onConfirm={handleSuccessClose}
+          />
+
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  formContainer: {
+    marginTop: 10,
+    gap: 15,
+  },
   authArea: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,       
-    elevation: 5,
+    backgroundColor: '#FFECB3', // Based on the yellow input box in design
+    borderRadius: 15,
+    height: 60,       
   },
   errorInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,
+    backgroundColor: '#FFE5E5',
+    borderRadius: 15,
+    height: 60,
     borderWidth: 1.5,
     borderColor: '#FF4D4D',
   },
@@ -93,7 +140,7 @@ const styles = StyleSheet.create({
     color: '#FF4D4D',
     fontSize: 12,
     fontWeight: 'bold',
-    marginLeft: 20,
+    marginLeft: 10,
     marginTop: -10
   },
   actionBtn: {
@@ -101,6 +148,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 35,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   }
 });

@@ -282,7 +282,10 @@ export default function TranslationResultModal({ visible, onClose, isLoading, re
           </View>
 
           {isLoading ? (
-            <LoadingModal visible={true} message="Processing document..." />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#F59E0B" />
+              <Text style={styles.loadingText}>Processing document...</Text>
+            </View>
           ) : error ? (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#EF4444" />
@@ -744,6 +747,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#4B5563',
+    fontWeight: '500',
   },
   errorContainer: {
     flex: 1,

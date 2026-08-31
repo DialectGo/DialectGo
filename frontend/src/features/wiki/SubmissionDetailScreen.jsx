@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Image, Keyboard, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,11 @@ import { availableAvatars } from '../../shared/hooks/profile/constants';
 export default function SubmissionDetailScreen({ id }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef(null);
+
+  // Animated padding for smooth transition when keyboard opens/closes
+  const paddingBottomAnim = useRef(new Animated.Value(Math.max(insets.bottom, 12))).current;
+  const [inputFocused, setInputFocused] = useState(false);
   
   const getAvatarSource = (avatarName) => {
     if (!avatarName || avatarName === 'null') return null;
@@ -38,6 +43,30 @@ export default function SubmissionDetailScreen({ id }) {
     handleBookmark,
     handlePostComment,
   } = useSubmissionDetail(id);
+
+  // When input gains focus, reduce bottom padding (keyboard covers safe area)
+  const handleInputFocus = () => {
+    setInputFocused(true);
+    Animated.timing(paddingBottomAnim, {
+      toValue: 8,
+      duration: Platform.OS === 'ios' ? 250 : 200,
+      useNativeDriver: false,
+    }).start();
+    // Auto-scroll so comments and input area are visible
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 300);
+  };
+
+  // When input loses focus, restore safe area bottom padding
+  const handleInputBlur = () => {
+    setInputFocused(false);
+    Animated.timing(paddingBottomAnim, {
+      toValue: Math.max(insets.bottom, 12),
+      duration: Platform.OS === 'ios' ? 250 : 200,
+      useNativeDriver: false,
+    }).start();
+  };
 
   if (loading) {
     return (
@@ -116,7 +145,11 @@ export default function SubmissionDetailScreen({ id }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         <SubmissionDetailCard
           submission={submission}
           userVote={userVote}
@@ -134,18 +167,20 @@ export default function SubmissionDetailScreen({ id }) {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Floating AI Fab positioned above the bottom input */}
-      <TouchableOpacity
-        style={[styles.aiFab, { bottom: insets.bottom + 80 }]}
-        activeOpacity={0.85}
-        onPress={() => setShowAssistant(true)}
-      >
-        <Ionicons name="sparkles" size={22} color="#1F2937" />
-        <Text style={styles.aiFabText}>Ask AI</Text>
-      </TouchableOpacity>
+      {/* Floating AI Fab - hidden when keyboard is open */}
+      {!inputFocused && (
+        <TouchableOpacity
+          style={[styles.aiFab, { bottom: insets.bottom + 80 }]}
+          activeOpacity={0.85}
+          onPress={() => setShowAssistant(true)}
+        >
+          <Ionicons name="sparkles" size={22} color="#1F2937" />
+          <Text style={styles.aiFabText}>Ask AI</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Facebook style fixed comment input */}
-      <View style={[styles.bottomInputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <Animated.View style={[styles.bottomInputContainer, { paddingBottom: paddingBottomAnim }]}>
         <View style={styles.commentInputWrapperFb}>
           <TextInput
             style={styles.commentInputFb}
@@ -153,8 +188,10 @@ export default function SubmissionDetailScreen({ id }) {
             placeholderTextColor="#9CA3AF"
             value={commentText}
             onChangeText={setCommentText}
-            multiline={commentText.length > 0}
+            multiline
             maxLength={2000}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
           />
           {commentText.trim().length > 0 && (
             <TouchableOpacity
@@ -170,7 +207,7 @@ export default function SubmissionDetailScreen({ id }) {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       <WikiAssistantModal
         visible={showAssistant}

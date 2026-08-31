@@ -48,16 +48,25 @@ export const refreshStreak = async (userId, token) => {
 };
 
 export const updateStreakStatus = async (userId, token) => {
-  const today = new Date().toISOString().split('T')[0];
+  // Get the start and end of the current day in Manila time, converted to UTC ISO strings
+  // This ensures we query exactly from 00:00:00 to 23:59:59 Manila Time, regardless of server UTC time
+  const now = new Date();
+  const manilaDateString = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }); // YYYY-MM-DD
+  
+  // Create start and end dates strictly in Manila time, then convert to UTC
+  // Using explicit offset +08:00 for Manila
+  const startOfDayUTC = new Date(`${manilaDateString}T00:00:00+08:00`).toISOString();
+  const endOfDayUTC = new Date(`${manilaDateString}T23:59:59.999+08:00`).toISOString();
+
   const client = getAuthClient(token);
 
-  // 1. Count translations for the user today
+  // 1. Count translations for the user today (using accurate UTC bounds for Manila)
   const { count, error } = await client
     .from('translation_history')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .gte('created_at', `${today}T00:00:00`)
-    .lte('created_at', `${today}T23:59:59`);
+    .gte('created_at', startOfDayUTC)
+    .lte('created_at', endOfDayUTC);
 
   if (error) throw error;
 

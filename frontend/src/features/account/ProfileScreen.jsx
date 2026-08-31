@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   StatusBar, 
   View, 
-  ActivityIndicator 
+  ActivityIndicator,
+  Text 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
@@ -11,8 +12,12 @@ import FeatureGateModal from '../../shared/components/FeatureGateModal';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import { styles } from './styles/ProfileStyles';
 import { useProfile } from '../../shared/hooks/profile/useProfile';
-import ProfileHeader from '../../shared/components/profile/ProfileHeader';
 import ProfileMenuItem from '../../shared/components/profile/ProfileMenuItem';
+import AvatarSelector from '../../shared/components/profile/AvatarSelector';
+import { availableAvatars } from '../../shared/hooks/profile/constants';
+import { updateUserProfile } from '../../shared/services/profile/userService';
+import { useToast } from '../../shared/context/ToastContext';
+import { formatFullName } from '../../shared/utils/stringUtils';
 
 export default function ProfileScreen({ onNavigate }) {
   const router = useRouter();
@@ -31,6 +36,31 @@ export default function ProfileScreen({ onNavigate }) {
     handleProtectedAction,
     handleLogout
   } = useProfile(onNavigate, router);
+
+  const { showToast } = useToast();
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+
+  const currentAvatarObj = availableAvatars.find(a => a.source === userAvatar) || availableAvatars[0];
+
+  const handleAvatarSelect = async (avatarObj) => {
+    setIsAvatarModalVisible(false);
+    if (isGuest) {
+      showToast('Sign in to change avatar', 'info', 'Notice');
+      return;
+    }
+    
+    try {
+      const success = await updateUserProfile({ profile_avatar_url: avatarObj.name });
+      if (success) {
+        handleRefresh();
+        showToast('Avatar updated successfully!', 'success', 'Saved');
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      showToast('Failed to update avatar', 'error', 'Error');
+    }
+  };
 
   if (loading) {
     return (
@@ -51,13 +81,21 @@ export default function ProfileScreen({ onNavigate }) {
         refreshing={refreshing}
         onRefresh={handleRefresh}
       >
-        <ProfileHeader 
-          firstName={firstName} 
-          lastName={lastName} 
-          userAvatar={userAvatar} 
-          isGuest={isGuest} 
-          streakCount={streakCount} 
-        />
+        <View style={{ alignItems: 'center', paddingBottom: 20 }}>
+          <AvatarSelector 
+            currentAvatar={currentAvatarObj}
+            availableAvatars={availableAvatars}
+            isModalVisible={isAvatarModalVisible}
+            setIsModalVisible={setIsAvatarModalVisible}
+            onSelect={handleAvatarSelect}
+          />
+          <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#000000', marginTop: -5, fontFamily: 'Poppins-Bold' }}>
+            {formatFullName(firstName, lastName)}
+          </Text>
+          <Text style={{ fontSize: 16, color: '#777', fontWeight: '600', fontFamily: 'Poppins-Regular', marginTop: 5 }}>
+            {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
+          </Text>
+        </View>
 
         <View style={styles.settingsContainer}>
           <ProfileMenuItem 

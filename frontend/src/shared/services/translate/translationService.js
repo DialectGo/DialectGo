@@ -334,9 +334,15 @@ export const translateDocument = async ({
   }
 
   const formData = new FormData();
+  
+  // Append a timestamp to the filename to force React Native Android to treat it as a new file.
+  // This bypasses a known OkHttp/FormData bug where uploading the exact same local URI twice hangs.
+  const originalFileName = fileAsset.fileName || fileAsset.name || 'upload.jpg';
+  const uniqueFileName = `${Date.now()}_${originalFileName}`;
+
   formData.append('file', {
     uri: uploadUri,
-    name: fileAsset.fileName || fileAsset.name || 'upload.jpg',
+    name: uniqueFileName,
     type: mimeType,
   });
   formData.append('sourceLang', sourceLang);
