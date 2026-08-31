@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { colors } from '../theme/colorPalette';
 
 export default function ConfirmOverlay({ 
   visible, 
@@ -10,35 +11,45 @@ export default function ConfirmOverlay({
   onConfirm, 
   isConfirming = false,
   confirmText = "Yes, Delete",
-  cancelText = "Cancel"
+  cancelText = "Cancel",
+  type = "danger", // "danger" | "success"
+  hideCancel = false
 }) {
+  const isSuccess = type === 'success';
+
   return (
     <Modal
       visible={visible}
       transparent={true}
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={onCancel || onConfirm}
     >
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="trash-outline" size={32} color="#FF5252" />
+          <View style={[styles.iconContainer, isSuccess && styles.iconSuccess]}>
+            <Ionicons 
+              name={isSuccess ? "checkmark-circle-outline" : "trash-outline"} 
+              size={32} 
+              color={isSuccess ? colors.primaryDark : "#FF5252"} 
+            />
           </View>
           
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
           
           <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
-              onPress={onCancel}
-              disabled={isConfirming}
-            >
-              <Text style={styles.cancelText}>{cancelText}</Text>
-            </TouchableOpacity>
+            {!hideCancel && (
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton]} 
+                onPress={onCancel}
+                disabled={isConfirming}
+              >
+                <Text style={styles.cancelText}>{cancelText}</Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity 
-              style={[styles.button, styles.confirmButton]} 
+              style={[styles.button, isSuccess ? styles.confirmButtonSuccess : styles.confirmButton]} 
               onPress={onConfirm}
               disabled={isConfirming}
             >
@@ -58,13 +69,13 @@ export default function ConfirmOverlay({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   modalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderRadius: 24,
     padding: 24,
     width: '100%',
@@ -85,18 +96,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  iconSuccess: {
+    backgroundColor: colors.surfaceLight, // DialectGo honey color
+  },
   title: {
     fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Poppins-Bold',
-    color: '#1F2937',
+    color: colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 14,
     fontFamily: 'Poppins-Regular',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -115,18 +129,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   cancelButton: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceGray,
   },
   confirmButton: {
     backgroundColor: '#FF5252',
   },
+  confirmButtonSuccess: {
+    backgroundColor: '#FFBC00', // DialectGo Yellow Button color
+  },
   cancelText: {
-    color: '#4B5563',
+    color: colors.textDark,
     fontFamily: 'Poppins-Bold',
     fontSize: 14,
   },
   confirmText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontFamily: 'Poppins-Bold',
     fontSize: 14,
   }

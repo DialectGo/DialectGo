@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -8,17 +8,18 @@ import {
   Platform, 
   TouchableWithoutFeedback, 
   Keyboard,
-  ScrollView 
+  ScrollView,
+  TextInput
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
-import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
 import { maskEmail } from '../../src/shared/utils/stringUtils';
+import verifyEmailImg from '../../assets/beelogo/verify_email_screen.png';
 
-// Supabase standard OTP is 6 digits. 
+// Supabase standard OTP can be up to 8 digits
 const OTP_LENGTH = 8; 
 
 export default function VerifyEmail() {
@@ -28,6 +29,8 @@ export default function VerifyEmail() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(120); 
+  
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -79,41 +82,73 @@ export default function VerifyEmail() {
     }
   };
 
+  const renderOtpBoxes = () => {
+    const boxes = [];
+    for (let i = 0; i < OTP_LENGTH; i++) {
+      const char = token[i] || '';
+      const isFocused = token.length === i;
+      
+      boxes.push(
+        <View 
+          key={i} 
+          style={[
+            styles.otpBox, 
+            isFocused && styles.otpBoxFocused,
+            error && styles.otpBoxError
+          ]}
+        >
+          <Text style={styles.otpText}>{char}</Text>
+        </View>
+      );
+    }
+    return boxes;
+  };
+
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : null}
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView 
-          contentContainerStyle={{ flexGrow: 1 }} 
+          contentContainerStyle={{ flexGrow: 1, backgroundColor: '#FFFFFF' }} 
           keyboardShouldPersistTaps="handled"
         >
           <AuthLayout
             title="Verify Email"
             description={`Enter the ${OTP_LENGTH} digits code sent to your email address \n${maskEmail(params.email)} below.`}
             step={2}
+            logoSource={verifyEmailImg}
           >
             <View style={styles.formContainer}>
-              <View style={styles.otpContainer}>
-                <AuthInput 
-                  label="Verification Code"
-                  value={token}
-                  onChangeText={(val) => {
-                    setError('');
-                    setToken(val);
-                  }}
-                  keyboardType="number-pad" // Better for mobile keyboards
-                  maxLength={OTP_LENGTH}
-                  style={error ? styles.errorInput : styles.authArea}
-                  placeholder="00000000"
-                />
-              </View>
+              
+              <TouchableOpacity 
+                activeOpacity={1} 
+                onPress={() => inputRef.current?.focus()}
+                style={styles.otpBoxesContainer}
+              >
+                {renderOtpBoxes()}
+              </TouchableOpacity>
+
+              {/* Hidden actual input */}
+              <TextInput
+                ref={inputRef}
+                value={token}
+                onChangeText={(val) => {
+                  setError('');
+                  // Only allow digits up to OTP_LENGTH
+                  setToken(val.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH));
+                }}
+                keyboardType="number-pad"
+                maxLength={OTP_LENGTH}
+                style={styles.hiddenInput}
+                autoFocus
+              />
 
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
               <Text style={styles.expireText}>
-                {countdown > 0 ? `Code expires in ${countdown}s` : "Code has expired."}
+                {countdown > 0 ? `Code expires in ${countdown}s` : "The verification code you entered has expired."}
               </Text>
 
               <CustomButton 
@@ -131,7 +166,7 @@ export default function VerifyEmail() {
                         styles.resendLink, 
                         { color: countdown > 0 ? '#9CA3AF' : '#FFBC00' }
                       ]}>
-                        Resend code.
+                        Resend code
                       </Text>
                   </TouchableOpacity>
               </View>
@@ -145,32 +180,49 @@ export default function VerifyEmail() {
 
 const styles = StyleSheet.create({
   formContainer: {
-    marginTop: 20,
-    gap: 20,
+    marginTop: 10,
+    gap: 15,
   },
-  authArea: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,       
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  otpBoxesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4, 
+    paddingHorizontal: 2,
+    marginBottom: 5,
   },
-  errorInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,
+  otpBox: {
+    width: 34, 
+    height: 46,
+    backgroundColor: '#FFECB3', 
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  otpBoxFocused: {
+    borderColor: '#FFBC00', 
+  },
+  otpBoxError: {
     borderColor: '#FF4D4D',
+  },
+  otpText: {
+    fontSize: 18, 
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
   },
   errorText: {
     color: '#FF4D4D',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: -10
+    marginTop: -5
   },
   expireText: {
     color: '#9CA3AF',
@@ -189,13 +241,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 10,
+    paddingTop: 5,
   },
   footerText: {
-    color: '#475569',
+    color: '#9CA3AF',
+    fontWeight: 'bold'
   },
   resendLink: {
-    fontWeight: '900',
+    fontWeight: 'bold',
     textDecorationLine: 'underline',
   }
 });
