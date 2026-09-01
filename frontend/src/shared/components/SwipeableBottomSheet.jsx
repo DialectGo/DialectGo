@@ -122,10 +122,9 @@ export default function SwipeableBottomSheet({ visible, onClose, children }) {
 
         <Animated.View
           style={[styles.sheetContainer, { transform: [{ translateY }] }]}
-          {...panResponder.panHandlers}
         >
           {/* Drag Handle Indicator */}
-          <View style={styles.dragHandleContainer}>
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
             <View style={styles.dragHandle} />
           </View>
           
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
   dragHandleContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 20,
   },
   dragHandle: {
     width: 40,
