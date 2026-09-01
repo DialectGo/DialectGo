@@ -89,7 +89,7 @@ export default function CustomizeModal({ visible, onClose, onSubmit, isLoading }
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.overlay}
             >
                 <TouchableOpacity style={styles.backdrop} onPress={handleClose} activeOpacity={1} />

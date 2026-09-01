@@ -59,15 +59,30 @@ const getGradioClient = async () => {
 const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
     try {
         const client = await getGradioClient();
+        
+        let inputText = String(text || '').trim();
+        // Check if the text is fully uppercase (has uppercase characters and no lowercase characters)
+        const isAllCaps = inputText.length > 0 && inputText === inputText.toUpperCase() && inputText !== inputText.toLowerCase();
+        
+        // Normalize to sentence case to prevent NLLB hallucination
+        if (isAllCaps) {
+            inputText = inputText.charAt(0).toUpperCase() + inputText.slice(1).toLowerCase();
+        }
+
         const result = await client.predict('/translate', {
-            text: String(text || '').trim(),
+            text: inputText,
             audio_path: null,
             source_lang_name: normalizeLanguageName(sourceLang),
             target_lang_name: normalizeLanguageName(targetLang),
         });
 
         if (Array.isArray(result?.data)) {
-            return typeof result.data[1] === 'string' ? result.data[1].trim() : '';
+            let translated = typeof result.data[1] === 'string' ? result.data[1].trim() : '';
+            // Restore ALL CAPS if the original text was ALL CAPS
+            if (isAllCaps && translated) {
+                translated = translated.toUpperCase();
+            }
+            return translated;
         }
         return '';
     } catch (e) {
@@ -394,6 +409,15 @@ export const performDocumentTranslation = async (
 ) => {
     const pipelineStart = Date.now();
 
+    // ── Document cache check ───────────────────────────────
+    const cachePrefix = withBreakdown ? 'DOC_BREAKDOWN' : 'DOC_STANDARD';
+    const docCacheKey = createTranslationCacheKey(`${cachePrefix}_${text}`, sourceLang, targetLang, targetDialect);
+    const cachedResult = translationCache.get(docCacheKey);
+    if (cachedResult) {
+        console.log(`[Cache] Document translation cache HIT — skipping full pipeline (~<10ms)`);
+        return cachedResult;
+    }
+
     // Steps 1+2: Run DocType Detection AND Layout Reconstruction concurrently.
     // These are independent of each other so we fire both at the same time.
     console.log('[DocPipeline] Steps 1+2 — Detecting doc type & reconstructing layout concurrently...');
@@ -453,7 +477,7 @@ export const performDocumentTranslation = async (
 
         console.log(`[DocPipeline] Complete in ${Date.now() - pipelineStart}ms`);
 
-        return {
+        const finalOutput = {
             ...translationResult,
             documentType: docType,
             formattedSourceText: segmentedSourceText,
@@ -461,6 +485,8 @@ export const performDocumentTranslation = async (
             layoutReconstruction: layoutResult,
             breakdown,
         };
+        translationCache.set(docCacheKey, finalOutput);
+        return finalOutput;
     } else {
         // No OCR spatial data (PDF/DOCX) — skip layout reconstruction.
         // Run docType and preprocessing concurrently since they are independent.
@@ -520,13 +546,15 @@ export const performDocumentTranslation = async (
 
         console.log(`[DocPipeline] Complete in ${Date.now() - pipelineStart}ms`);
 
-        return {
+        const finalOutput = {
             ...result,
             documentType: docType,
             formattedSourceText: text,
             segments: translatedSegments,
             layoutReconstruction: null,
         };
+        translationCache.set(docCacheKey, finalOutput);
+        return finalOutput;
     }
 };
 

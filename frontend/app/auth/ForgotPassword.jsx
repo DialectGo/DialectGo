@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard,
+  ScrollView
+} from 'react-native';
 import { Text } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/shared/api/supabase';
@@ -8,6 +17,7 @@ import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
 import { useLocalSearchParams } from 'expo-router';
 import { PASSWORD_RESET_REDIRECT_URL } from '../../src/shared/api/client';
+import forgotPassImg from '../../assets/beelogo/forgot_pass_screen.png';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -18,24 +28,24 @@ export default function ForgotPassword() {
 
   const handleSendCode = async () => {
     if (!email) {
-      Alert.alert("Error", "Please enter your email address");
+      setError("Please enter a valid email address.");
       return;
     }
     
+    setError('');
     setLoading(true);
+    Keyboard.dismiss();
 
     try {
-      // FIX: Remove '.api' from the call
       const { data, error: sbError } = await supabase.auth.resetPasswordForEmail(
         email.trim(), 
         {
-          // Ensure this URL is added to your Supabase Redirect URLs in the dashboard
           redirectTo: PASSWORD_RESET_REDIRECT_URL,
         }
       );
 
       if (sbError) {
-        Alert.alert("Error", sbError.message);
+        setError(sbError.message);
       } else {
         router.push({
           pathname: '/auth/VerifyEmail',
@@ -44,49 +54,66 @@ export default function ForgotPassword() {
       }
     } catch (err) {
       console.error("Forgot Password Error:", err);
-      Alert.alert("Error", "An unexpected error occurred.");
+      setError("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout
-      title="Forgot Password"
-      description="Enter email address to receive a verification code."
-      step={1}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : null}
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
     >
-      <View className="space-y-6">
-        <AuthInput 
-          label="Email Address"
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          style={error ? styles.errorInput : styles.authArea}
-        />
-        {error && <Text style={styles.errorText}>{error}</Text>}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#FFFFFF' }} keyboardShouldPersistTaps="handled">
+          <AuthLayout
+            title="Forgot Password"
+            description="Enter email address to receive a verification code."
+            step={1}
+            logoSource={forgotPassImg}
+          >
+            <View style={styles.formContainer}>
+              <AuthInput 
+                label="Enter your email address"
+                value={email}
+                onChangeText={(val) => {
+                  setError('');
+                  setEmail(val);
+                }}
+                keyboardType="email-address"
+                style={error ? styles.errorInput : styles.authArea}
+              />
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <CustomButton 
-          title="Send" 
-          onPress={handleSendCode} 
-          loading={loading}
-          style={styles.actionBtn}
-        />
-      </View>
-    </AuthLayout>
+              <CustomButton 
+                title="Send" 
+                onPress={handleSendCode} 
+                loading={loading}
+                style={styles.actionBtn}
+              />
+            </View>
+          </AuthLayout>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  formContainer: {
+    marginTop: 10,
+    gap: 15,
+  },
   authArea: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,       
-    elevation: 5,
+    backgroundColor: '#FFECB3', // Based on the yellow input box in design
+    borderRadius: 15,
+    height: 60,       
   },
   errorInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 35,
-    height: 65,
+    backgroundColor: '#FFECB3',
+    borderRadius: 15,
+    height: 60,
     borderWidth: 1.5,
     borderColor: '#FF4D4D',
   },
@@ -94,13 +121,14 @@ const styles = StyleSheet.create({
     color: '#FF4D4D',
     fontSize: 12,
     fontWeight: 'bold',
-    marginLeft: 20,
-    marginTop: -20
+    marginLeft: 10,
+    marginTop: -10
   },
   actionBtn: {
     backgroundColor: '#FFBC00',
     paddingVertical: 18,
     borderRadius: 35,
     alignItems: 'center',
+    marginTop: 10,
   }
 });

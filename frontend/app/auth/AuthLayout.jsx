@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import finalBeeImg from '@assets/logo/Logo.png'; 
 const { height } = Dimensions.get('window');
 
-export default function AuthLayout({ children, title, description, step = 1, totalSteps = 3 }) {
+export default function AuthLayout({ children, title, description, step = 1, totalSteps = 3, logoSource }) {
   const router = useRouter();
 
   const renderPagination = () => (
@@ -38,7 +38,7 @@ export default function AuthLayout({ children, title, description, step = 1, tot
       </View>
 
       <View style={styles.imageSection}>
-        <Image source={finalBeeImg} style={styles.beeLogo} resizeMode="contain" />
+        <Image source={logoSource || finalBeeImg} style={styles.beeLogo} resizeMode="contain" />
       </View>
 
       <View style={styles.contentSection}>

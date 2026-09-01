@@ -46,7 +46,12 @@ export const getWeeklyStatus = (activeDays = []) => {
   for (let i = 0; i < 7; i++) {
     const tempDate = new Date(sunday);
     tempDate.setDate(sunday.getDate() + i);
-    const dateString = tempDate.toISOString().split('T')[0];
+    // Extract local YYYY-MM-DD instead of UTC to avoid timezone shift
+    const year = tempDate.getFullYear();
+    const month = String(tempDate.getMonth() + 1).padStart(2, '0');
+    const day = String(tempDate.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
     if (activeDays.includes(dateString)) {
       status[i] = true;
     }

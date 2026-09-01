@@ -37,6 +37,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
   
   // Address States
   const [country, setCountry] = useState('Philippines'); // Default value
@@ -104,7 +105,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
     if (loading) return;
     setLoading(true);
     try {
-      const redirectUrl = makeRedirectUri();
+      const redirectUrl = makeRedirectUri({ scheme: 'dialectgo' });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -249,7 +250,18 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Password</Text>
-              <TextInput style={styles.bubbleInput} placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
+              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }]}>
+                <TextInput 
+                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }} 
+                  placeholder="••••••••" 
+                  secureTextEntry={secureTextEntry} 
+                  value={password} 
+                  onChangeText={setPassword} 
+                />
+                <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
+                  <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 20 }]} onPress={handleRegister} disabled={loading}>
