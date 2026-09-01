@@ -49,6 +49,7 @@
     "nodemailer": "^9.1.0",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.19.1",
+    "resend": "^6.25.0",
     "winston": "^3.19.0"
   },
   "devDependencies": {
