@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router'; // Para sa auto-redirect
 import { supabase } from '../src/shared/api/supabase';
-import IntroSplash from '../src/components/IntroSplash';
+import OpeningAnimation from '../src/components/OpeningAnimation';
 import AutoSplash from '../src/components/AutoSplash';
 import Onboarding from '../src/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
@@ -41,9 +41,9 @@ return (
       {/* 1. Loading state while checking Supabase */}
       {currentScreen === 'loading' && <ActivityIndicator size="large" color="#FFD54F" />}
 
-      {/* 2. New User: Shows Splash with Button */}
+      {/* 2. New User: Shows Opening Animation */}
       {currentScreen === 'intro-splash' && (
-        <IntroSplash onFinish={handleIntroFinish} />
+        <OpeningAnimation onFinish={handleIntroFinish} />
       )}
 
       {/* 3. Existing User: Shows Splash that fades out automatically */}

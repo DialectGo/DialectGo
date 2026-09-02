@@ -4,6 +4,7 @@ import { Image, Modal, ScrollView, StatusBar, Text, TouchableOpacity, View, } fr
 import { styles } from './styles/SettingsStyles';
 import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
+import ProfileMenuItem from '../../shared/components/profile/ProfileMenuItem';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -15,57 +16,32 @@ export default function SettingsScreen() {
     setModalVisible(true);
   };
 
-  const SettingItem = ({ icon, title, subtitle, onPress }) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuLeft}>
-        <View style={styles.iconCircle}>
-           <Image source={icon} style={styles.itemIcon} />
-        </View>
-        <View>
-          <Text style={styles.menuText}>{title}</Text>
-          {subtitle && <Text style={styles.subtitleText}>{subtitle}</Text>}
-        </View>
-      </View>
-      <Image source={require('../../../assets/icons/nav/forward_arrow.png')} style={styles.arrowIcon} />
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#FFD54F" barStyle="dark-content" />
 
       <ProfileTopBar title="Settings" />
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
-        <View style={styles.topSpacer} />
-        
-        {/* YELLOW BUBBLY CONTAINER */}
-        <View style={styles.settingsContainer}>
-          <Text style={styles.sectionLabel}>Information & Legal</Text>
-          
-          <View style={styles.menuCard}>
-            <SettingItem 
-              icon={require('../../../assets/icons/profile/help_icon.png')} 
-              title="How to Use" 
-              subtitle="Learn the basics of DialectGo"
-              onPress={() => handlePress('guide')}
-            />
-            <SettingItem 
-              icon={require('../../../assets/icons/profile/terms_icon.png')} 
-              title="Terms and Conditions" 
-              subtitle="Usage rules and agreements"
-              onPress={() => handlePress('terms')}
-            />
-            <SettingItem 
-              icon={require('../../../assets/icons/profile/privacy_icon.png')} 
-              title="Privacy Policy" 
-              subtitle="How we protect your data"
-              onPress={() => handlePress('privacy')}
-            />
-          </View>
-
-          <Text style={styles.versionText}>DialectGo Version 1.0.4</Text>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody} contentContainerStyle={{ paddingBottom: 110 }}>
+        <View style={{ marginTop: 20 }}>
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/help_icon.png')} 
+            text="How to Use"
+            onPress={() => handlePress('guide')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/terms_icon.png')} 
+            text="Terms and Conditions"
+            onPress={() => handlePress('terms')}
+          />
+          <ProfileMenuItem 
+            iconSource={require('../../../assets/icons/profile/privacy_icon.png')} 
+            text="Privacy Policy"
+            onPress={() => handlePress('privacy')}
+          />
         </View>
+
+        <Text style={styles.versionText}>DialectGo Version 1.0.4</Text>
       </ScrollView>
 
       {/* MODAL */}

@@ -77,9 +77,10 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   avatarImg: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 115,
+    height: 115,
+    borderRadius: 57.5,
+    resizeMode: 'contain',
   },
   editBadge: {
     position: 'absolute',
