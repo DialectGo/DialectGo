@@ -13,11 +13,7 @@ export default function DictionarySaveWordsCard({
   const translations = entry.translations || [];
   const isSelected = selectedIds.has(item.id);
   
-  const trans1 = translations[0]?.target_entry?.word_term || '';
-  const trans2 = translations[1]?.target_entry?.word_term || '';
-  const usage1 = translations[0]?.target_entry?.example_usage || '';
-  const usage2 = translations[1]?.target_entry?.example_usage || '';
-  const translationDisplay = [trans1, trans2].filter(Boolean).join(' / ') || 'No translation';
+  const translationDisplay = translations.map(t => t?.target_entry?.word_term).filter(Boolean).join(' / ') || 'No translation';
 
   return (
     <View key={item.id?.toString() || index.toString()} style={styles.cardContainer}>
@@ -43,10 +39,7 @@ export default function DictionarySaveWordsCard({
               partOfSpeech: entry.part_of_speech,
               phoneticTranscription: entry.phonetic_transcription,
               exampleUsage: entry.example_usage,
-              translation1: trans1,
-              translation2: trans2,
-              usage1: usage1,
-              usage2: usage2 
+              translationsStr: JSON.stringify(translations)
             }
           });
         }}

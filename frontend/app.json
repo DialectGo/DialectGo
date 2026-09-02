@@ -34,7 +34,17 @@
       "@react-native-community/datetimepicker",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "networkInspector": true
+          }
+        }
+      ],
+      "./plugins/withNetworkSecurityConfig"
     ],
     "extra": {
       "router": {},
