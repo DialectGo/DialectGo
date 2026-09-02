@@ -157,7 +157,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
 
               <View style={styles.tripleFlameWrapper}>
                 <Image
-                  source={require('../../../assets/images/beefire.png')}
+                  source={require('../../../assets/icons/profile/streak_icon.png')}
                   style={styles.centerFlame}
                   resizeMode="contain"
                 />
