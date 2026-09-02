@@ -14,6 +14,7 @@ export const DictionaryModel = {
                     target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
                         word_term,
                         definition,
+                        language_id,
                         part_of_speech,
                         example_usage
                     )
@@ -48,6 +49,7 @@ export const DictionaryModel = {
                     target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
                         word_term,
                         definition,
+                        language_id,
                         example_usage
                     )
                 )
@@ -99,6 +101,7 @@ export const DictionaryModel = {
                         target_entry:dictionary_entries!dictionary_translations_target_entry_id_fkey (
                             word_term,
                             definition,
+                            language_id,
                             part_of_speech,
                             example_usage
                         )
