@@ -4,68 +4,74 @@ const { height } = Dimensions.get('window');
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFDE7', 
+    backgroundColor: '#FFFFFF', 
   },
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 40,
   },
-  // --- HEADER: PABABAIN PA NATIN ---
-  headerContainer: {
-    paddingTop: 60,             // Adjusted para sa breathing room sa taas
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,           
-    paddingHorizontal: 20,
-  },
-  miniLogo: {
-    width: 80, 
-    height: 80,
-    marginRight: 15,
-  },
-  brandGroup: {
-    justifyContent: 'center',
-  },
-  welcomeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  // --- HEADER SECTION (WHITE BG) ---
+  topHalf: {
+    paddingTop: 40,
+    paddingHorizontal: 25,
+    paddingBottom: 60, // Space for the jeep to drive
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   welcomeTextBold: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 28,
-    color: '#ffdb0c',
-    textShadowColor: 'rgba(255, 219, 12, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    fontSize: 30,
+    color: '#FFC107',
+  },
+  welcomeSubtitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    color: '#421C00',
+    marginTop: 5,
   },
 
-  // --- WHITE BUBBLE CARD ---
+  // --- YELLOW MODAL CARD ---
   loginCard: {
-    marginHorizontal: 20,
-    paddingVertical: 35,
+    flex: 1,
+    paddingTop: 15,
+    paddingBottom: 250, // Extra padding to prevent gap when dragged up
     paddingHorizontal: 25,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 40, 
-    elevation: 10,              // Shadow for Android
+    backgroundColor: '#FFFDE7',
+    borderTopLeftRadius: 40, 
+    borderTopRightRadius: 40,
+    minHeight: height, // Full height to cover screen when dragged up
+    elevation: 20,              // Upward Shadow for Android
     shadowColor: '#000',        // Shadow for iOS
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.1,
     shadowRadius: 15,
+  },
+  dragHandler: {
+    width: '100%',
+    paddingTop: 20,
+    paddingBottom: 25,
+    alignItems: 'center',
+  },
+  closeIndicator: {
+    width: 60,
+    height: 6,
+    backgroundColor: '#D0D0D0',
+    borderRadius: 3,
   },
   cardLabel: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 25,               // 25px Bold
+    fontWeight: 'bold',
+    fontSize: 28,               
     color: '#421C00',           
     textAlign: 'center',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 45,           
+    marginBottom: 25, // Reduced from 45
   },
 
   // --- FORM ELEMENTS WITH SHADOW ---
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 12, // Reduced from 20
   },
   labelShadow: {
     fontFamily: 'Poppins-Medium',
@@ -96,7 +102,7 @@ export const styles = StyleSheet.create({
   },
   forgotBtn: {
     alignSelf: 'flex-end',
-    marginBottom: 30,
+    marginBottom: 20, // Reduced from 30
     marginRight: 10,
   },
   forgotText: {
@@ -155,14 +161,14 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9CA3AF',
     textAlign: 'center',
-    marginTop: 15,
-    marginBottom: 25,
+    marginTop: 10,
+    marginBottom: 15,
   },
 
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 30,
+    marginVertical: 15, // Reduced from 30
   },
   line: { flex: 1, height: 1, backgroundColor: '#F0F0F0' },
   lineText: { 
@@ -174,6 +180,7 @@ export const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    marginBottom: 40, // Added margin to clear bottom navigation bar
   },
   footerText: { 
     fontFamily: 'Poppins-Regular', 

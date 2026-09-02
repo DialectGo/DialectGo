@@ -23,29 +23,61 @@ import LogIn from '../login';
 import SignUp from './Register'; 
 
 const { height } = Dimensions.get('window');
-const MAX_UP = height * 0.05; 
-const MIN_DOWN = height;      
+const MAX_UP = 0; // Snap to very top of screen
+const MIN_DOWN = height + 300;      
 
 export default function AuthTransition() {
   const router = useRouter();
-  const translateY = useRef(new Animated.Value(height)).current; 
+  const translateY = useRef(new Animated.Value(height + 300)).current; 
+  const lastY = useRef(height + 300);
+  const gestureStartY = useRef(height + 300);
   const [activeForm, setActiveForm] = useState('login'); 
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const { showToast } = useToast();
 
+  React.useEffect(() => {
+    const listener = translateY.addListener(({ value }) => {
+      lastY.current = value;
+    });
+    return () => translateY.removeListener(listener);
+  }, []);
+
   // --- ANIMATION LOGIC (PAN RESPONDER) ---
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
+      onPanResponderGrant: () => {
+        gestureStartY.current = lastY.current;
+        translateY.setOffset(lastY.current);
+        translateY.setValue(0);
+      },
       onPanResponderMove: (e, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(MAX_UP + gestureState.dy);
+        const newY = gestureStartY.current + gestureState.dy;
+        if (newY < -180) {
+          translateY.setValue(-180 - gestureStartY.current);
+        } else {
+          translateY.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (e, gestureState) => {
-        if (gestureState.dy > 150) {
+        translateY.flattenOffset();
+        const finalY = gestureStartY.current + gestureState.dy;
+
+        // Swipe down fast, or pulled down significantly
+        if (gestureState.vy > 0.2 || gestureState.dy > 40 || finalY > 100) {
           closeSheet();
-        } else {
+        } 
+        // Swipe up fast, or pulled up significantly
+        else if (gestureState.vy < -0.5 || gestureState.dy < -40 || finalY < -50) {
+          Animated.spring(translateY, {
+            toValue: -180,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }).start();
+        } 
+        // Snap back to default open state
+        else {
           openSheet();
         }
       },
@@ -265,20 +297,18 @@ export default function AuthTransition() {
           { transform: [{ translateY: translateY }] }
         ]}
       >
-        <View {...panResponder.panHandlers} style={styles.dragHandler}>
-          <View style={styles.closeIndicator} />
-        </View>
-        
         <View style={{ flex: 1 }}>
             {activeForm === 'login' ? (
               <LogIn 
                 onSwitch={() => setActiveForm('signup')} 
                 onSuccess={handleLoginSuccess} 
+                panHandlers={panResponder.panHandlers}
               />
             ) : (
               <SignUp 
                 onSwitch={() => setActiveForm('login')} 
                 onSuccess={handleLoginSuccess} 
+                panHandlers={panResponder.panHandlers}
               />
             )}
         </View>

@@ -58,29 +58,11 @@ export const styles = StyleSheet.create({
   // --- ETO YUNG SHEET NA AANGAT ---
   animatedOverlay: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     width: width,
-    height: height,
-    backgroundColor: '#FFFDE7', // <--- GINAWANG CREAM (Background ng mismong slider)
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    elevation: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    height: height + 300, // Taller to prevent bottom gap when dragged up
+    backgroundColor: 'transparent', // Transparent to let the white topHalf blend
   },
-  dragHandler: {
-    width: '100%',
-    paddingVertical: 20,
-    alignItems: 'center',
-    backgroundColor: '#FFFDE7', // <--- GINAWANG CREAM (Match na sa LogIn content)
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-  },
-  closeIndicator: {
-    width: 60,
-    height: 6,
-    backgroundColor: '#D0D0D0', // Ginawang medyo darker gray para kita sa cream
-    borderRadius: 3,
-  }
+
 });

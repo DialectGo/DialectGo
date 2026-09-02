@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  
+
   ScrollView,
   Text,
   TextInput,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { styles } from '../../src/features/auth/styles/LoginStyles';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 import { endpoints } from '../../src/shared/api/client';
 import { supabase } from '../../src/shared/api/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,13 +26,14 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../../src/shared/context/ProfileContext';
 import { useToast } from '../../src/shared/context/ToastContext';
 import TermsAndAgreementModal from '../../src/features/auth/components/TermsAndAgreementModal';
+import AnimatedJeep from '../../src/features/auth/components/AnimatedJeep';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = endpoints.USER_REGISTER;
 
-export default function SignUp({ onSwitch, onSuccess }) {
-  const router = useRouter(); 
+export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
+  const router = useRouter();
   const { refreshProfile } = useProfileContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -41,7 +42,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  
+
   // Address States
   const [country, setCountry] = useState('Philippines'); // Default value
   const [province, setProvince] = useState('');
@@ -100,7 +101,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
           province,
           city,
           // addressLine: `${city}, ${province}, ${country}`,
-          username: deriveUsername(email), 
+          username: deriveUsername(email),
           preferredLanguageCode: 'en'
         }),
       });
@@ -136,7 +137,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-        
+
         if (result.type === 'success' && result.url) {
           console.log("Supabase WebBrowser Google Login success!");
 
@@ -158,7 +159,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
               console.log("Successfully set Supabase OAuth session!");
             }
           }
-          
+
           await AsyncStorage.removeItem('@guest_mode');
           await AsyncStorage.setItem('@user_role', 'authenticated');
 
@@ -179,7 +180,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TermsAndAgreementModal 
+      <TermsAndAgreementModal
         visible={showTerms}
         onClose={() => setShowTerms(false)}
         isAccepted={termsAccepted}
@@ -197,9 +198,9 @@ export default function SignUp({ onSwitch, onSuccess }) {
             <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
               Malipayong pag-abot! Palihug pag-log in gamit ang imong bag-ong credentials.
             </Text>
-            
-            <TouchableOpacity 
-              style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]} 
+
+            <TouchableOpacity
+              style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]}
               onPress={() => {
                 setIsSuccess(false);
                 onSwitch(); // Switches the form inside the sheet to Login
@@ -212,20 +213,38 @@ export default function SignUp({ onSwitch, onSuccess }) {
         </View>
       </Modal>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.loginCard}>
-            <Text style={styles.cardLabel}>CREATE YOUR ACCOUNT</Text>
+        {/* --- HEADER SECTION --- */}
+        <View style={styles.topHalf}>
+          <Text style={styles.welcomeTextBold}>Maayong pag-abot!</Text>
+          <Text style={styles.welcomeSubtitle}>Learn More. Speak Better. Connect Easier</Text>
+
+          <AnimatedJeep />
+        </View>
+
+        {/* --- YELLOW BUBBLE CARD --- */}
+        <View style={[styles.loginCard, { paddingBottom: 0, paddingHorizontal: 0 }]}>
+          {panHandlers && (
+            <View {...panHandlers} style={styles.dragHandler}>
+              <View style={styles.closeIndicator} />
+            </View>
+          )}
+
+          <ScrollView
+            contentContainerStyle={[styles.scrollContainer, { paddingBottom: 250, paddingHorizontal: 25 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.cardLabel}>SIGN UP</Text>
 
             {/* Name Row */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>First Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" value={firstName} onChangeText={(t) => { setFirstName(t); if(errors.firstName) setErrors({...errors, firstName: null}); }} />
+                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" value={firstName} onChangeText={(t) => { setFirstName(t); if (errors.firstName) setErrors({ ...errors, firstName: null }); }} />
                 {errors.firstName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.firstName}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Last Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" value={lastName} onChangeText={(t) => { setLastName(t); if(errors.lastName) setErrors({...errors, lastName: null}); }} />
+                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" value={lastName} onChangeText={(t) => { setLastName(t); if (errors.lastName) setErrors({ ...errors, lastName: null }); }} />
                 {errors.lastName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.lastName}</Text>}
               </View>
             </View>
@@ -233,8 +252,8 @@ export default function SignUp({ onSwitch, onSuccess }) {
             {/* Birthdate */}
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Birthdate</Text>
-              <TouchableOpacity 
-                style={[styles.bubbleInput, { justifyContent: 'center' }, errors.birthDate ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
+              <TouchableOpacity
+                style={[styles.bubbleInput, { justifyContent: 'center' }, errors.birthDate ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Text style={{ color: dateSelected ? '#000' : '#999' }}>
@@ -256,7 +275,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
             {/* Country */}
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Country</Text>
-              <TextInput style={[styles.bubbleInput, errors.country ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Country" value={country} onChangeText={(t) => { setCountry(t); if(errors.country) setErrors({...errors, country: null}); }} />
+              <TextInput style={[styles.bubbleInput, errors.country ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Country" value={country} onChangeText={(t) => { setCountry(t); if (errors.country) setErrors({ ...errors, country: null }); }} />
               {errors.country && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.country}</Text>}
             </View>
 
@@ -264,31 +283,31 @@ export default function SignUp({ onSwitch, onSuccess }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Province</Text>
-                <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" value={province} onChangeText={(t) => { setProvince(t); if(errors.province) setErrors({...errors, province: null}); }} />
+                <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" value={province} onChangeText={(t) => { setProvince(t); if (errors.province) setErrors({ ...errors, province: null }); }} />
                 {errors.province && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.province}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>City</Text>
-                <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" value={city} onChangeText={(t) => { setCity(t); if(errors.city) setErrors({...errors, city: null}); }} />
+                <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" value={city} onChangeText={(t) => { setCity(t); if (errors.city) setErrors({ ...errors, city: null }); }} />
                 {errors.city && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.city}</Text>}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Email</Text>
-              <TextInput style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={(t) => { setEmail(t); if(errors.email) setErrors({...errors, email: null}); }} />
+              <TextInput style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }} />
               {errors.email && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Password</Text>
               <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
-                <TextInput 
-                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }} 
-                  placeholder="••••••••" 
-                  secureTextEntry={secureTextEntry} 
-                  value={password} 
-                  onChangeText={(t) => { setPassword(t); if(errors.password) setErrors({...errors, password: null}); }} 
+                <TextInput
+                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  placeholder="••••••••"
+                  secureTextEntry={secureTextEntry}
+                  value={password}
+                  onChangeText={(t) => { setPassword(t); if (errors.password) setErrors({ ...errors, password: null }); }}
                 />
                 <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
                   <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
@@ -302,13 +321,13 @@ export default function SignUp({ onSwitch, onSuccess }) {
               <TouchableOpacity onPress={() => setShowTerms(true)}>
                 <Text style={{ fontFamily: 'Poppins-Bold', fontSize: 11, color: '#6B7280', textDecorationLine: 'underline', marginRight: 8 }}>Terms and Agreement?</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={{
-                  width: 18, 
-                  height: 18, 
-                  backgroundColor: termsAccepted ? '#FFC107' : '#FFD54D', 
-                  borderRadius: 4, 
-                  justifyContent: 'center', 
+                  width: 18,
+                  height: 18,
+                  backgroundColor: termsAccepted ? '#FFC107' : '#FFD54D',
+                  borderRadius: 4,
+                  justifyContent: 'center',
                   alignItems: 'center'
                 }}
                 onPress={() => setTermsAccepted(!termsAccepted)}
@@ -336,18 +355,18 @@ export default function SignUp({ onSwitch, onSuccess }) {
               <Text style={styles.soonText}>More sign-up options coming soon...</Text>
             </View>
 
-            <View style={[styles.footer, { marginTop: 20 }]}>
+            <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity 
-                  onPress={() => {
-                    // Directs the user to app/auth/Register.jsx
-                    router.push('../login'); 
-                  }}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (onSwitch) onSwitch();
+                  else router.push('../login');
+                }}>
                 <Text style={styles.footerLink}>Log In</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
