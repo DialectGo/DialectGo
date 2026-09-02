@@ -2,3 +2,8 @@ android/local.properties
 android/.gradle/
 android/build/
 android/app/build/
+node_modules/
+.expo/
+dist/
+android/
+ios/

@@ -12,11 +12,6 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.1.77:5001",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://egalempypegfsegmomud.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Q-n8s648TscunnWlP0Sefg_8ebPONMt"
       }
     },
     "production": {

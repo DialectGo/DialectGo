@@ -358,7 +358,10 @@ export const translateDocument = async ({
     body: formData,
   });
 
-  if (!response.ok) throw new Error('Document translation failed');
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.message || 'Document translation failed');
+  }
   return response.json();
 };
 
