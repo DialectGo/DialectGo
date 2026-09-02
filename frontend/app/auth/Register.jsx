@@ -25,6 +25,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../../src/shared/context/ProfileContext';
 import { useToast } from '../../src/shared/context/ToastContext';
+import TermsAndAgreementModal from '../../src/features/auth/components/TermsAndAgreementModal';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -38,6 +39,8 @@ export default function SignUp({ onSwitch, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [showTerms, setShowTerms] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   // Address States
   const [country, setCountry] = useState('Philippines'); // Default value
@@ -72,6 +75,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
     if (!city) newErrors.city = "City is required";
     if (!email) newErrors.email = "Email is required";
     if (!password) newErrors.password = "Password is required";
+    if (!termsAccepted) newErrors.terms = "You must agree to the Terms and Agreement";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -175,6 +179,13 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TermsAndAgreementModal 
+        visible={showTerms}
+        onClose={() => setShowTerms(false)}
+        isAccepted={termsAccepted}
+        onAccept={() => setTermsAccepted(true)}
+      />
+
       {/* --- SUCCESS MODAL --- */}
       <Modal visible={isSuccess} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -286,7 +297,28 @@ export default function SignUp({ onSwitch, onSuccess }) {
               {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
             </View>
 
-            <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 20 }]} onPress={handleRegister} disabled={loading}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20, paddingHorizontal: 5 }}>
+              <Text style={{ fontFamily: 'Poppins-Bold', fontSize: 11, color: '#6B7280', marginRight: 4 }}>Do you agree on</Text>
+              <TouchableOpacity onPress={() => setShowTerms(true)}>
+                <Text style={{ fontFamily: 'Poppins-Bold', fontSize: 11, color: '#6B7280', textDecorationLine: 'underline', marginRight: 8 }}>Terms and Agreement?</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={{
+                  width: 18, 
+                  height: 18, 
+                  backgroundColor: termsAccepted ? '#FFC107' : '#FFD54D', 
+                  borderRadius: 4, 
+                  justifyContent: 'center', 
+                  alignItems: 'center'
+                }}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+              >
+                {termsAccepted && <FontAwesome5 name="check" size={10} color="#421C00" />}
+              </TouchableOpacity>
+            </View>
+            {errors.terms && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 5, fontWeight: 'bold' }}>{errors.terms}</Text>}
+
+            <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 10 }]} onPress={handleRegister} disabled={loading}>
               {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>SIGN UP</Text>}
             </TouchableOpacity>
 
