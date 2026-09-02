@@ -313,7 +313,7 @@ export default function ResultDictionaryScreen() {
           ) : (
             <>
               <Image
-                source={require('../../../assets/icons/status/star.png')}
+                source={require('../../../assets/icons/nav/save_word_icon.png')}
                 style={[
                   styles.starIcon,
                   isBookmarked && styles.savedStarIcon,

@@ -50,7 +50,7 @@ export default function DictionarySaveWordsCard({
         </View>
         <View style={styles.rightSection}>
           <Text style={styles.posTag}>{entry.part_of_speech?.toUpperCase() || 'WORD'}</Text>
-          <Image source={require('../../../../assets/icons/status/star.png')} style={styles.starIcon} />
+          <Image source={require('../../../../assets/icons/nav/save_word_icon.png')} style={styles.starIcon} />
         </View>
       </TouchableOpacity>
     </View>
