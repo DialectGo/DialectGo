@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   View, 
   StyleSheet, 
-  Alert, 
   KeyboardAvoidingView, 
   Platform, 
   TouchableWithoutFeedback, 
@@ -18,6 +17,7 @@ import CustomButton from '../../src/shared/components/CustomButton';
 import { useLocalSearchParams } from 'expo-router';
 import { PASSWORD_RESET_REDIRECT_URL } from '../../src/shared/api/client';
 import forgotPassImg from '../../assets/beelogo/forgot_pass_screen.png';
+import { useToast } from '../../src/shared/context/ToastContext';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -25,6 +25,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState(initialEmail || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { showToast } = useToast();
 
   const handleSendCode = async () => {
     if (!email) {
@@ -54,7 +55,7 @@ export default function ForgotPassword() {
       }
     } catch (err) {
       console.error("Forgot Password Error:", err);
-      setError("An unexpected error occurred.");
+      showToast("An unexpected error occurred.", 'error', 'Error');
     } finally {
       setLoading(false);
     }

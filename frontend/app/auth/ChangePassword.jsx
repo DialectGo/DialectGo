@@ -16,6 +16,7 @@ import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
 import ConfirmOverlay from '../../src/shared/components/ConfirmOverlay';
 import newPassImg from '../../assets/beelogo/new_pass_screen.png';
+import { useToast } from '../../src/shared/context/ToastContext';
 
 export default function ChangePassword() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const { showToast } = useToast();
 
   const handleChangePassword = async () => {
     setError('');
@@ -46,7 +48,7 @@ export default function ChangePassword() {
     setLoading(false);
 
     if (sbError) {
-      setError(sbError.message);
+      showToast(sbError.message, 'error', 'Error');
     } else {
       setShowSuccessModal(true);
     }

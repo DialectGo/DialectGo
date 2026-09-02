@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +22,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../src/shared/context/ProfileContext';
+import { useToast } from '../src/shared/context/ToastContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -35,14 +35,21 @@ export default function LogIn({ onSwitch, onSuccess }) {
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const { showToast } = useToast();
 
   // --- LOGIN LOGIC ---
   const handleLogin = async (email, password) => {
-    if (!email || !password) {
-      Alert.alert("Error", "Palihug isulod ang imong email ug password.");
+    let newErrors = {};
+    if (!email) newErrors.email = "Email is required";
+    if (!password) newErrors.password = "Password is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setLoading(true);
     try {
         const response = await axios.post(LOGIN_URL, {
@@ -79,7 +86,14 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
       } catch (error) {
         console.error("Login Error:", error);
-        Alert.alert("Error", error.response?.data?.message || error.message || 'Login failed');
+        const errorMsg = error.response?.data?.message || error.message || 'Login failed';
+        
+        // Inline auth error handling
+        if (errorMsg.toLowerCase().includes('credential') || errorMsg.toLowerCase().includes('password') || errorMsg.toLowerCase().includes('email')) {
+          setErrors({ email: ' ', password: errorMsg });
+        } else {
+          showToast(errorMsg, 'error', 'Login Failed');
+        }
       } finally {
         setLoading(false); 
       }
@@ -144,7 +158,7 @@ export default function LogIn({ onSwitch, onSuccess }) {
 
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      Alert.alert("Google Sign-In Error", error.message || 'Authentication failed');
+      showToast(error.message || 'Authentication failed', 'error', 'Google Sign-In Error');
     } finally {
       setLoading(false);
     }
@@ -183,31 +197,39 @@ export default function LogIn({ onSwitch, onSuccess }) {
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Email</Text>
               <TextInput 
-                style={styles.bubbleInput} 
+                style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
                 placeholder="Enter your email" 
                 placeholderTextColor="#BDBDBD" 
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) setErrors({ ...errors, email: null });
+                }}
               />
+              {errors.email && errors.email !== ' ' && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Password</Text>
-              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }]}>
+              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput 
                   style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }} 
                   placeholder="••••••••" 
                   placeholderTextColor="#BDBDBD" 
                   secureTextEntry={secureTextEntry}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) setErrors({ ...errors, password: null, email: null });
+                  }}
                 />
                 <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
                   <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
+              {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
             </View>
 
             <TouchableOpacity style={styles.forgotBtn}

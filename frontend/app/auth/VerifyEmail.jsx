@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
+  TouchableOpacity,
   KeyboardAvoidingView, 
   Platform, 
   TouchableWithoutFeedback, 
@@ -18,6 +17,7 @@ import AuthLayout from './AuthLayout';
 import CustomButton from '../../src/shared/components/CustomButton';
 import { maskEmail } from '../../src/shared/utils/stringUtils';
 import verifyEmailImg from '../../assets/beelogo/verify_email_screen.png';
+import { useToast } from '../../src/shared/context/ToastContext';
 
 // Supabase standard OTP can be up to 8 digits
 const OTP_LENGTH = 8; 
@@ -31,6 +31,7 @@ export default function VerifyEmail() {
   const [countdown, setCountdown] = useState(120); 
   
   const inputRef = useRef(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (countdown > 0) {
@@ -75,10 +76,10 @@ export default function VerifyEmail() {
     setLoading(false);
 
     if (resendError) {
-      Alert.alert("Error", resendError.message);
+      showToast(resendError.message, 'error', 'Error');
     } else {
       setCountdown(120);
-      Alert.alert("Success", "A new code has been sent to your email.");
+      showToast("A new code has been sent to your email.", 'success', 'Success');
     }
   };
 
