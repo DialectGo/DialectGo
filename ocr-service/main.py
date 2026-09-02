@@ -62,7 +62,7 @@ os.environ["FLAGS_enable_pir_api"] = "0"
 
 logger.info("Initializing PaddleOCR model (this may take a moment on first run)...")
 # PaddleOCR 3.x API: use_textline_orientation replaces use_angle_cls
-ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en")
+ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en", enable_mkldnn=False)
 logger.info("PaddleOCR ready.")
 
 
