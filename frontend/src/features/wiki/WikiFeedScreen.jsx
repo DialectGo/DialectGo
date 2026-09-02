@@ -6,6 +6,7 @@ import { useRouter, Stack } from 'expo-router';
 
 import TopBar from '../../components/TopBar';
 import BottomNav from '../../components/BottomNav';
+import { colors } from '../../shared/theme/colorPalette';
 import SubmitTermModal from '../../shared/components/wiki/SubmitTermModal';
 import GlobalWikiAssistantModal from '../../shared/components/wiki/GlobalWikiAssistantModal';
 
@@ -119,7 +120,11 @@ export default function WikiFeedScreen() {
           activeOpacity={0.85}
           onPress={() => setShowAiModal(true)}
         >
-          <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+          <Image
+            source={require('../../../assets/icons/wiki/wiki_ai_chatbot_icon.png')}
+            style={styles.aiFabIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -128,7 +133,7 @@ export default function WikiFeedScreen() {
           onPress={() => setShowSubmitModal(true)}
         >
           <Image
-            source={require('../../../assets/icons/actions/add_icon.png')}
+            source={require('../../../assets/icons/wiki/contribute_icon.png')}
             style={styles.fabIcon}
             resizeMode="contain"
           />
@@ -211,8 +216,9 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 30 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginTop: 14 },
   emptySubtitle: { fontSize: 13, color: '#9CA3AF', marginTop: 5, textAlign: 'center' },
-  fabContainer: { position: 'absolute', bottom: 100, right: 20, gap: 12, alignItems: 'center' },
-  fab: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#ffe7ab', justifyContent: 'center', alignItems: 'center', shadowColor: '#B7791F', shadowOpacity: 0.25, shadowOffset: { width: 0, height: 4 }, shadowRadius: 9, elevation: 6 },
-  aiFab: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#7C3AED', shadowColor: '#7C3AED' },
-  fabIcon: { width: 27, height: 27, resizeMode: 'contain' },
+  fabContainer: { position: 'absolute', bottom: 120, right: 20, gap: 12, alignItems: 'center' },
+  fab: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.surfaceLight, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
+  aiFab: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
+  fabIcon: { width: 28, height: 28, resizeMode: 'contain' },
+  aiFabIcon: { width: 42, height: 42, resizeMode: 'contain' },
 });
