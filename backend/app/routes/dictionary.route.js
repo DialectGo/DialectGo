@@ -1,10 +1,10 @@
 import express from 'express';
-import { 
+import {
     getWordDefinition,
     getBrowseWords,
-    saveWord, 
+    saveWord,
     checkSavedStatus,
-    getSavedWords ,
+    getSavedWords,
     deleteSelectedWords,
     getSearchHistory,
     deleteSelectedHistory,

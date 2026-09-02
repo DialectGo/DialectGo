@@ -26,16 +26,19 @@ export function useOfflineSearch(searchQuery, isGuestMode) {
     part_of_speech: item.part_of_speech,
     example_usage: item.examples?.[0]?.cebuano || '',
     phonetic_transcription: item.pronunciation?.cebuano || '',
+    language_id: 3, // Cebuano
     translations: [
       {
         target_entry: {
           word_term: item.tagalog,
+          language_id: 2, // Tagalog
           example_usage: item.examples?.[0]?.tagalog || '',
         },
       },
       {
         target_entry: {
           word_term: item.english,
+          language_id: 1, // English
           example_usage: item.examples?.[0]?.english || '',
         },
       },

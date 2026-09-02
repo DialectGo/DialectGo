@@ -29,13 +29,17 @@ export default function ResultDictionaryScreen() {
     languageId,
     exampleUsage,
     phoneticTranscription,
-    translation1,
-    translation2,
-    usage1,
-    usage2,
-    translationDef1,
-    translationDef2,
+    translationsStr,
   } = params;
+
+  let translations = [];
+  try {
+    if (translationsStr) {
+      translations = JSON.parse(translationsStr);
+    }
+  } catch (e) {
+    console.error("Failed to parse translationsStr", e);
+  }
 
   const [refreshing, setRefreshing] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
@@ -71,14 +75,13 @@ export default function ResultDictionaryScreen() {
     cebuanoDef,
     tagalogTerm,
     tagalogDef,
+    englishTerm,
+    englishDef,
   } = formatDictionaryTerms({
     languageId,
     wordTerm,
     definition,
-    translation1,
-    translation2,
-    translationDef1,
-    translationDef2,
+    translations,
   });
 
   // --------------------------------------------------
@@ -182,7 +185,7 @@ export default function ResultDictionaryScreen() {
           <View
             style={[
               styles.languageCard,
-              currentLangId !== 3 && styles.currentLanguageCard,
+              currentLangId === 2 && styles.currentLanguageCard,
             ]}
           >
             <View style={styles.languageHeaderRow}>
@@ -190,7 +193,7 @@ export default function ResultDictionaryScreen() {
                 TAGALOG
               </Text>
 
-              {currentLangId !== 3 && (
+              {currentLangId === 2 && (
                 <View style={styles.currentBadge}>
                   <Text style={styles.currentBadgeText}>
                     CURRENT
@@ -209,21 +212,32 @@ export default function ResultDictionaryScreen() {
           </View>
 
           {/* ENGLISH */}
-          <View style={styles.languageCard}>
+          <View
+            style={[
+              styles.languageCard,
+              currentLangId === 1 && styles.currentLanguageCard,
+            ]}
+          >
             <View style={styles.languageHeaderRow}>
               <Text style={styles.languageLabel}>
                 ENGLISH
               </Text>
+
+              {currentLangId === 1 && (
+                <View style={styles.currentBadge}>
+                  <Text style={styles.currentBadgeText}>
+                    CURRENT
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text style={styles.languageTerm}>
-              {wordTerm}
+              {englishTerm}
             </Text>
 
             <Text style={styles.languageDefinition}>
-              {currentLangId === 3
-                ? translationDef1 || 'No English translation available.'
-                : translationDef2 || 'No English translation available.'}
+              {englishDef}
             </Text>
           </View>
         </View>
@@ -248,29 +262,21 @@ export default function ResultDictionaryScreen() {
               </Text>
             </View>
 
-            {translation1 ? (
-              <View style={styles.exampleItem}>
-                <Text style={styles.exampleLanguage}>
-                  {translation1}
-                </Text>
-
-                <Text style={styles.exampleText}>
-                  {usage1 || 'No example available.'}
-                </Text>
-              </View>
-            ) : null}
-
-            {translation2 ? (
-              <View style={styles.exampleItem}>
-                <Text style={styles.exampleLanguage}>
-                  {translation2}
-                </Text>
-
-                <Text style={styles.exampleText}>
-                  {usage2 || 'No example available.'}
-                </Text>
-              </View>
-            ) : null}
+            {translations.map((t, index) => {
+              const target = t?.target_entry;
+              if (!target) return null;
+              
+              return (
+                <View style={styles.exampleItem} key={index}>
+                  <Text style={styles.exampleLanguage}>
+                    {target.word_term}
+                  </Text>
+                  <Text style={styles.exampleText}>
+                    {target.example_usage || 'No example available.'}
+                  </Text>
+                </View>
+              );
+            })}
 
           </View>
         </View>
