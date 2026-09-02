@@ -85,13 +85,13 @@ const TopBar = ({
                   style={styles.iconCircle}
                   onPress={onHistoryPress}
                 >
-                  <Image source={require('../../assets/images/history.png')} style={styles.historyIcon} />
+                  <Image source={require('../../assets/icons/nav/search_history_icon.png')} style={styles.historyIcon} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.iconCircle}
                   onPress={onSaveWordsPress}
                 >
-                  <Image source={require('../../assets/images/star.png')} style={styles.starIcon} />
+                  <Image source={require('../../assets/icons/nav/save_word_icon.png')} style={styles.starIcon} />
                 </TouchableOpacity>
               </>
             ) : screenType === 'translator' ? (
@@ -100,7 +100,7 @@ const TopBar = ({
                   style={styles.iconCircle}
                   onPress={onHistoryPress}
                 >
-                  <Image source={require('../../assets/images/history.png')} style={styles.topIcon} />
+                  <Image source={require('../../assets/icons/nav/search_history_icon.png')} style={styles.topIcon} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -120,7 +120,7 @@ const TopBar = ({
                   }}
                 >
                   <Image
-                    source={require('../../assets/icons/nav/notif_icon.png')}
+                    source={require('../../assets/icons/nav/notification_icon.png')}
                     style={styles.notificationIcon}
                     resizeMode="contain"
                   />

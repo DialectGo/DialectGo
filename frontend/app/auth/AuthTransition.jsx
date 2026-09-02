@@ -7,14 +7,14 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Alert
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../src/shared/api/client';
 import { styles } from '../../src/features/auth/styles/AuthTransitionStyles';
+import { useToast } from '../../src/shared/context/ToastContext';
 
 // FIXED IMPORTS: 
 // 1. '../login' dahil nasa app/login.jsx (lowercase 'l')
@@ -31,6 +31,7 @@ export default function AuthTransition() {
   const translateY = useRef(new Animated.Value(height)).current; 
   const [activeForm, setActiveForm] = useState('login'); 
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const { showToast } = useToast();
 
   // --- ANIMATION LOGIC (PAN RESPONDER) ---
   const panResponder = useRef(
@@ -212,11 +213,7 @@ export default function AuthTransition() {
 
       console.error("Guest Mode Error:", error);
 
-      Alert.alert(
-        "Guest Mode Error",
-        error.message || "Unable to initialize guest session."
-      );
-
+      showToast(error.message || "Unable to initialize guest session.", 'error', 'Guest Mode Error');
     } finally {
       setIsGuestLoading(false);
     }

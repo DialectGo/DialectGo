@@ -39,8 +39,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuIcon: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     marginRight: 20,
     resizeMode: 'contain',
   },
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   logoutIcon: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
     marginRight: 20,
     resizeMode: 'contain',
   },

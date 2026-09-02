@@ -99,7 +99,7 @@ export default function ProfileScreen({ onNavigate }) {
 
         <View style={styles.settingsContainer}>
           <ProfileMenuItem 
-            iconSource={require('../../../assets/icons/profile/profileIcon.png')}
+            iconSource={require('../../../assets/icons/profile/account_information_icon.png')}
             text="Account Information"
             onPress={() => handleProtectedAction('/Account/AccountInformation')}
           />
@@ -109,7 +109,7 @@ export default function ProfileScreen({ onNavigate }) {
             onPress={() => handleProtectedAction('/Account/Activities')}
           />
           <ProfileMenuItem 
-            iconSource={require('../../../assets/images/beefire.png')}
+            iconSource={require('../../../assets/icons/profile/streak_icon.png')}
             text="Streaks"
             onPress={() => handleProtectedAction('/Account/Streaks')}
           />
@@ -119,7 +119,7 @@ export default function ProfileScreen({ onNavigate }) {
             onPress={() => router.push('/Account/Settings')}
           />
           <ProfileMenuItem 
-            iconSource={require('../../../assets/icons/profile/info_icon.png')}
+            iconSource={require('../../../assets/icons/profile/about_dialectgo_icon.png')}
             text="About DialectGo"
             onPress={() => router.push('/Account/About')}
           />

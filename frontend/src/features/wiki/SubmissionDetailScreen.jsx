@@ -174,8 +174,11 @@ export default function SubmissionDetailScreen({ id }) {
           activeOpacity={0.85}
           onPress={() => setShowAssistant(true)}
         >
-          <Ionicons name="sparkles" size={22} color="#1F2937" />
-          <Text style={styles.aiFabText}>Ask AI</Text>
+          <Image
+            source={require('../../../assets/icons/wiki/wiki_ai_chatbot_icon.png')}
+            style={styles.aiFabIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       )}
 
@@ -301,6 +304,6 @@ const styles = StyleSheet.create({
   commentInputFb: { flex: 1, fontSize: 15, color: '#1F2937', paddingTop: 10, paddingBottom: 10, paddingRight: 8 },
   commentSendBtnFb: { paddingLeft: 8, paddingVertical: 8 },
 
-  aiFab: { position: 'absolute', right: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FBBF24', paddingHorizontal: 18, paddingVertical: 14, borderRadius: 28, gap: 8, shadowColor: '#FBBF24', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 6 },
-  aiFabText: { fontSize: 14, fontWeight: '800', color: '#1F2937' },
+  aiFab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
+  aiFabIcon: { width: 42, height: 42, resizeMode: 'contain' },
 });

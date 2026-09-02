@@ -2,7 +2,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -25,6 +24,7 @@ import { formatBirthDate } from '../../src/shared/utils/dateUtils';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../../src/shared/context/ProfileContext';
+import { useToast } from '../../src/shared/context/ToastContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -51,6 +51,8 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
+  const { showToast } = useToast();
 
   const onChangeDate = (event, selectedDate) => {
     setShowDatePicker(false);
@@ -61,11 +63,23 @@ export default function SignUp({ onSwitch, onSuccess }) {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !firstName || !lastName || !dateSelected || !province || !city) {
-      Alert.alert("Error", "Palihug kumpletoha ang tanang fields.");
+    let newErrors = {};
+    if (!firstName) newErrors.firstName = "First name is required";
+    if (!lastName) newErrors.lastName = "Last name is required";
+    if (!dateSelected) newErrors.birthDate = "Birthdate is required";
+    if (!country) newErrors.country = "Country is required";
+    if (!province) newErrors.province = "Province is required";
+    if (!city) newErrors.city = "City is required";
+    if (!email) newErrors.email = "Email is required";
+    if (!password) newErrors.password = "Password is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showToast("Palihug kumpletoha ang tanang fields.", "error", "Error");
       return;
     }
 
+    setErrors({});
     setLoading(true);
 
     try {
@@ -95,7 +109,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
         throw new Error(result.message || "Registration failed");
       }
     } catch (error) {
-      Alert.alert("Sign Up Error", error.message);
+      showToast(error.message, 'error', 'Sign Up Error');
     } finally {
       setLoading(false);
     }
@@ -153,7 +167,7 @@ export default function SignUp({ onSwitch, onSuccess }) {
 
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      Alert.alert("Google Sign-In Error", error.message || 'Authentication failed');
+      showToast(error.message || 'Authentication failed', 'error', 'Google Sign-In Error');
     } finally {
       setLoading(false);
     }
@@ -195,11 +209,13 @@ export default function SignUp({ onSwitch, onSuccess }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>First Name</Text>
-                <TextInput style={styles.bubbleInput} placeholder="First" value={firstName} onChangeText={setFirstName} />
+                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" value={firstName} onChangeText={(t) => { setFirstName(t); if(errors.firstName) setErrors({...errors, firstName: null}); }} />
+                {errors.firstName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.firstName}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Last Name</Text>
-                <TextInput style={styles.bubbleInput} placeholder="Last" value={lastName} onChangeText={setLastName} />
+                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" value={lastName} onChangeText={(t) => { setLastName(t); if(errors.lastName) setErrors({...errors, lastName: null}); }} />
+                {errors.lastName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.lastName}</Text>}
               </View>
             </View>
 
@@ -207,13 +223,14 @@ export default function SignUp({ onSwitch, onSuccess }) {
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Birthdate</Text>
               <TouchableOpacity 
-                style={[styles.bubbleInput, { justifyContent: 'center' }]} 
+                style={[styles.bubbleInput, { justifyContent: 'center' }, errors.birthDate ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
                 onPress={() => setShowDatePicker(true)}
               >
                 <Text style={{ color: dateSelected ? '#000' : '#999' }}>
                   {dateSelected ? birthDate.toDateString() : "Select Birthdate"}
                 </Text>
               </TouchableOpacity>
+              {errors.birthDate && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.birthDate}</Text>}
               {showDatePicker && (
                 <DateTimePicker
                   value={birthDate}
@@ -228,40 +245,45 @@ export default function SignUp({ onSwitch, onSuccess }) {
             {/* Country */}
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Country</Text>
-              <TextInput style={styles.bubbleInput} placeholder="Country" value={country} onChangeText={setCountry} />
+              <TextInput style={[styles.bubbleInput, errors.country ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Country" value={country} onChangeText={(t) => { setCountry(t); if(errors.country) setErrors({...errors, country: null}); }} />
+              {errors.country && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.country}</Text>}
             </View>
 
             {/* Province & City Row */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Province</Text>
-                <TextInput style={styles.bubbleInput} placeholder="Province" value={province} onChangeText={setProvince} />
+                <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" value={province} onChangeText={(t) => { setProvince(t); if(errors.province) setErrors({...errors, province: null}); }} />
+                {errors.province && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.province}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>City</Text>
-                <TextInput style={styles.bubbleInput} placeholder="City" value={city} onChangeText={setCity} />
+                <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" value={city} onChangeText={(t) => { setCity(t); if(errors.city) setErrors({...errors, city: null}); }} />
+                {errors.city && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.city}</Text>}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Email</Text>
-              <TextInput style={styles.bubbleInput} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+              <TextInput style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={(t) => { setEmail(t); if(errors.email) setErrors({...errors, email: null}); }} />
+              {errors.email && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Password</Text>
-              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }]}>
+              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput 
                   style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }} 
                   placeholder="••••••••" 
                   secureTextEntry={secureTextEntry} 
                   value={password} 
-                  onChangeText={setPassword} 
+                  onChangeText={(t) => { setPassword(t); if(errors.password) setErrors({...errors, password: null}); }} 
                 />
                 <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
                   <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
+              {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
             </View>
 
             <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 20 }]} onPress={handleRegister} disabled={loading}>

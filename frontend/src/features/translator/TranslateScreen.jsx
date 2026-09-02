@@ -79,8 +79,27 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
           <LanguageSelector
             sourceLang={sourceLang} targetLang={targetLang}
             onSwap={() => {
-              const temp = sourceLang; setSourceLang(targetLang); setTargetLang(temp);
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              const tempLang = sourceLang; 
+              setSourceLang(targetLang); 
+              setTargetLang(tempLang);
               setTargetDialect(null);
+
+              if (inputText && translation) {
+                skipDebounceRef.current = true;
+                const prevInput = inputText;
+                
+                // Helper to convert string to Title Case
+                const toTitleCase = (str) => {
+                  return str.replace(
+                    /\w\S*/g,
+                    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                  );
+                };
+
+                setInputText(translation);
+                setTranslation(toTitleCase(prevInput));
+              }
             }}
             onSelectSource={() => { setSelectingFor('source'); setModalVisible(true); }}
             onSelectTarget={() => { setSelectingFor('target'); setModalVisible(true); }}
