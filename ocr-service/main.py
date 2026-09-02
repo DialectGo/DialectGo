@@ -2,17 +2,26 @@
 DialectGo PaddleOCR Microservice
 ---------------------------------
 A lightweight FastAPI service that wraps PaddleOCR to provide high-accuracy
-text extraction from images. Replaces the previous Tesseract.js integration.
+text extraction from images.
 
 Run with:
     python main.py
+
 Or with uvicorn directly:
-    uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    uvicorn main:app --host 0.0.0.0 --port 8001
 """
 
 import base64
 import io
 import logging
+import os
+
+# ---------------------------------------------------------------------------
+# Disable PaddlePaddle CPU optimizations that can cause oneDNN/PIR runtime
+# errors in some PaddlePaddle/PaddleOCR version combinations.
+# ---------------------------------------------------------------------------
+os.environ["FLAGS_use_mkldnn"] = "0"
+os.environ["FLAGS_enable_pir_api"] = "0"
 
 import cv2
 import numpy as np
@@ -22,28 +31,38 @@ from paddleocr import PaddleOCR
 from PIL import Image
 from pydantic import BaseModel
 
+# Optional HEIC/HEIF support
 try:
     import pillow_heif
+
     pillow_heif.register_heif_opener()
 except ImportError:
     pass
 
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dialectgo-ocr")
+
 
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
+
 app = FastAPI(
     title="DialectGo PaddleOCR Microservice",
     description="Extracts text from images using PaddleOCR deep-learning pipeline.",
     version="1.0.0",
 )
 
-# Allow calls from the Node.js backend (localhost) during development.
+
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,235 +70,625 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# PaddleOCR initialization (loaded once at startup for performance)
-# ---------------------------------------------------------------------------
-# use_angle_cls=True  – handles rotated / skewed text from mobile photos
-# lang='en'          – optimized for English; swap to 'ch' for Chinese, etc.
-import os
-os.environ["FLAGS_use_mkldnn"] = "0"
-os.environ["FLAGS_enable_pir_api"] = "0"
-
-logger.info("Initializing PaddleOCR model (this may take a moment on first run)...")
-# PaddleOCR 3.x API: use_textline_orientation replaces use_angle_cls
-ocr_engine = PaddleOCR(use_textline_orientation=True, lang="en", enable_mkldnn=False)
-logger.info("PaddleOCR ready.")
-
 
 # ---------------------------------------------------------------------------
-# Helper
+# PaddleOCR initialization
 # ---------------------------------------------------------------------------
+
+logger.info(
+    "Initializing PaddleOCR model "
+    "(this may take a moment on first run)..."
+)
+
+try:
+    ocr_engine = PaddleOCR(
+    lang="en",
+    device="cpu",
+    enable_mkldnn=False,
+    use_doc_orientation_classify=False,
+    use_doc_unwarping=False,
+    use_textline_orientation=False,
+    text_detection_model_name="PP-OCRv5_mobile_det",
+    )
+
+    logger.info("PaddleOCR ready.")
+
+except Exception as exc:
+    logger.exception("Failed to initialize PaddleOCR: %s", exc)
+    raise
+
+
+# ---------------------------------------------------------------------------
+# OCR helper
+# ---------------------------------------------------------------------------
+
 def run_ocr(img_array: np.ndarray) -> dict:
-    """Run PaddleOCR on a decoded OpenCV image array and return structured results.
-    Compatible with PaddleOCR 3.x API (uses predict() result structure).
-    Returns bounding boxes and layout hints for spatial-aware translation.
     """
-    result = ocr_engine.ocr(img_array)
+    Run PaddleOCR on a decoded OpenCV image array.
+
+    Uses PaddleOCR 3.x predict() API.
+
+    Returns:
+        {
+            "full_text": "...",
+            "details": [...],
+            "layout_hints": {...}
+        }
+    """
+
+    logger.info("Starting OCR inference...")
+
+    # -----------------------------------------------------------------------
+    # PaddleOCR 3.x inference
+    # -----------------------------------------------------------------------
+    result = ocr_engine.predict(img_array)
 
     extracted_lines = []
 
-    if result:
-        for page_result in result:
-            # Handle new PaddleX/PaddleOCR 3.x dictionary structure
-            if isinstance(page_result, dict) and "rec_texts" in page_result:
-                texts = page_result.get("rec_texts", [])
-                scores = page_result.get("rec_scores", [])
-                polys = page_result.get("rec_polys", [])
-                for i in range(len(texts)):
-                    text = texts[i]
-                    score = float(scores[i]) if i < len(scores) else 0.0
-                    # Extract bounding box as [x_min, y_min, x_max, y_max]
-                    bbox = None
-                    if i < len(polys):
-                        try:
-                            poly = polys[i]
-                            xs = [int(p[0]) for p in poly]
-                            ys = [int(p[1]) for p in poly]
-                            bbox = [min(xs), min(ys), max(xs), max(ys)]
-                        except Exception:
-                            pass
-                    if text and str(text).strip():
-                        extracted_lines.append({
-                            "text": str(text),
-                            "confidence": score,
-                            "bbox": bbox,
-                            "line_index": len(extracted_lines),
-                        })
+    if not result:
+        logger.warning("PaddleOCR returned no results.")
+
+        return {
+            "full_text": "",
+            "details": [],
+            "layout_hints": {
+                "paragraphs": [],
+                "detected_headers": [],
+            },
+        }
+
+    # -----------------------------------------------------------------------
+    # Parse PaddleOCR 3.x result objects
+    # -----------------------------------------------------------------------
+    for page_result in result:
+
+        data = None
+
+        # PaddleOCR 3.x result object generally exposes .json
+        if hasattr(page_result, "json"):
+            try:
+                data = page_result.json
+
+                # Some versions may expose JSON as a string.
+                if isinstance(data, str):
+                    import json
+
+                    data = json.loads(data)
+
+            except Exception as exc:
+                logger.warning(
+                    "Unable to read PaddleOCR result JSON: %s",
+                    exc
+                )
+                data = None
+
+        # -------------------------------------------------------------------
+        # Dictionary fallback
+        # -------------------------------------------------------------------
+        if data is None and isinstance(page_result, dict):
+            data = page_result
+
+        if not isinstance(data, dict):
+            logger.warning(
+                "Unsupported PaddleOCR result type: %s",
+                type(page_result)
+            )
+            continue
+
+        texts = data.get("rec_texts", [])
+        scores = data.get("rec_scores", [])
+        polys = data.get("rec_polys", [])
+
+        # Make sure these are iterable
+        if texts is None:
+            texts = []
+
+        if scores is None:
+            scores = []
+
+        if polys is None:
+            polys = []
+
+        # -------------------------------------------------------------------
+        # Extract individual text lines
+        # -------------------------------------------------------------------
+        for i, text in enumerate(texts):
+
+            if text is None:
                 continue
-                
-            # Fallback for old PaddleOCR format
-            items = page_result if isinstance(page_result, list) else [page_result]
-            for item in items:
-                if isinstance(item, dict):
-                    text = item.get("rec_text", "")
-                    score = float(item.get("rec_score", 0.0))
-                elif isinstance(item, (list, tuple)) and len(item) >= 2:
-                    text_box = item[1]
-                    text = text_box[0] if isinstance(text_box, (list, tuple)) else str(text_box)
-                    score = float(text_box[1]) if isinstance(text_box, (list, tuple)) and len(text_box) > 1 else 0.0
-                else:
-                    continue
 
-                if text and str(text).strip():
-                    extracted_lines.append({
-                        "text": str(text),
-                        "confidence": score,
-                        "bbox": None,
-                        "line_index": len(extracted_lines),
-                    })
+            text = str(text).strip()
 
-    # Build layout hints by grouping lines into paragraphs based on vertical gaps
+            if not text:
+                continue
+
+            # Confidence
+            try:
+                score = float(scores[i]) if i < len(scores) else 0.0
+            except (TypeError, ValueError):
+                score = 0.0
+
+            # Bounding box
+            bbox = None
+
+            if i < len(polys):
+                try:
+                    poly = polys[i]
+
+                    # Convert numpy arrays to normal Python lists if needed.
+                    if hasattr(poly, "tolist"):
+                        poly = poly.tolist()
+
+                    xs = [int(point[0]) for point in poly]
+                    ys = [int(point[1]) for point in poly]
+
+                    if xs and ys:
+                        bbox = [
+                            min(xs),
+                            min(ys),
+                            max(xs),
+                            max(ys),
+                        ]
+
+                except Exception as exc:
+                    logger.debug(
+                        "Could not parse polygon for line %s: %s",
+                        i,
+                        exc
+                    )
+
+            extracted_lines.append(
+                {
+                    "text": text,
+                    "confidence": score,
+                    "bbox": bbox,
+                    "line_index": len(extracted_lines),
+                }
+            )
+
+    # -----------------------------------------------------------------------
+    # Layout processing
+    # -----------------------------------------------------------------------
+
     layout_hints = _compute_layout_hints(extracted_lines)
 
-    full_text = " ".join(item["text"] for item in extracted_lines)
-    return {"full_text": full_text, "details": extracted_lines, "layout_hints": layout_hints}
+    full_text = " ".join(
+        item["text"]
+        for item in extracted_lines
+    )
 
+    logger.info(
+        "OCR complete. Extracted %d text lines.",
+        len(extracted_lines)
+    )
+
+    return {
+        "full_text": full_text,
+        "details": extracted_lines,
+        "layout_hints": layout_hints,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Layout helper
+# ---------------------------------------------------------------------------
 
 def _compute_layout_hints(lines: list) -> dict:
-    """Group OCR lines into logical paragraphs/sections based on Y-coordinate gaps."""
-    if not lines:
-        return {"paragraphs": [], "detected_headers": []}
+    """
+    Group OCR lines into logical paragraphs/sections
+    based on Y-coordinate gaps.
+    """
 
-    # Sort by Y position (top of bounding box)
-    sortable = [(i, l) for i, l in enumerate(lines) if l.get("bbox")]
-    if not sortable:
-        # No bounding box data — treat everything as one paragraph
+    if not lines:
         return {
-            "paragraphs": [{"line_indices": list(range(len(lines))), "text": " ".join(l["text"] for l in lines)}],
+            "paragraphs": [],
             "detected_headers": [],
         }
 
-    sortable.sort(key=lambda x: x[1]["bbox"][1])  # Sort by y_min
+    # -----------------------------------------------------------------------
+    # Keep only lines that have bounding boxes.
+    # -----------------------------------------------------------------------
+
+    sortable = [
+        (i, line)
+        for i, line in enumerate(lines)
+        if line.get("bbox")
+    ]
+
+    # -----------------------------------------------------------------------
+    # No bounding boxes
+    # -----------------------------------------------------------------------
+
+    if not sortable:
+        return {
+            "paragraphs": [
+                {
+                    "line_indices": list(range(len(lines))),
+                    "text": " ".join(
+                        line["text"]
+                        for line in lines
+                    ),
+                }
+            ],
+            "detected_headers": [],
+        }
+
+    # -----------------------------------------------------------------------
+    # Sort by Y position
+    # -----------------------------------------------------------------------
+
+    sortable.sort(
+        key=lambda x: x[1]["bbox"][1]
+    )
 
     paragraphs = []
-    current_para_indices = [sortable[0][0]]
+
+    current_para_indices = [
+        sortable[0][0]
+    ]
+
     prev_y_max = sortable[0][1]["bbox"][3]
 
-    # Compute median line height for gap threshold
-    heights = [l["bbox"][3] - l["bbox"][1] for _, l in sortable if l["bbox"][3] > l["bbox"][1]]
-    median_height = sorted(heights)[len(heights) // 2] if heights else 30
+    # -----------------------------------------------------------------------
+    # Calculate median line height
+    # -----------------------------------------------------------------------
+
+    heights = [
+        line["bbox"][3] - line["bbox"][1]
+        for _, line in sortable
+        if line["bbox"][3] > line["bbox"][1]
+    ]
+
+    if heights:
+        sorted_heights = sorted(heights)
+        median_height = sorted_heights[
+            len(sorted_heights) // 2
+        ]
+    else:
+        median_height = 30
+
+    # -----------------------------------------------------------------------
+    # Group lines into paragraphs
+    # -----------------------------------------------------------------------
 
     for idx, line in sortable[1:]:
+
         y_min = line["bbox"][1]
+
         gap = y_min - prev_y_max
 
         if gap > median_height * 1.2:
-            # Significant gap → new paragraph
-            para_text = " ".join(lines[i]["text"] for i in current_para_indices)
-            paragraphs.append({"line_indices": current_para_indices, "text": para_text})
+
+            para_text = " ".join(
+                lines[i]["text"]
+                for i in current_para_indices
+            )
+
+            paragraphs.append(
+                {
+                    "line_indices": current_para_indices,
+                    "text": para_text,
+                }
+            )
+
             current_para_indices = [idx]
+
         else:
             current_para_indices.append(idx)
+
         prev_y_max = line["bbox"][3]
 
+    # -----------------------------------------------------------------------
     # Final paragraph
+    # -----------------------------------------------------------------------
+
     if current_para_indices:
-        para_text = " ".join(lines[i]["text"] for i in current_para_indices)
-        paragraphs.append({"line_indices": current_para_indices, "text": para_text})
 
-    # Detect headers: lines that are significantly shorter than median line width
-    # and appear at the top of a paragraph group
+        para_text = " ".join(
+            lines[i]["text"]
+            for i in current_para_indices
+        )
+
+        paragraphs.append(
+            {
+                "line_indices": current_para_indices,
+                "text": para_text,
+            }
+        )
+
+    # -----------------------------------------------------------------------
+    # Header detection
+    # -----------------------------------------------------------------------
+
     detected_headers = []
+
     for para in paragraphs:
-        if para["line_indices"]:
-            first_line = lines[para["line_indices"][0]]
-            if first_line.get("bbox"):
-                line_width = first_line["bbox"][2] - first_line["bbox"][0]
-                # If line is short and has high confidence, likely a header
-                if len(para["line_indices"]) == 1 and len(first_line["text"].split()) <= 6:
-                    detected_headers.append(para["line_indices"][0])
 
-    return {"paragraphs": paragraphs, "detected_headers": detected_headers}
+        if not para["line_indices"]:
+            continue
+
+        first_line = lines[
+            para["line_indices"][0]
+        ]
+
+        if first_line.get("bbox"):
+
+            if (
+                len(para["line_indices"]) == 1
+                and len(first_line["text"].split()) <= 6
+            ):
+                detected_headers.append(
+                    para["line_indices"][0]
+                )
+
+    return {
+        "paragraphs": paragraphs,
+        "detected_headers": detected_headers,
+    }
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# Health endpoint
 # ---------------------------------------------------------------------------
+
 @app.get("/health")
 async def health_check():
-    """Simple health-check endpoint for the Node.js backend to ping."""
-    return {"status": "ok", "service": "dialectgo-paddle-ocr"}
+    """
+    Simple health-check endpoint for the Node.js backend.
+    """
 
+    return {
+        "status": "ok",
+        "service": "dialectgo-paddle-ocr",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Version/debug endpoint
+# ---------------------------------------------------------------------------
+
+@app.get("/versions")
+async def versions():
+    """
+    Returns PaddlePaddle and PaddleOCR versions.
+
+    Useful for checking which versions are installed
+    inside the Google Cloud Docker container.
+    """
+
+    try:
+        import paddle
+        import paddleocr
+
+        return {
+            "paddlepaddle": paddle.__version__,
+            "paddleocr": paddleocr.__version__,
+        }
+
+    except Exception as exc:
+        logger.exception(
+            "Unable to retrieve package versions."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Image decoding helper
+# ---------------------------------------------------------------------------
+
+def decode_image(image_bytes: bytes) -> np.ndarray:
+    """
+    Decode uploaded image bytes into an OpenCV BGR image.
+    """
+
+    if not image_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="Empty image file.",
+        )
+
+    # -----------------------------------------------------------------------
+    # Try OpenCV first
+    # -----------------------------------------------------------------------
+
+    nparr = np.frombuffer(
+        image_bytes,
+        np.uint8,
+    )
+
+    img = cv2.imdecode(
+        nparr,
+        cv2.IMREAD_COLOR,
+    )
+
+    if img is not None:
+        return img
+
+    # -----------------------------------------------------------------------
+    # PIL fallback for HEIC and other formats
+    # -----------------------------------------------------------------------
+
+    try:
+
+        pil_img = Image.open(
+            io.BytesIO(image_bytes)
+        ).convert("RGB")
+
+        img = cv2.cvtColor(
+            np.array(pil_img),
+            cv2.COLOR_RGB2BGR,
+        )
+
+        return img
+
+    except Exception as exc:
+
+        logger.error(
+            "PIL image decoding failed: %s",
+            exc
+        )
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or unreadable image file.",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Extract text endpoint
+# ---------------------------------------------------------------------------
 
 @app.post("/extract-text")
-async def extract_text(file: UploadFile = File(...)):
+async def extract_text(
+    file: UploadFile = File(...)
+):
     """
-    Accept a multipart image file upload and return the extracted text.
+    Accept a multipart image upload and return extracted text.
+    """
 
-    Used when the Node.js backend has a saved file path and forwards the file
-    as a multipart form.
-    """
     try:
+
         contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        if img is None:
-            # Fallback for HEIC and other formats OpenCV misses natively
-            try:
-                pil_img = Image.open(io.BytesIO(contents)).convert("RGB")
-                img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-            except Exception as e:
-                logger.error(f"[extract-text] PIL fallback failed: {e}")
-                raise HTTPException(status_code=400, detail="Invalid or unreadable image file.")
+        img = decode_image(contents)
 
-        logger.info(f"[extract-text] Processing uploaded file: {file.filename}")
+        logger.info(
+            "[extract-text] Processing uploaded file: %s",
+            file.filename,
+        )
+
         ocr_result = run_ocr(img)
 
-        return {"success": True, **ocr_result}
+        return {
+            "success": True,
+            **ocr_result,
+        }
 
     except HTTPException:
         raise
-    except Exception as exc:
-        logger.error(f"[extract-text] Error: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
 
+    except Exception as exc:
+
+        logger.exception(
+            "[extract-text] Error: %s",
+            exc
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"OCR extraction failed: {str(exc)}",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Base64 request model
+# ---------------------------------------------------------------------------
 
 class Base64ImageRequest(BaseModel):
-    image: str  # Raw base64 string (no data URI prefix)
+    image: str
 
+
+# ---------------------------------------------------------------------------
+# Base64 extraction endpoint
+# ---------------------------------------------------------------------------
 
 @app.post("/extract-text-base64")
-async def extract_text_base64(payload: Base64ImageRequest):
+async def extract_text_base64(
+    payload: Base64ImageRequest
+):
     """
-    Accept a raw base64-encoded image string and return the extracted text.
+    Accept a raw base64-encoded image and return extracted text.
 
-    This is the primary endpoint called by the Node.js backend's
-    ocr.service.js when the mobile app sends an image as a base64 string
-    (the existing API contract from the old Tesseract integration).
+    This endpoint is intended for the Node.js backend.
     """
+
     try:
-        # Decode base64 to bytes, then to OpenCV image
-        image_bytes = base64.b64decode(payload.image)
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        if img is None:
-            # Fallback: try via PIL (handles some formats OpenCV misses)
-            try:
-                pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-                img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-            except Exception:
-                raise HTTPException(status_code=400, detail="Could not decode the base64 image.")
+        # -------------------------------------------------------------------
+        # Decode base64
+        # -------------------------------------------------------------------
 
-        logger.info("[extract-text-base64] Processing base64 image payload.")
+        try:
+            image_bytes = base64.b64decode(
+                payload.image,
+                validate=True,
+            )
+
+        except Exception as exc:
+
+            logger.error(
+                "Base64 decoding failed: %s",
+                exc
+            )
+
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid base64 image data.",
+            )
+
+        # -------------------------------------------------------------------
+        # Decode image
+        # -------------------------------------------------------------------
+
+        img = decode_image(image_bytes)
+
+        logger.info(
+            "[extract-text-base64] Processing base64 image."
+        )
+
+        # -------------------------------------------------------------------
+        # OCR
+        # -------------------------------------------------------------------
+
         ocr_result = run_ocr(img)
 
-        return {"success": True, **ocr_result}
+        return {
+            "success": True,
+            **ocr_result,
+        }
 
     except HTTPException:
         raise
+
     except Exception as exc:
-        logger.error(f"[extract-text-base64] Error: {exc}")
-        raise HTTPException(status_code=500, detail=str(exc))
+
+        logger.exception(
+            "[extract-text-base64] Error: %s",
+            exc
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"OCR extraction failed: {str(exc)}",
+        )
 
 
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
-import os
 
 if __name__ == "__main__":
+
     import uvicorn
-    port = int(os.environ.get("PORT", 8001))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            8001,
+        )
+    )
+
+    logger.info(
+        "Starting DialectGo OCR service on port %s",
+        port,
+    )
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=port,
+    )
