@@ -45,7 +45,7 @@ export default function AccountInformationScreen() {
             elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.1, shadowRadius: 10,
           }}>
-            <Image source={userAvatar} style={{ width: 120, height: 120, borderRadius: 60 }} />
+            <Image source={userAvatar} style={{ width: 115, height: 115, borderRadius: 57.5, resizeMode: 'contain' }} />
           </View>
         </View>
         
