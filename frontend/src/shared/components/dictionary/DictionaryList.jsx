@@ -4,9 +4,6 @@ import DictionaryEntryCard from './DictionaryEntryCard';
 
 export default function DictionaryList({
     searchQuery,
-    isConnected,
-    isGuestMode,
-    isOffline,
     loading,
     error,
     refreshing,
@@ -14,18 +11,12 @@ export default function DictionaryList({
     refreshBrowseData,
     isFetchingMore,
     handleLoadMore,
-    offlineResults,
-    offlineBrowseData,
     searchResults,
     browseData,
     styles,
     router
 }) {
-    const displayData = !isConnected
-        ? searchQuery.trim() ? offlineResults : offlineBrowseData
-        : isGuestMode
-            ? searchQuery.trim() ? offlineResults : offlineBrowseData
-            : searchQuery.trim() ? searchResults : browseData;
+    const displayData = searchQuery.trim() ? searchResults : browseData;
 
     const renderItem = ({ item }) => {
         return <DictionaryEntryCard item={item} router={router} styles={styles} />;
@@ -36,11 +27,11 @@ export default function DictionaryList({
     };
 
     const handleEndReached = () => {
-        if (isOffline || isFetchingMore || !handleLoadMore) {
+        if (isFetchingMore || !handleLoadMore) {
             return;
         }
 
-        if (!searchQuery.trim() && !isGuestMode) {
+        if (!searchQuery.trim()) {
             handleLoadMore();
         }
     };
@@ -78,7 +69,7 @@ export default function DictionaryList({
     };
 
     const renderFooter = () => {
-        if (isFetchingMore && !isOffline) {
+        if (isFetchingMore) {
             return <ActivityIndicator color="#FFD54F" style={{ marginVertical: 15 }} />;
         }
         return null;

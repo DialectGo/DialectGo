@@ -8,7 +8,6 @@ const ProfileContext = createContext();
 export const ProfileProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
   const hasInitialized = useRef(false);
 
   const { isConnected } = useProfileNetwork();
@@ -25,13 +24,9 @@ export const ProfileProvider = ({ children }) => {
     }
 
     try {
-      const { role, guestMode } = await getUserRoleAndMode();
       const session = await getAuthSession();
 
-      const guestStatus = role === 'guest' || guestMode !== null || !session || !isConnected;
-      setIsGuest(guestStatus);
-
-      if (guestStatus) {
+      if (!session) {
         profileData.resetProfileData();
         return;
       }
@@ -43,7 +38,6 @@ export const ProfileProvider = ({ children }) => {
 
     } catch (error) {
       console.log('Profile load error:', error);
-      setIsGuest(true);
       profileData.resetProfileData();
     } finally {
       setLoading(false);
@@ -55,7 +49,6 @@ export const ProfileProvider = ({ children }) => {
     if (!isConnected) {
       setLoading(false); 
       setRefreshing(false);
-      setIsGuest(true);
       profileData.resetProfileData();
       return;
     }
@@ -75,7 +68,6 @@ export const ProfileProvider = ({ children }) => {
     <ProfileContext.Provider value={{
       loading,
       refreshing,
-      isGuest,
       isConnected,
       refreshProfile,
       ...profileData

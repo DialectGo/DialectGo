@@ -5,7 +5,6 @@ export const useProfile = (onNavigate, router) => {
   const { 
     loading, 
     refreshing, 
-    isGuest, 
     isConnected,
     refreshProfile,
     firstName, 
@@ -14,12 +13,11 @@ export const useProfile = (onNavigate, router) => {
     streakCount 
   } = useProfileContext();
 
-  const { gateVisible, setGateVisible, handleProtectedAction, handleLogout } = useProfileAuth(isGuest, isConnected, onNavigate, router);
+  const { gateVisible, setGateVisible, handleProtectedAction, handleLogout } = useProfileAuth(isConnected, onNavigate, router);
 
   return {
     loading,
     refreshing,
-    isGuest,
     gateVisible,
     setGateVisible,
     firstName,
