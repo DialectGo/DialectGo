@@ -7,11 +7,57 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../api/supabase';
 import { WIKI_API_BASE } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import SwipeableBottomSheet from '../SwipeableBottomSheet';
 
 const REGIONS = ['Batangueño', 'Boholano', 'General Cebuano', 'General Tagalog'];
 const TERM_CATEGORIES = ['Slang', 'Idiom', 'Colloquial', 'Literal'];
 const QUESTION_CATEGORIES = ['Cultural', 'General', 'Colloquial', 'Literal'];
 const SENTIMENTS = ['Casual', 'Humorous', 'Aggressive', 'Affectionate', 'Formal', 'Sarcastic'];
+
+const Dropdown = ({ label, options, selectedValue, onSelect, required, isOpen, toggleOpen, isSentiment }) => {
+  return (
+    <View style={{ marginBottom: 4 }}>
+      <Text style={styles.label}>
+        {label} {required && <Text style={styles.required}>*</Text>}
+      </Text>
+      <TouchableOpacity
+        style={[styles.dropdownHeader, isOpen && styles.dropdownHeaderOpen]}
+        onPress={toggleOpen}
+        activeOpacity={0.8}
+      >
+        <Text style={[styles.dropdownHeaderText, !selectedValue && { color: '#9CA3AF' }]}>
+          {selectedValue || `Select ${label}`}
+        </Text>
+        <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={20} color={isOpen ? "#FFD54F" : "#6B7280"} />
+      </TouchableOpacity>
+      
+      {isOpen && (
+        <View style={styles.dropdownList}>
+          {options.map((opt) => {
+            const isActive = selectedValue === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                style={[
+                  styles.dropdownItem, 
+                  isActive && styles.dropdownItemActive
+                ]}
+                onPress={() => onSelect(opt)}
+              >
+                <Text style={[
+                  styles.dropdownItemText, 
+                  isActive && styles.activeDropdownText
+                ]}>
+                  {opt}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+};
 
 export default function SubmitTermModal({ visible, onClose, onSuccess }) {
   const { showToast } = useToast();
@@ -23,6 +69,7 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
   const [sentimentTag, setSentimentTag] = useState('');
   const [submissionType, setSubmissionType] = useState('Term');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const isQuestion = submissionType === 'Question';
   const CATEGORIES = isQuestion ? QUESTION_CATEGORIES : TERM_CATEGORIES;
@@ -85,15 +132,9 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-
-          <View style={styles.sheetHeader}>
+    <SwipeableBottomSheet visible={visible} onClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
               {isQuestion ? 'Ask a Question' : 'Contribute a Term'}
             </Text>
@@ -109,14 +150,14 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
                 style={[styles.typeBtn, !isQuestion && styles.typeBtnActive]}
                 onPress={() => { setSubmissionType('Term'); setCategory(''); }}
               >
-                <Ionicons name="text-outline" size={16} color={!isQuestion ? '#1F2937' : '#9CA3AF'} />
+                <Ionicons name="text-outline" size={16} color={!isQuestion ? '#421C00' : '#9CA3AF'} />
                 <Text style={[styles.typeBtnText, !isQuestion && styles.typeBtnTextActive]}>Term</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.typeBtn, isQuestion && styles.typeBtnActive]}
                 onPress={() => { setSubmissionType('Question'); setCategory(''); }}
               >
-                <Ionicons name="help-circle-outline" size={16} color={isQuestion ? '#1F2937' : '#9CA3AF'} />
+                <Ionicons name="help-circle-outline" size={16} color={isQuestion ? '#421C00' : '#9CA3AF'} />
                 <Text style={[styles.typeBtnText, isQuestion && styles.typeBtnTextActive]}>Question</Text>
               </TouchableOpacity>
             </View>
@@ -137,37 +178,27 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
               numberOfLines={isQuestion ? 3 : 1}
             />
 
-            {/* Region */}
-            <Text style={styles.label}>
-              Region <Text style={styles.required}>*</Text>
-            </Text>
-            <View style={styles.chipRow}>
-              {REGIONS.map(r => (
-                <TouchableOpacity
-                  key={r}
-                  style={[styles.chip, region === r && styles.activeChip]}
-                  onPress={() => setRegion(r)}
-                >
-                  <Text style={[styles.chipText, region === r && styles.activeChipText]}>{r}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Region Dropdown */}
+            <Dropdown 
+              label="Region" 
+              options={REGIONS} 
+              selectedValue={region} 
+              onSelect={(val) => { setRegion(val); setOpenDropdown(null); }} 
+              required 
+              isOpen={openDropdown === 'region'} 
+              toggleOpen={() => setOpenDropdown(openDropdown === 'region' ? null : 'region')} 
+            />
 
-            {/* Category */}
-            <Text style={styles.label}>
-              Category <Text style={styles.required}>*</Text>
-            </Text>
-            <View style={styles.chipRow}>
-              {CATEGORIES.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.chip, category === c && styles.activeChip]}
-                  onPress={() => setCategory(c)}
-                >
-                  <Text style={[styles.chipText, category === c && styles.activeChipText]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Category Dropdown */}
+            <Dropdown 
+              label="Category" 
+              options={CATEGORIES} 
+              selectedValue={category} 
+              onSelect={(val) => { setCategory(val); setOpenDropdown(null); }} 
+              required 
+              isOpen={openDropdown === 'category'} 
+              toggleOpen={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')} 
+            />
 
             {/* Standard Translation / Context */}
             <Text style={styles.label}>
@@ -198,21 +229,16 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
               numberOfLines={3}
             />
 
-            {/* Sentiment Tag */}
-            <Text style={styles.label}>Tone / Sentiment (Optional)</Text>
-            <View style={styles.chipRow}>
-              {SENTIMENTS.map(s => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.chip, styles.sentimentOption, sentimentTag === s && styles.activeSentiment]}
-                  onPress={() => setSentimentTag(sentimentTag === s ? '' : s)}
-                >
-                  <Text style={[styles.chipText, sentimentTag === s && styles.activeSentimentText]}>
-                    {s}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Sentiment Tag Dropdown */}
+            <Dropdown 
+              label="Tone / Sentiment (Optional)" 
+              options={SENTIMENTS} 
+              selectedValue={sentimentTag} 
+              onSelect={(val) => { setSentimentTag(sentimentTag === val ? '' : val); setOpenDropdown(null); }} 
+              isOpen={openDropdown === 'sentiment'} 
+              toggleOpen={() => setOpenDropdown(openDropdown === 'sentiment' ? null : 'sentiment')} 
+              isSentiment={true}
+            />
 
             {/* Submit Button */}
             <TouchableOpacity
@@ -230,35 +256,12 @@ export default function SubmitTermModal({ visible, onClose, onSuccess }) {
 
             <View style={{ height: 30 }} />
           </ScrollView>
-        </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </SwipeableBottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingBottom: 30,
-    maxHeight: '88%',
-  },
-  handle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 16,
-  },
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -287,12 +290,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   typeBtnActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 1 },
+    backgroundColor: '#FFD54F',
+    shadowColor: '#8A6200',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   typeBtnText: {
     fontSize: 14,
@@ -300,7 +303,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   typeBtnTextActive: {
-    color: '#1F2937',
+    color: '#421C00',
     fontWeight: '800',
   },
   label: {
@@ -377,4 +380,55 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1F2937',
   },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  dropdownHeaderOpen: {
+    borderColor: '#FFD54F',
+    backgroundColor: '#FFFDF5',
+  },
+  dropdownHeaderText: {
+    fontSize: 15,
+    color: '#421C00',
+    fontWeight: '500',
+  },
+  dropdownList: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FFD54F',
+    borderRadius: 12,
+    marginTop: 6,
+    overflow: 'hidden',
+    shadowColor: '#8A6200',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3E9D8',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#FFF7D6',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#634F4B',
+    fontWeight: '500',
+  },
+  activeDropdownText: {
+    color: '#8A6200',
+    fontWeight: '800',
+  }
 });
