@@ -26,7 +26,9 @@ export const registerSchema = Joi.object({
 
   username: Joi.string().alphanum().min(3).required(),
 
-  preferredLanguageCode: Joi.string().optional()
+  preferredLanguageCode: Joi.string().optional(),
+  
+  redirectUrl: Joi.string().uri().optional()
 });
 
 /**

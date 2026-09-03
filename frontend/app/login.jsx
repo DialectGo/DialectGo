@@ -6,12 +6,12 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Modal
 } from 'react-native';
 import { styles } from '../src/features/auth/styles/LoginStyles';
 import { useRouter } from 'expo-router';
@@ -24,6 +24,8 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../src/shared/context/ProfileContext';
 import { useToast } from '../src/shared/context/ToastContext';
 import AnimatedJeep from '../src/features/auth/components/AnimatedJeep';
+import * as Linking from 'expo-linking';
+import { useEffect } from 'react';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -38,6 +40,19 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const { showToast } = useToast();
+  const [showConfirmOverlay, setShowConfirmOverlay] = useState(false);
+  const url = Linking.useURL();
+
+  useEffect(() => {
+    if (url) {
+      const parsedUrl = Linking.parse(url);
+      const queryParams = parsedUrl.queryParams || {};
+      
+      if (queryParams.confirmed === 'true' || url.includes('confirmed=true') || url.includes('access_token=') || url.includes('code=')) {
+        setShowConfirmOverlay(true);
+      }
+    }
+  }, [url]);
 
   // --- LOGIN LOGIC ---
   const handleLogin = async (email, password) => {
@@ -167,6 +182,27 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Modal visible={showConfirmOverlay} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#FFF', width: '100%', borderRadius: 30, padding: 30, alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#4CAF50', width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+              <FontAwesome5 name="check" size={40} color="#FFF" />
+            </View>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>Account Registered!</Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
+              Your email has been successfully confirmed. You can now log in using your credentials.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]}
+              onPress={() => setShowConfirmOverlay(false)}
+            >
+              <Text style={{ color: '#FFF', fontSize: 16, fontFamily: 'Poppins-Bold' }}>PROCEED TO LOG IN</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
