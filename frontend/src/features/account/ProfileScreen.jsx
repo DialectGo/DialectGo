@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import BottomNav from '../../components/BottomNav';
 import FeatureGateModal from '../../shared/components/FeatureGateModal'; 
+import LogoutConfirmModal from '../../shared/components/LogoutConfirmModal';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import { styles } from './styles/ProfileStyles';
 import { useProfile } from '../../shared/hooks/profile/useProfile';
@@ -33,7 +34,12 @@ export default function ProfileScreen({ onNavigate }) {
     streakCount,
     handleRefresh,
     handleProtectedAction,
-    handleLogout
+    handleLogout,
+    logoutModalVisible,
+    isSavingProfile,
+    handleSaveAndLogout,
+    handleLogoutWithoutSaving,
+    handleCancelLogout,
   } = useProfile(onNavigate, router);
 
   const { showToast } = useToast();
@@ -128,6 +134,13 @@ export default function ProfileScreen({ onNavigate }) {
       </RefreshContainer>
 
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
+      <LogoutConfirmModal
+        visible={logoutModalVisible}
+        onSaveAndLogout={handleSaveAndLogout}
+        onLogoutWithoutSaving={handleLogoutWithoutSaving}
+        onCancel={handleCancelLogout}
+        isSaving={isSavingProfile}
+      />
       <BottomNav activeTab="Profile" />
     </View>
   );

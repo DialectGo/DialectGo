@@ -17,6 +17,12 @@ router.post('/guest-login', loginLimiter, UserController.loginGuest);
 router.get('/profile', verifyToken, UserController.getProfile);
 router.put('/profile', verifyToken, UserController.updateProfile);
 router.get('/streak', verifyToken, UserController.getStreakData);
+
+// DEVICE PROFILES (multi-account auth screen)
+router.post('/device-profiles', verifyToken, UserController.saveDeviceProfile);
+router.get('/device-profiles/:deviceId', UserController.getDeviceProfiles);          // Public (pre-login)
+router.delete('/device-profiles/:deviceId/:userId', UserController.removeDeviceProfile); // Public (pre-login removal)
+
 // ADMIN
 router.get('/admin/users', verifyToken, authorizeRole('admin'), UserController.getAllUsers);
 router.post('/admin/login', loginLimiter, validate(loginSchema), UserController.adminLogin);

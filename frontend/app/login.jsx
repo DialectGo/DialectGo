@@ -29,10 +29,10 @@ WebBrowser.maybeCompleteAuthSession();
 
 const LOGIN_URL = endpoints.USER_LOGIN;
 
-export default function LogIn({ onSwitch, onSuccess, panHandlers }) {
+export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail = '' }) {
   const router = useRouter();
   const { refreshProfile } = useProfileContext();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);

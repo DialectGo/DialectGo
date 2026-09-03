@@ -361,3 +361,54 @@ export const adminLogin = async (email, password, req) => {
     throw err;
   }
 };
+
+// ============================================
+// DEVICE PROFILES (Multi-account Auth Screen)
+// ============================================
+
+export const saveDeviceProfile = async (deviceId, userId, profileData) => {
+  const { email, first_name, last_name, avatar_url, auth_provider } = profileData;
+
+  const { data, error } = await supabaseAdmin
+    .from('saved_device_profiles')
+    .upsert(
+      {
+        device_id: deviceId,
+        user_id: userId,
+        email,
+        first_name: first_name || null,
+        last_name: last_name || null,
+        avatar_url: avatar_url || null,
+        auth_provider: auth_provider || 'email',
+        saved_at: new Date().toISOString(),
+      },
+      { onConflict: 'device_id,user_id' }
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getDeviceProfiles = async (deviceId) => {
+  const { data, error } = await supabaseAdmin
+    .from('saved_device_profiles')
+    .select('*')
+    .eq('device_id', deviceId)
+    .order('saved_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+export const removeDeviceProfile = async (deviceId, userId) => {
+  const { error } = await supabaseAdmin
+    .from('saved_device_profiles')
+    .delete()
+    .eq('device_id', deviceId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  return { success: true };
+};
