@@ -7,6 +7,8 @@ import AutoSplash from '../src/components/AutoSplash';
 import Onboarding from '../src/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
 
+import { getSavedProfiles } from '../src/shared/services/profile/deviceProfileService';
+
 export default function MainIndex() {
   const [currentScreen, setCurrentScreen] = useState('loading');
   const [session, setSession] = useState(null);
@@ -14,10 +16,22 @@ export default function MainIndex() {
 
   // 1. Check session once when the app starts
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkState = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setCurrentScreen(session ? 'auto-splash' : 'intro-splash');
-    });
+
+      const profiles = await getSavedProfiles();
+
+      if (session) {
+        setCurrentScreen('home'); // Skip AutoSplash if they have a session
+      } else if (profiles && profiles.length > 0) {
+        setCurrentScreen('auth'); // Skip animations and go to Profile List
+      } else {
+        setCurrentScreen('intro-splash'); // First-time user, no profiles
+      }
+    };
+
+    checkState();
 
     // Listen for auth changes (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
