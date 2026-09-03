@@ -29,6 +29,10 @@ export const endpoints = {
   DICTIONARY_BROWSE: DICTIONARY_BROWSE,
   PASSWORD_RESET_REDIRECT_URL: PASSWORD_RESET_REDIRECT_URL,
   GROQ_API_KEY,
+  // Device Profiles (multi-account auth)
+  DEVICE_PROFILES_SAVE: `${API_BASE_URL}/api/v1/users/device-profiles`,
+  DEVICE_PROFILES_GET: (deviceId) => `${API_BASE_URL}/api/v1/users/device-profiles/${deviceId}`,
+  DEVICE_PROFILES_REMOVE: (deviceId, userId) => `${API_BASE_URL}/api/v1/users/device-profiles/${deviceId}/${userId}`,
 };
 
 export default {

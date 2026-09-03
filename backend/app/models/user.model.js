@@ -13,21 +13,18 @@ const getAuthenticatedClient = (token) => {
 };
 // AUTH
 export const registerUser = async (data) => {
-  const { email, password, redirectUrl, ...meta } = data;
-
-  const signUpOptions = { data: meta };
-  
-  if (redirectUrl) {
-    signUpOptions.emailRedirectTo = redirectUrl;
-  }
+  const { email, password, ...meta } = data;
 
   const { data: result, error } = await supabase.auth.signUp({
     email,
     password,
-    options: signUpOptions
+    options: { data: meta }
   });
 
   if (error) throw error;
+
+  // Send the customized Nodemailer welcome email
+  await sendWelcomeEmail(email, meta.firstName || 'User');
 
   // Explicitly sync additional metadata into the public.profiles table
   // because the Postgres trigger misses these non-standard camelCase keys.

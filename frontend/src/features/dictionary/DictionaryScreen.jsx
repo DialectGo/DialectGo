@@ -23,8 +23,6 @@ import DictionaryFilters from "../../shared/components/dictionary/DictionaryFilt
 import FeatureGateModal from "../../shared/components/FeatureGateModal";
 
 import { useDictionaryBrowse } from "../../shared/hooks/dictionary/useDictionaryBrowse";
-import { useOfflineSearch } from "../../shared/hooks/dictionary/useOfflineSearch";
-import { useDictionaryGuestMode } from "../../shared/hooks/dictionary/useDictionaryGuestMode";
 import { useDictionarySearch } from "../../shared/hooks/dictionary/useDictionarySearch";
 import DictionaryList from "../../shared/components/dictionary/DictionaryList";
 
@@ -36,8 +34,6 @@ export default function DictionaryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { isGuestMode, setIsGuestMode, isConnected, checkGuestMode } =
-    useDictionaryGuestMode();
   const {
     searchQuery,
     setSearchQuery,
@@ -46,11 +42,7 @@ export default function DictionaryScreen() {
     error,
     refreshing,
     handleRefresh,
-  } = useDictionarySearch({
-    isGuestMode,
-    isConnected,
-    checkGuestMode,
-  });
+  } = useDictionarySearch();
 
   const {
     browseData,
@@ -60,12 +52,7 @@ export default function DictionaryScreen() {
     refreshBrowseData,
   } = useDictionaryBrowse(searchQuery);
 
-  const { isOffline, offlineResults, offlineBrowseData } = useOfflineSearch(
-    searchQuery,
-    isGuestMode,
-  );
 
-  const [showFeatureModal, setShowFeatureModal] = useState(false);
 
   useEffect(() => {
     if (search && typeof search === 'string') {
@@ -85,55 +72,24 @@ export default function DictionaryScreen() {
         titleSecondary="Dictionary"
         screenType="dictionary"
         onHistoryPress={() => {
-          if (isGuestMode) {
-            setShowFeatureModal(true);
-            return;
-          }
           router.push("/Dictionary/History");
         }}
         onSaveWordsPress={() => {
-          if (isGuestMode) {
-            setShowFeatureModal(true);
-            return;
-          }
           router.push("/Dictionary/SaveWords");
         }}
       />
-      {isGuestMode && (
-        <View
-          style={{
-            backgroundColor: "#421C00",
-            padding: 5,
-            alignItems: "center",
-            marginTop: insets.top + 55,
-          }}
-        >
-          <Text
-            style={{
-              color: "#FFD54F",
-              fontSize: 11,
-              fontWeight: "bold",
-            }}
-          >
-            GUEST MODE: OFFLINE DICTIONARY ENABLED
-          </Text>
-        </View>
-      )}
       <View
         style={[
           styles.contentWrapper,
-
           {
-            marginTop: isGuestMode ? 8 : insets.top + 65,
+            marginTop: insets.top + 65,
           },
         ]}
       >
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder={
-              isGuestMode ? "Search offline dictionary..." : "Search words..."
-            }
+            placeholder="Search words..."
             placeholderTextColor="#421C00"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -154,15 +110,12 @@ export default function DictionaryScreen() {
             />
           )}
         </View>
-        {!searchQuery.trim() && !isGuestMode && (
+        {!searchQuery.trim() && (
           <DictionaryFilters {...filters} />
         )}
       </View>
       <DictionaryList 
         searchQuery={searchQuery}
-        isConnected={isConnected}
-        isGuestMode={isGuestMode}
-        isOffline={isOffline}
         loading={loading}
         error={error}
         refreshing={refreshing}
@@ -170,16 +123,10 @@ export default function DictionaryScreen() {
         refreshBrowseData={refreshBrowseData}
         isFetchingMore={isFetchingMore}
         handleLoadMore={handleLoadMore}
-        offlineResults={offlineResults}
-        offlineBrowseData={offlineBrowseData}
         searchResults={searchResults}
         browseData={browseData}
         styles={styles}
         router={router}
-      />
-      <FeatureGateModal
-        visible={showFeatureModal}
-        onClose={() => setShowFeatureModal(false)}
       />
       <BottomNav activeTab="Dictionary" />
     </View>

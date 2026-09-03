@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import BottomNav from '../../components/BottomNav';
 import FeatureGateModal from '../../shared/components/FeatureGateModal'; 
+import LogoutConfirmModal from '../../shared/components/LogoutConfirmModal';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import { styles } from './styles/ProfileStyles';
 import { useProfile } from '../../shared/hooks/profile/useProfile';
@@ -25,7 +26,6 @@ export default function ProfileScreen({ onNavigate }) {
   const {
     loading,
     refreshing,
-    isGuest,
     gateVisible,
     setGateVisible,
     firstName,
@@ -34,7 +34,12 @@ export default function ProfileScreen({ onNavigate }) {
     streakCount,
     handleRefresh,
     handleProtectedAction,
-    handleLogout
+    handleLogout,
+    logoutModalVisible,
+    isSavingProfile,
+    handleSaveAndLogout,
+    handleLogoutWithoutSaving,
+    handleCancelLogout,
   } = useProfile(onNavigate, router);
 
   const { showToast } = useToast();
@@ -44,10 +49,6 @@ export default function ProfileScreen({ onNavigate }) {
 
   const handleAvatarSelect = async (avatarObj) => {
     setIsAvatarModalVisible(false);
-    if (isGuest) {
-      showToast('Sign in to change avatar', 'info', 'Notice');
-      return;
-    }
     
     try {
       const success = await updateUserProfile({ profile_avatar_url: avatarObj.name });
@@ -93,7 +94,7 @@ export default function ProfileScreen({ onNavigate }) {
             {formatFullName(firstName, lastName)}
           </Text>
           <Text style={{ fontSize: 16, color: '#777', fontWeight: '600', fontFamily: 'Poppins-Regular', marginTop: 5 }}>
-            {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
+            {`${streakCount} days streak`}
           </Text>
         </View>
 
@@ -125,7 +126,7 @@ export default function ProfileScreen({ onNavigate }) {
           />
           <ProfileMenuItem 
             iconSource={require('../../../assets/icons/actions/logout_icon.png')}
-            text={isGuest ? 'Exit Guest Mode' : 'Log out'}
+            text="Log out"
             onPress={handleLogout}
             isLogout={true}
           />
@@ -133,6 +134,13 @@ export default function ProfileScreen({ onNavigate }) {
       </RefreshContainer>
 
       <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
+      <LogoutConfirmModal
+        visible={logoutModalVisible}
+        onSaveAndLogout={handleSaveAndLogout}
+        onLogoutWithoutSaving={handleLogoutWithoutSaving}
+        onCancel={handleCancelLogout}
+        isSaving={isSavingProfile}
+      />
       <BottomNav activeTab="Profile" />
     </View>
   );

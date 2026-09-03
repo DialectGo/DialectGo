@@ -19,6 +19,9 @@ export function useDictionaryBrowse(searchQuery) {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return; // Early return if logged out to avoid crash
+      }
       const url = `${BROWSE_API_URL}?page=${pageNum}&limit=15${selectedLang ? `&lang=${selectedLang}` : ''}${selectedLetter ? `&letter=${selectedLetter}` : ''}`;
       
       const response = await fetch(url, {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { searchDictionary } from '../../services/dictionary/dictionarySearchService';
 
-export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }) => {
+export const useDictionarySearch = () => {
     const { showToast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -13,10 +13,7 @@ export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }
     useEffect(() => {
         let timeout;
 
-        if (isGuestMode) {
-            setSearchResults([]);
-            return;
-        }
+
 
         if (!searchQuery.trim()) {
             setSearchResults([]);
@@ -47,16 +44,14 @@ export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }
         }, 500);
 
         return () => clearTimeout(timeout);
-    }, [searchQuery, isGuestMode, isConnected]);
+    }, [searchQuery]);
 
     const handleRefresh = useCallback(async (refreshBrowseDataCallback) => {
         setRefreshing(true);
         setError(null);
 
         try {
-            await checkGuestMode();
-
-            if (searchQuery.trim() && !isGuestMode && isConnected) {
+            if (searchQuery.trim()) {
                 // Manually trigger search again
                 setLoading(true);
                 const results = await searchDictionary(searchQuery.trim());
@@ -70,7 +65,7 @@ export const useDictionarySearch = ({ isGuestMode, isConnected, checkGuestMode }
         } finally {
             setRefreshing(false);
         }
-    }, [searchQuery, isGuestMode, isConnected, checkGuestMode]);
+    }, [searchQuery]);
 
     return {
         searchQuery,

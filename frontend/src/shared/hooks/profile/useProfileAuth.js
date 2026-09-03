@@ -1,27 +1,89 @@
 import { useState, useCallback } from 'react';
 import { clearAuthSession } from '../../services/profile/userService';
+import { saveProfileToDevice } from '../../services/profile/deviceProfileService';
+import { useProfileContext } from '../../context/ProfileContext';
 
-export const useProfileAuth = (isGuest, isConnected, onNavigate, router) => {
+export const useProfileAuth = (isConnected, onNavigate, router) => {
   const [gateVisible, setGateVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const profileContext = useProfileContext();
 
   const handleProtectedAction = useCallback((targetPath) => {
-    if (isGuest || !isConnected) {
+    if (!isConnected) {
       setGateVisible(true);
       return;
     }
     router.push(targetPath);
-  }, [isGuest, isConnected, router]);
+  }, [isConnected, router]);
 
-  const handleLogout = useCallback(async () => {
-    await clearAuthSession();
-    if (onNavigate) {
-      onNavigate('auth');
-    } else {
-      router.replace('/auth/AuthTransition');
+  // Show the logout confirmation modal instead of logging out directly
+  const handleLogout = useCallback(() => {
+    setLogoutModalVisible(true);
+  }, []);
+
+  // Save profile to device, then sign out and navigate
+  const handleSaveAndLogout = useCallback(async () => {
+    setIsSavingProfile(true);
+    try {
+      // Gather current user info from profile context
+      const { firstName, lastName, userAvatar } = profileContext;
+      const avatarName = typeof userAvatar === 'number'
+        ? null // It's a require() reference, we can't extract name here
+        : userAvatar;
+
+      // Try to get email from Supabase session
+      const { supabase } = await import('../../api/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      const email = session?.user?.email || '';
+      const authProvider = session?.user?.app_metadata?.provider || 'email';
+
+      // Find avatar filename from the constants
+      const { availableAvatars } = await import('../../hooks/profile/constants');
+      const matchedAvatar = availableAvatars.find(a => a.source === userAvatar);
+      const avatarUrl = matchedAvatar?.name || null;
+
+      await saveProfileToDevice({
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        avatar_url: avatarUrl,
+        auth_provider: authProvider,
+      });
+    } catch (error) {
+      console.warn('Failed to save profile to device (continuing logout):', error);
+    } finally {
+      setIsSavingProfile(false);
     }
-  }, [onNavigate, router]);
+
+    await clearAuthSession();
+    setLogoutModalVisible(false);
+    if (router.dismissAll) router.dismissAll();
+    router.replace('/auth/AuthTransition');
+  }, [profileContext, router]);
+
+  // Log out without saving profile
+  const handleLogoutWithoutSaving = useCallback(async () => {
+    await clearAuthSession();
+    setLogoutModalVisible(false);
+    if (router.dismissAll) router.dismissAll();
+    router.replace('/auth/AuthTransition');
+  }, [router]);
+
+  const handleCancelLogout = useCallback(() => {
+    setLogoutModalVisible(false);
+  }, []);
 
   return {
-    gateVisible, setGateVisible, handleProtectedAction, handleLogout
+    gateVisible,
+    setGateVisible,
+    handleProtectedAction,
+    handleLogout,
+    logoutModalVisible,
+    isSavingProfile,
+    handleSaveAndLogout,
+    handleLogoutWithoutSaving,
+    handleCancelLogout,
   };
 };

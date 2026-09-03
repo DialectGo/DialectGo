@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
 import { formatFullName } from '../../utils/stringUtils';
 
-export default function ProfileHeader({ firstName, lastName, userAvatar, isGuest, streakCount }) {
+export default function ProfileHeader({ firstName, lastName, userAvatar, streakCount }) {
   return (
     <View style={styles.profileHeader}>
       <View style={styles.avatarWrapper}>
@@ -10,7 +10,7 @@ export default function ProfileHeader({ firstName, lastName, userAvatar, isGuest
       </View>
       <Text style={styles.userName}>{formatFullName(firstName, lastName)}</Text>
       <Text style={styles.streakText}>
-        {isGuest ? 'Sign in to accumulate streaks' : `${streakCount} days streak`}
+        {`${streakCount} days streak`}
       </Text>
     </View>
   );

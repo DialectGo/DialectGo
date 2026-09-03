@@ -13,7 +13,6 @@ import RefreshContainer from '../../shared/components/RefreshContainer';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { styles } from './styles/ResultDictionaryStyles';
 import FeatureGateModal from '../../shared/components/FeatureGateModal';
-import { useDictionaryGuestMode } from '../../shared/hooks/dictionary/useDictionaryGuestMode';
 import { useDictionaryBookmark } from '../../shared/hooks/dictionary/useDictionaryBookmark';
 import { formatDictionaryTerms } from '../../shared/utils/dictionaryFormatUtils';
 
@@ -47,24 +46,23 @@ export default function ResultDictionaryScreen() {
   // --------------------------------------------------
   // GLOBAL STATE
   // --------------------------------------------------
-  const { isGuestMode, isConnected, checkGuestMode } = useDictionaryGuestMode();
-  const canUseOnlineFeatures = isConnected && !isGuestMode;
+  const isConnected = true; // Temporary mock since OfflineScreen blocks interaction when false.
+  const canUseOnlineFeatures = true;
 
   // --------------------------------------------------
   // BOOKMARK ORCHESTRATION
   // --------------------------------------------------
   const { isBookmarked, isSaving, verifyBookmarkStatus, handleSaveWord } = 
-    useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm);
+    useDictionaryBookmark(id, isConnected, wordTerm);
 
   // --------------------------------------------------
   // REFRESH
   // --------------------------------------------------
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await checkGuestMode();
     await verifyBookmarkStatus();
     setRefreshing(false);
-  }, [checkGuestMode, verifyBookmarkStatus]);
+  }, [verifyBookmarkStatus]);
 
   // --------------------------------------------------
   // LANGUAGE DATA

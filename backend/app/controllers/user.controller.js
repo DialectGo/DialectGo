@@ -100,3 +100,48 @@ export const adminLogin = async (req, res, next) => {
     return res.status(500).json({ success: false, message: 'Authentication failed.' });
   }
 };
+
+// ============================================
+// DEVICE PROFILES
+// ============================================
+
+export const saveDeviceProfile = async (req, res, next) => {
+  try {
+    const { device_id, email, first_name, last_name, avatar_url, auth_provider } = req.body;
+    if (!device_id) {
+      return res.status(400).json({ success: false, message: 'device_id is required' });
+    }
+    const result = await UserService.saveDeviceProfile(device_id, req.user.id, {
+      email, first_name, last_name, avatar_url, auth_provider,
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getDeviceProfiles = async (req, res, next) => {
+  try {
+    const { deviceId } = req.params;
+    if (!deviceId) {
+      return res.status(400).json({ success: false, message: 'deviceId param is required' });
+    }
+    const profiles = await UserService.getDeviceProfiles(deviceId);
+    res.json({ success: true, data: profiles });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const removeDeviceProfile = async (req, res, next) => {
+  try {
+    const { deviceId, userId } = req.params;
+    if (!deviceId || !userId) {
+      return res.status(400).json({ success: false, message: 'deviceId and userId are required' });
+    }
+    const result = await UserService.removeDeviceProfile(deviceId, userId);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};

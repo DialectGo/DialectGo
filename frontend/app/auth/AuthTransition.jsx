@@ -15,6 +15,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../src/shared/api/client';
 import { styles } from '../../src/features/auth/styles/AuthTransitionStyles';
 import { useToast } from '../../src/shared/context/ToastContext';
+import { getSavedProfiles } from '../../src/shared/services/profile/deviceProfileService';
+import SavedProfileCard from '../../src/features/auth/components/SavedProfileCard';
 
 // FIXED IMPORTS: 
 // 1. '../login' dahil nasa app/login.jsx (lowercase 'l')
@@ -32,10 +34,20 @@ export default function AuthTransition() {
   const lastY = useRef(height + 300);
   const gestureStartY = useRef(height + 300);
   const [activeForm, setActiveForm] = useState('login'); 
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [initialEmail, setInitialEmail] = useState('');
+  const [profiles, setProfiles] = useState([]);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
   const { showToast } = useToast();
 
   React.useEffect(() => {
+    const fetchProfiles = async () => {
+      setIsLoadingProfiles(true);
+      const data = await getSavedProfiles();
+      setProfiles(data || []);
+      setIsLoadingProfiles(false);
+    };
+    fetchProfiles();
+
     const listener = translateY.addListener(({ value }) => {
       lastY.current = value;
     });
@@ -84,8 +96,9 @@ export default function AuthTransition() {
     })
   ).current;
 
-  const handlePress = (formType) => {
+  const handlePress = (formType, email = '') => {
     setActiveForm(formType);
+    setInitialEmail(email);
     openSheet();
   };
 
@@ -130,165 +143,81 @@ export default function AuthTransition() {
     throw new Error(`Expected JSON response but got ${contentType}: ${text}`);
   };
 
-  const handleContinueAsGuest = async () => {
-    setIsGuestLoading(true);
 
-    try {
-      // Detect internet status
-      const networkState = await NetInfo.fetch();
-
-      // =========================
-      // OFFLINE GUEST MODE
-      // =========================
-      if (!networkState.isConnected) {
-
-        // Local-only guest session
-        const offlineGuest = {
-          id: 'offline-guest',
-          role: 'guest',
-          isOfflineGuest: true,
-          createdAt: new Date().toISOString()
-        };
-
-        // Persist local guest state
-        await AsyncStorage.setItem(
-          '@guest_mode',
-          'offline'
-        );
-
-        await AsyncStorage.setItem(
-          '@user_role',
-          'guest'
-        );
-
-        await AsyncStorage.setItem(
-          '@user_metadata',
-          JSON.stringify(offlineGuest)
-        );
-
-        // Offline cache containers
-        await AsyncStorage.setItem(
-          '@guest_history_cache',
-          JSON.stringify([])
-        );
-
-        await AsyncStorage.setItem(
-          '@guest_saved_words',
-          JSON.stringify([])
-        );
-
-        router.replace('/(tabs)/Home');
-
-        return;
-      }
-
-      // =========================
-      // ONLINE GUEST MODE
-      // =========================
-
-      const response = await fetch(
-        endpoints.GUEST_LOGIN,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      const json = await parseJsonResponse(response);
-
-      if (json.success && json.data?.session) {
-
-        const { access_token, user } = json.data.session;
-
-        await AsyncStorage.setItem(
-          '@guest_mode',
-          'online'
-        );
-
-        await AsyncStorage.setItem(
-          '@user_token',
-          access_token
-        );
-
-        await AsyncStorage.setItem(
-          '@user_role',
-          'guest'
-        );
-
-        await AsyncStorage.setItem(
-          '@user_metadata',
-          JSON.stringify(user)
-        );
-
-        await AsyncStorage.setItem(
-          '@guest_history_cache',
-          JSON.stringify([])
-        );
-
-        await AsyncStorage.setItem(
-          '@guest_saved_words',
-          JSON.stringify([])
-        );
-
-        router.replace('/(tabs)/Home');
-
-      } else {
-        throw new Error(
-          json.message || "Failed to initialize guest mode."
-        );
-      }
-
-    } catch (error) {
-
-      console.error("Guest Mode Error:", error);
-
-      showToast(error.message || "Unable to initialize guest session.", 'error', 'Guest Mode Error');
-    } finally {
-      setIsGuestLoading(false);
-    }
-  };
 
   return (
     <View style={styles.container}>
-      {/* Background Content */}
-      <View style={styles.content}>
-        <Image 
-          source={require('../../assets/logo/bee.png')} 
-          style={styles.logo} 
-          resizeMode="contain" 
-        />
-        <Text style={styles.brandText}>DialectGo</Text>
-        <Text style={styles.tagline}>Bridge the gap, one word at a time.</Text>
-      </View>
+      {/* Dynamic Content Based on Profiles */}
+      {isLoadingProfiles ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#FFC107" />
+        </View>
+      ) : profiles.length > 0 ? (
+        // --- MULTI-PROFILE VIEW ---
+        <View style={{ flex: 1, width: '100%', paddingHorizontal: 20, paddingTop: 60 }}>
+          <View style={{ alignItems: 'center', marginBottom: 30 }}>
+            <Image 
+              source={require('../../assets/logo/bee.png')} 
+              style={{ width: 60, height: 60 }} 
+              resizeMode="contain" 
+            />
+          </View>
 
-      {/* Landing Buttons */}
-      <View style={styles.buttonWrapper}>
-        <TouchableOpacity style={styles.loginBtn} onPress={() => handlePress('login')}>
-          <Text style={styles.loginBtnText}>LOG IN</Text>
-        </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            {profiles.map(p => (
+              <SavedProfileCard
+                key={p.user_id}
+                profile={p}
+                onPress={(profile) => {
+                  // If we need to support google oauth direct login, it could be handled here.
+                  // For now, pre-fill email in the login sheet.
+                  handlePress('login', profile.email);
+                }}
+              />
+            ))}
+          </View>
+          
+          <View style={{ paddingBottom: 60 }}>
+            <TouchableOpacity style={[styles.signUpBtn, { marginBottom: 15 }]} onPress={() => handlePress('login')}>
+              <Text style={styles.signUpBtnText}>Use another profile</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signUpBtn} onPress={() => handlePress('signup')}>
-          <Text style={styles.signUpBtnText}>SIGN UP</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.loginBtn} onPress={() => handlePress('signup')}>
+              <Text style={styles.loginBtnText}>Create new account</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={{ alignItems: 'center', marginTop: 10 }}
+              onPress={() => router.push('/auth/ManageProfiles')}
+            >
+              <Text style={{ color: '#888', fontFamily: 'Poppins-Medium' }}>Manage Accounts</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        // --- ORIGINAL VIEW ---
+        <>
+          <View style={styles.content}>
+            <Image 
+              source={require('../../assets/logo/bee.png')} 
+              style={styles.logo} 
+              resizeMode="contain" 
+            />
+            <Text style={styles.brandText}>DialectGo</Text>
+            <Text style={styles.tagline}>Bridge the gap, one word at a time.</Text>
+          </View>
 
-        {/* Continue as Guest Trigger */}
-        <TouchableOpacity 
-          style={[styles.guestBtn, { marginTop: 15, padding: 12, alignItems: 'center' }]} 
-          onPress={handleContinueAsGuest}
-          disabled={isGuestLoading}
-        >
-          {isGuestLoading ? (
-            <ActivityIndicator color="#666" />
-          ) : (
-            <Text style={{ color: '#666', fontWeight: '600', textDecorationLine: 'underline' }}>
-              Continue as Guest
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <View style={styles.buttonWrapper}>
+            <TouchableOpacity style={styles.loginBtn} onPress={() => handlePress('login')}>
+              <Text style={styles.loginBtnText}>LOG IN</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.signUpBtn} onPress={() => handlePress('signup')}>
+              <Text style={styles.signUpBtnText}>SIGN UP</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {/* --- ANIMATED SHEET --- */}
       <Animated.View 
@@ -303,6 +232,7 @@ export default function AuthTransition() {
                 onSwitch={() => setActiveForm('signup')} 
                 onSuccess={handleLoginSuccess} 
                 panHandlers={panResponder.panHandlers}
+                initialEmail={initialEmail}
               />
             ) : (
               <SignUp 

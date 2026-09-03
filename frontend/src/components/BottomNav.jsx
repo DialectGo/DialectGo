@@ -9,10 +9,6 @@ import {
   Easing
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import FeatureGateModal from '../shared/components/FeatureGateModal';
-import NetInfo from '@react-native-community/netinfo';
-import { supabase } from '../shared/api/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -75,56 +71,16 @@ const TabItem = ({ icon, ioniconName, label, isActive, onPress }) => {
 export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const [gateVisible, setGateVisible] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const [isConnected, setIsConnected] = useState(true);
-  const [isGuestMode, setIsGuestMode] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = state.isConnected ?? false;
-      setIsConnected(connected);
-
-      if (!connected) {
-        setIsGuestMode(true);
-      } else {
-        checkUserMode();
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const checkUserMode = async () => {
-    try {
-      const role = await AsyncStorage.getItem('@user_role');
-      const guestMode = await AsyncStorage.getItem('@guest_mode');
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const isGuest = role === 'guest' || guestMode !== null || !session;
-      setIsGuestMode(isGuest);
-
-    } catch (err) {
-      console.log('BottomNav auth check error:', err);
-      setIsGuestMode(true);
-    }
-  };
-
   const tabs = [
-    { name: 'Home', path: '/Home', icon: require('../../assets/icons/bottombar/homeIcon.png'), isGated: false },
-    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/bottombar/dictionaryIcon.png'), isGated: false },
-    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/bottombar/translateIcon1.png'), isGated: false },
-{ name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/bottombar/wikiIcon.png'), isGated: true },  ];
+    { name: 'Home', path: '/Home', icon: require('../../assets/icons/bottombar/homeIcon.png') },
+    { name: 'Dictionary', path: '/Dictionary/Dictionary', icon: require('../../assets/icons/bottombar/dictionaryIcon.png') },
+    { name: 'Translate', path: '/Translator/Translate', icon: require('../../assets/icons/bottombar/translateIcon1.png') },
+    { name: 'Wiki', path: '/Wiki/WikiFeed', icon: require('../../assets/icons/bottombar/wikiIcon.png') },
+  ];
 
-  const handleNavigationInterception = async (tab, index) => {
-    if (tab.isGated) {
-      if (!isConnected || isGuestMode) {
-        setGateVisible(true);
-        return;
-      }
-    }
-    
+  const handleNavigationInterception = (tab) => {
     router.replace(tab.path);
   };
 
@@ -142,12 +98,11 @@ export default function BottomNav() {
               ioniconName={tab.ioniconName}
               label={tab.name}
               isActive={isTabActive}
-              onPress={() => handleNavigationInterception(tab, index)}
+              onPress={() => handleNavigationInterception(tab)}
             />
           );
         })}
       </View>
-      <FeatureGateModal visible={gateVisible} onClose={() => setGateVisible(false)} />
     </View>
   );
 }

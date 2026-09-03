@@ -13,7 +13,8 @@ export const getValidSession = async () => {
   if (sessionError || !sessionData?.session?.access_token) {
     const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
     if (refreshError || !refreshData?.session?.access_token) {
-      throw new Error('Authentication expired. Please log in again.');
+      console.warn('Authentication expired. Please log in again.');
+      return null;
     }
     return refreshData.session;
   }
@@ -22,7 +23,8 @@ export const getValidSession = async () => {
   if (userError || !userData?.user) {
     const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
     if (refreshError || !refreshData?.session?.access_token) {
-      throw new Error('Authentication expired. Please log in again.');
+      console.warn('Authentication expired. Please log in again.');
+      return null;
     }
     return refreshData.session;
   }

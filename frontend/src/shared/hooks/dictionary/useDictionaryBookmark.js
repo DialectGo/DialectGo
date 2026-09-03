@@ -3,13 +3,13 @@ import { Alert } from 'react-native';
 import { useToast } from '../../context/ToastContext';
 import { dictionaryBookmarkService } from '../../services/dictionary/dictionaryBookmarkService';
 
-export function useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm) {
+export function useDictionaryBookmark(id, isConnected, wordTerm) {
   const { showToast } = useToast();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const verifyBookmarkStatus = async () => {
-    if (!id || isGuestMode || !isConnected) return;
+    if (!id || !isConnected) return;
     
     try {
       const status = await dictionaryBookmarkService.checkBookmarkStatus(id);
@@ -21,7 +21,7 @@ export function useDictionaryBookmark(id, isGuestMode, isConnected, wordTerm) {
 
   useEffect(() => {
     verifyBookmarkStatus();
-  }, [id, isGuestMode, isConnected]);
+  }, [id, isConnected]);
 
   const handleSaveWord = async () => {
     if (!id) {
