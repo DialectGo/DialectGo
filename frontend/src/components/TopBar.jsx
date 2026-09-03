@@ -107,7 +107,9 @@ const TopBar = ({
                   style={styles.glassBtn}
                   onPress={() => handleNavigation('/Account/Profile')}
                 >
-                  <Image source={userAvatar} style={styles.avatarIcon} />
+                  <View style={styles.avatarWrapper}>
+                    <Image source={userAvatar} style={styles.avatarIcon} />
+                  </View>
                 </TouchableOpacity>
               </>
             ) : (
@@ -137,7 +139,9 @@ const TopBar = ({
                   style={styles.glassBtn}
                   onPress={() => handleNavigation('/Account/Profile')}
                 >
-                  <Image source={userAvatar} style={styles.avatarIcon} />
+                  <View style={styles.avatarWrapper}>
+                    <Image source={userAvatar} style={styles.avatarIcon} />
+                  </View>
                 </TouchableOpacity>
               </>
             )}
@@ -200,10 +204,21 @@ glassBtn: {
   justifyContent: 'center',
   alignItems: 'center',
 },
-  avatarIcon: {
+  avatarWrapper: {
     width: 38,
     height: 38,
     borderRadius: 19,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFD54F',
+  },
+  avatarIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    resizeMode: 'contain',
   },
   badge: {
     position: 'absolute',
