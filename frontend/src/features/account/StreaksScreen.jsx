@@ -9,6 +9,7 @@ import ProfileTopBar from '../../components/ProfileTopBar';
 import { getWeeklyStatus } from '../../shared/utils/dateUtils';
 import { useProfileContext } from '../../shared/context/ProfileContext';
 import HomeCard from '../../shared/components/HomeCard';
+import { getStreakAsset } from '../../shared/utils/streakAssets';
 
 export default function StreaksScreen() { 
   const router = useRouter(); 
@@ -67,7 +68,7 @@ export default function StreaksScreen() {
 
               <View style={styles.tripleFlameWrapper}>
                 <Image
-                  source={require('../../../assets/icons/profile/streak_icon.png')}
+                  source={getStreakAsset(currentStreak)}
                   style={styles.centerFlame}
                   resizeMode="contain"
                 />
