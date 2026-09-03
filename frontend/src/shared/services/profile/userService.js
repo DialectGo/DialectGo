@@ -18,14 +18,16 @@ export const getUserRoleAndMode = async () => {
   return { role, guestMode };
 };
 
-export const clearAuthSession = async () => {
-  try {
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) {
-      console.warn("Supabase signout returned error, clearing local anyway:", error);
+export const clearAuthSession = async (keepServerSession = false) => {
+  if (!keepServerSession) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.warn("Supabase signout returned error, clearing local anyway:", error);
+      }
+    } catch (err) {
+      console.warn("Network error during signout, forcing local clear:", err);
     }
-  } catch (err) {
-    console.warn("Network error during signout, forcing local clear:", err);
   }
 
   try {

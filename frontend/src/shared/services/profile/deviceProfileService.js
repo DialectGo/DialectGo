@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { endpoints } from '../../api/client';
 import { getValidSession } from '../authService';
+import { supabase } from '../../api/supabase';
 
 const DEVICE_ID_KEY = 'dialectgo_device_id';
 
@@ -53,7 +54,14 @@ export const saveProfileToDevice = async ({ email, first_name, last_name, avatar
     });
 
     const result = await response.json();
-    return result.success ? result.data : null;
+    if (result.success) {
+      // Store the refresh token securely for one-click login
+      if (session.refresh_token && session.user?.id) {
+        await SecureStore.setItemAsync(`dialectgo_refresh_${session.user.id}`, session.refresh_token);
+      }
+      return result.data;
+    }
+    return null;
   } catch (error) {
     console.error('Failed to save device profile:', error);
     return null;
@@ -97,9 +105,35 @@ export const removeProfileFromDevice = async (userId) => {
     });
 
     const result = await response.json();
-    return result.success;
+    if (result.success) {
+      await SecureStore.deleteItemAsync(`dialectgo_refresh_${userId}`);
+      return true;
+    }
+    return false;
   } catch (error) {
     console.error('Failed to remove device profile:', error);
+    return false;
+  }
+};
+
+/**
+ * Perform a passwordless login using a saved refresh token.
+ */
+export const loginWithSavedProfile = async (userId) => {
+  try {
+    const token = await SecureStore.getItemAsync(`dialectgo_refresh_${userId}`);
+    console.log("Passwordless login: Retrieved token?", !!token);
+    if (!token) return false;
+    
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: token });
+    console.log("Passwordless login: Supabase result ->", data?.session ? "Success" : "Failed", error);
+    
+    if (error || !data?.session) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Passwordless login failed:', error);
     return false;
   }
 };

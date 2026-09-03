@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../shared/theme/colorPalette';
-import { fonts } from '../../shared/theme/typography';
-import { availableAvatars } from '../../shared/hooks/profile/constants';
+import { colors } from '../../../shared/theme/colorPalette';
+import { fonts } from '../../../shared/theme/typography';
+import { availableAvatars } from '../../../shared/hooks/profile/constants';
 
 /**
  * SavedProfileCard — Displays a saved profile for quick login

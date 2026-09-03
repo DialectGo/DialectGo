@@ -7,7 +7,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  StyleSheet
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,7 +16,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../src/shared/api/client';
 import { styles } from '../../src/features/auth/styles/AuthTransitionStyles';
 import { useToast } from '../../src/shared/context/ToastContext';
-import { getSavedProfiles } from '../../src/shared/services/profile/deviceProfileService';
+import { getSavedProfiles, loginWithSavedProfile } from '../../src/shared/services/profile/deviceProfileService';
 import SavedProfileCard from '../../src/features/auth/components/SavedProfileCard';
 
 // FIXED IMPORTS: 
@@ -37,6 +38,7 @@ export default function AuthTransition() {
   const [initialEmail, setInitialEmail] = useState('');
   const [profiles, setProfiles] = useState([]);
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
+  const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
   const { showToast } = useToast();
 
   React.useEffect(() => {
@@ -147,6 +149,13 @@ export default function AuthTransition() {
 
   return (
     <View style={styles.container}>
+      {/* Quick Login Overlay */}
+      {isQuickLoggingIn && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.7)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#FFD54F" />
+        </View>
+      )}
+
       {/* Dynamic Content Based on Profiles */}
       {isLoadingProfiles ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -168,10 +177,19 @@ export default function AuthTransition() {
               <SavedProfileCard
                 key={p.user_id}
                 profile={p}
-                onPress={(profile) => {
-                  // If we need to support google oauth direct login, it could be handled here.
-                  // For now, pre-fill email in the login sheet.
-                  handlePress('login', profile.email);
+                onPress={async (profile) => {
+                  setIsQuickLoggingIn(true);
+                  const success = await loginWithSavedProfile(profile.user_id);
+                  setIsQuickLoggingIn(false);
+                  
+                  if (success) {
+                    showToast(`Welcome back, ${profile.first_name || 'User'}!`, 'success');
+                    handleLoginSuccess();
+                  } else {
+                    // Fall back to asking for password
+                    showToast('Session expired. Please enter your password.', 'info');
+                    handlePress('login', profile.email);
+                  }
                 }}
               />
             ))}
