@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useCallback, useState, use
 import { useProfileData } from '../hooks/profile/useProfileData';
 import { useProfileNetwork } from '../hooks/profile/useProfileNetwork';
 import { getUserRoleAndMode, getAuthSession } from '../services/profile/userService';
+import { supabase } from '../api/supabase';
 
 const ProfileContext = createContext();
 
@@ -12,6 +13,7 @@ export const ProfileProvider = ({ children }) => {
 
   const { isConnected } = useProfileNetwork();
   const profileData = useProfileData();
+  const { resetProfileData } = profileData;
 
   const loadProfileData = useCallback(async (isManualRefresh = false) => {
     if (!isConnected) {
@@ -27,7 +29,7 @@ export const ProfileProvider = ({ children }) => {
       const session = await getAuthSession();
 
       if (!session) {
-        profileData.resetProfileData();
+        resetProfileData();
         return;
       }
 
@@ -38,7 +40,7 @@ export const ProfileProvider = ({ children }) => {
 
     } catch (error) {
       console.log('Profile load error:', error);
-      profileData.resetProfileData();
+      resetProfileData();
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,15 +51,30 @@ export const ProfileProvider = ({ children }) => {
     if (!isConnected) {
       setLoading(false); 
       setRefreshing(false);
-      profileData.resetProfileData();
+      resetProfileData();
       return;
     }
 
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      loadProfileData();
-    }
-  }, [isConnected, loadProfileData, profileData.resetProfileData]);
+    // Subscribe to auth state changes so we correctly handle app restarts
+    // and wait for Supabase to finish reading from AsyncStorage.
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session) {
+          loadProfileData();
+        } else {
+          resetProfileData();
+          setLoading(false);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        resetProfileData();
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [isConnected, loadProfileData, resetProfileData]);
 
   const refreshProfile = () => {
     setRefreshing(true);

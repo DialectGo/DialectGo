@@ -24,6 +24,7 @@ import { makeRedirectUri } from 'expo-auth-session';
 import { useProfileContext } from '../src/shared/context/ProfileContext';
 import { useToast } from '../src/shared/context/ToastContext';
 import AnimatedJeep from '../src/features/auth/components/AnimatedJeep';
+import NetInfo from '@react-native-community/netinfo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,11 +43,33 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
   // --- LOGIN LOGIC ---
   const handleLogin = async (email, password) => {
     let newErrors = {};
-    if (!email) newErrors.email = "Email is required";
-    if (!password) newErrors.password = "Password is required";
+    const emailTrimmed = email.trim();
+    const passTrimmed = password.trim();
+
+    // 1. Empty Field / Presence Validation
+    if (!emailTrimmed) newErrors.email = "Email is required";
+    if (!passTrimmed) newErrors.password = "Password is required";
+
+    // 2. Email Format Validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (emailTrimmed && !emailRegex.test(emailTrimmed)) {
+      newErrors.email = "Please enter a valid Gmail address (e.g. user@gmail.com)";
+    }
+
+    // 3. Password Length Check
+    if (passTrimmed && passTrimmed.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      return;
+    }
+
+    // 4. Network Connectivity Check
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      showToast("No internet connection. Please check your network and try again.", "error", "Offline");
       return;
     }
 
@@ -198,14 +221,17 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               <Text style={styles.labelShadow}>Email</Text>
               <TextInput
                 style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}
-                placeholder="Enter your email"
-                placeholderTextColor="#BDBDBD"
+                placeholder="juan@example.com"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) setErrors({ ...errors, email: null });
+                onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }}
+                onBlur={() => {
+                  const em = email.trim();
+                  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+                  if (em && !emailRegex.test(em)) {
+                    setErrors(prev => ({ ...prev, email: "Please enter a valid Gmail address (e.g. user@gmail.com)" }));
+                  }
                 }}
               />
               {errors.email && errors.email !== ' ' && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}

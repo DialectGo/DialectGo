@@ -45,7 +45,8 @@ export const dictionaryBookmarkService = {
 
     const result = await response.json();
     if (response.ok && result.success) {
-      return true;
+      // Return the actual toggled status from the backend
+      return result.data.isBookmarked;
     } else {
       throw new Error(result.message || 'Failed to save.');
     }

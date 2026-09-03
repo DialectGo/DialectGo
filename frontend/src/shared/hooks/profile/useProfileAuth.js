@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { clearAuthSession } from '../../services/profile/userService';
-import { saveProfileToDevice } from '../../services/profile/deviceProfileService';
+import { saveProfileToDevice, getSavedProfiles } from '../../services/profile/deviceProfileService';
 import { useProfileContext } from '../../context/ProfileContext';
 
 export const useProfileAuth = (isConnected, onNavigate, router) => {
@@ -18,10 +18,30 @@ export const useProfileAuth = (isConnected, onNavigate, router) => {
     router.push(targetPath);
   }, [isConnected, router]);
 
-  // Show the logout confirmation modal instead of logging out directly
-  const handleLogout = useCallback(() => {
+  // Show the logout confirmation modal only if the user hasn't saved their profile yet.
+  const handleLogout = useCallback(async () => {
+    try {
+      const { supabase } = await import('../../api/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (userId) {
+        const savedProfiles = await getSavedProfiles();
+        const isAlreadySaved = savedProfiles.some(p => p.user_id === userId);
+        
+        if (isAlreadySaved) {
+          // If already saved, just update/save again and log out directly
+          await handleSaveAndLogout();
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Error checking saved profiles:', error);
+    }
+    
+    // If not saved (or error), show the modal to ask
     setLogoutModalVisible(true);
-  }, []);
+  }, [handleSaveAndLogout]);
 
   // Save profile to device, then sign out and navigate
   const handleSaveAndLogout = useCallback(async () => {
@@ -57,7 +77,7 @@ export const useProfileAuth = (isConnected, onNavigate, router) => {
       setIsSavingProfile(false);
     }
 
-    await clearAuthSession();
+    await clearAuthSession(true); // <--- Keep the token valid on the server for quick login!
     setLogoutModalVisible(false);
     if (router.dismissAll) router.dismissAll();
     router.replace('/auth/AuthTransition');

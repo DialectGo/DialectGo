@@ -92,7 +92,7 @@ export default function ManageProfiles() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C242C', // Very dark slate (Duolingo manage screen color)
+    backgroundColor: '#FFFFFF', // Maintain white background
   },
   header: {
     paddingVertical: 20,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fonts.bold,
     fontSize: 22,
-    color: '#FFF',
+    color: '#5D4037', // Dark brown to contrast with white
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -125,8 +125,9 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 14,
-    color: '#93D333', // Duolingo green text
+    fontSize: 16,
+    color: '#FFC107', // Yellow color
     letterSpacing: 1,
+    fontWeight: 'bold',
   },
 });
