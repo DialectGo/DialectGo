@@ -27,6 +27,7 @@ import { useProfileContext } from '../../src/shared/context/ProfileContext';
 import { useToast } from '../../src/shared/context/ToastContext';
 import TermsAndAgreementModal from '../../src/features/auth/components/TermsAndAgreementModal';
 import AnimatedJeep from '../../src/features/auth/components/AnimatedJeep';
+import * as Linking from 'expo-linking';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -88,6 +89,8 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
     setLoading(true);
 
     try {
+      const redirectUrl = Linking.createURL('login', { queryParams: { confirmed: 'true' } });
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -102,7 +105,8 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
           city,
           // addressLine: `${city}, ${province}, ${country}`,
           username: deriveUsername(email),
-          preferredLanguageCode: 'en'
+          preferredLanguageCode: 'en',
+          redirectUrl
         }),
       });
 
@@ -192,22 +196,35 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ backgroundColor: '#FFF', width: '100%', borderRadius: 30, padding: 30, alignItems: 'center' }}>
             <View style={{ backgroundColor: '#4CAF50', width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ color: '#FFF', fontSize: 40 }}>✓</Text>
+              <FontAwesome5 name="envelope" size={40} color="#FFF" />
             </View>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>Account Registered!</Text>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>Confirm Your Email</Text>
             <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
-              Malipayong pag-abot! Palihug pag-log in gamit ang imong bag-ong credentials.
+              We've sent a confirmation link to {email}. Please check your inbox and confirm your email to continue.
             </Text>
 
             <TouchableOpacity
               style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]}
               onPress={() => {
                 setIsSuccess(false);
-                onSwitch(); // Switches the form inside the sheet to Login
-                // Optional: call onSuccess() here if you want to close the sheet entirely
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('message://');
+                } else {
+                  Linking.openURL('mailto:');
+                }
               }}
             >
-              <Text style={styles.primaryBtnText}>PROCEED TO LOGIN</Text>
+              <Text style={styles.primaryBtnText}>OPEN EMAIL APP</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ marginTop: 20 }}
+              onPress={() => {
+                setIsSuccess(false);
+                if (onSwitch) onSwitch();
+              }}
+            >
+              <Text style={{ color: '#9CA3AF', fontSize: 14, fontWeight: 'bold' }}>I'll do it later</Text>
             </TouchableOpacity>
           </View>
         </View>
