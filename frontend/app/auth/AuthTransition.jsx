@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   StyleSheet
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { endpoints } from '../../src/shared/api/client';
@@ -41,20 +41,23 @@ export default function AuthTransition() {
   const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
   const { showToast } = useToast();
 
-  React.useEffect(() => {
-    const fetchProfiles = async () => {
-      setIsLoadingProfiles(true);
-      const data = await getSavedProfiles();
-      setProfiles(data || []);
-      setIsLoadingProfiles(false);
-    };
-    fetchProfiles();
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchProfiles = async () => {
+        const data = await getSavedProfiles();
+        setProfiles(data || []);
+        setIsLoadingProfiles(false);
+      };
+      fetchProfiles();
+    }, [])
+  );
 
+  React.useEffect(() => {
     const listener = translateY.addListener(({ value }) => {
       lastY.current = value;
     });
     return () => translateY.removeListener(listener);
-  }, []);
+  }, [translateY]);
 
   // --- ANIMATION LOGIC (PAN RESPONDER) ---
   const panResponder = useRef(

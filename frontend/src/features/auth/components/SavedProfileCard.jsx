@@ -60,13 +60,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#303030', // Match Facebook dark card, or use DialectGo light
+    backgroundColor: '#FFFDE7', // DialectGo light yellow
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#444', // Dark mode border
+    borderWidth: 2,
+    borderColor: '#FFD54F', // Strong yellow border
   },
   leftContent: {
     flexDirection: 'row',
@@ -94,7 +94,9 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#444',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#FFD54F',
   },
   textContainer: {
     marginLeft: 12,
@@ -104,12 +106,12 @@ const styles = StyleSheet.create({
   nameText: {
     fontFamily: fonts.semiBold,
     fontSize: 16,
-    color: '#FFF', // Facebook uses white text
+    color: '#5D4037', // DialectGo dark brown text
   },
   emailText: {
     fontFamily: fonts.regular,
     fontSize: 12,
-    color: '#AAA',
+    color: '#8D6E63', // Lighter brown
     marginTop: 2,
   },
 });
