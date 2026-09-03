@@ -113,7 +113,19 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
       const result = await response.json();
 
       if (response.ok) {
-        setIsSuccess(true);
+        showToast("Registration successful! Redirecting to email...", "success", "Success");
+        setPassword('');
+        if (onSwitch) onSwitch();
+        
+        setTimeout(() => {
+          if (Platform.OS === 'ios') {
+            Linking.openURL('googlegmail://').catch(() => {
+              Linking.openURL('message://');
+            });
+          } else {
+            Linking.openURL('mailto:');
+          }
+        }, 1500);
       } else {
         throw new Error(result.message || "Registration failed");
       }
@@ -191,44 +203,6 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
         onAccept={() => setTermsAccepted(true)}
       />
 
-      {/* --- SUCCESS MODAL --- */}
-      <Modal visible={isSuccess} transparent animationType="fade">
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ backgroundColor: '#FFF', width: '100%', borderRadius: 30, padding: 30, alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#4CAF50', width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-              <FontAwesome5 name="envelope" size={40} color="#FFF" />
-            </View>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#333', textAlign: 'center' }}>Confirm Your Email</Text>
-            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginTop: 10, lineHeight: 20 }}>
-              We've sent a confirmation link to {email}. Please check your inbox and confirm your email to continue.
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.bubblePrimaryBtn, { marginTop: 30, width: '100%' }]}
-              onPress={() => {
-                setIsSuccess(false);
-                if (Platform.OS === 'ios') {
-                  Linking.openURL('message://');
-                } else {
-                  Linking.openURL('mailto:');
-                }
-              }}
-            >
-              <Text style={styles.primaryBtnText}>OPEN EMAIL APP</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{ marginTop: 20 }}
-              onPress={() => {
-                setIsSuccess(false);
-                if (onSwitch) onSwitch();
-              }}
-            >
-              <Text style={{ color: '#9CA3AF', fontSize: 14, fontWeight: 'bold' }}>I'll do it later</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {/* --- HEADER SECTION --- */}
         <View style={styles.topHalf}>
