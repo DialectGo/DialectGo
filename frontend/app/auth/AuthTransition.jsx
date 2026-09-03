@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  StyleSheet
+  StyleSheet,
+  Keyboard
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -117,6 +118,7 @@ export default function AuthTransition() {
   };
 
   const closeSheet = () => {
+    Keyboard.dismiss();
     Animated.timing(translateY, {
       toValue: MIN_DOWN,
       duration: 300,

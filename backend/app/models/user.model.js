@@ -23,6 +23,11 @@ export const registerUser = async (data) => {
 
   if (error) throw error;
 
+  // Supabase secure email enumeration protection returns a fake user with an empty identities array if the email already exists
+  if (result?.user?.identities && result.user.identities.length === 0) {
+    throw new Error("This email is already registered.");
+  }
+
   // Send the customized Nodemailer welcome email
   await sendWelcomeEmail(email, meta.firstName || 'User');
 

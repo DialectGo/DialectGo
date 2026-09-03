@@ -27,6 +27,7 @@ import { useProfileContext } from '../../src/shared/context/ProfileContext';
 import { useToast } from '../../src/shared/context/ToastContext';
 import TermsAndAgreementModal from '../../src/features/auth/components/TermsAndAgreementModal';
 import AnimatedJeep from '../../src/features/auth/components/AnimatedJeep';
+import NetInfo from '@react-native-community/netinfo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -39,7 +40,9 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
   const [showTerms, setShowTerms] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -68,19 +71,48 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
 
   const handleRegister = async () => {
     let newErrors = {};
-    if (!firstName) newErrors.firstName = "First name is required";
-    if (!lastName) newErrors.lastName = "Last name is required";
+    const fName = firstName.trim();
+    const lName = lastName.trim();
+    const em = email.trim();
+    const pwd = password.trim();
+    const cpwd = confirmPassword.trim();
+    
+    // 1. Empty Field Validation
+    if (!fName) newErrors.firstName = "First name is required";
+    if (!lName) newErrors.lastName = "Last name is required";
     if (!dateSelected) newErrors.birthDate = "Birthdate is required";
     if (!country) newErrors.country = "Country is required";
     if (!province) newErrors.province = "Province is required";
     if (!city) newErrors.city = "City is required";
-    if (!email) newErrors.email = "Email is required";
-    if (!password) newErrors.password = "Password is required";
+    if (!em) newErrors.email = "Email is required";
+    if (!pwd) newErrors.password = "Password is required";
+    if (!cpwd) newErrors.confirmPassword = "Confirm password is required";
     if (!termsAccepted) newErrors.terms = "You must agree to the Terms and Agreement";
+
+    // 2. Email Format Validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (em && !emailRegex.test(em)) {
+      newErrors.email = "Please enter a valid Gmail address (e.g. user@gmail.com)";
+    }
+
+    // 3. Password Strength & Matching
+    if (pwd && pwd.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    if (pwd && cpwd && pwd !== cpwd) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      showToast("Palihug kumpletoha ang tanang fields.", "error", "Error");
+      showToast("Palihug kumpletoha ang tanang fields o sunda ang porma.", "error", "Error");
+      return;
+    }
+
+    // 4. Network Connectivity Check
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      showToast("No internet connection. Please check your network and try again.", "error", "Offline");
       return;
     }
 
@@ -114,7 +146,12 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
         throw new Error(result.message || "Registration failed");
       }
     } catch (error) {
-      showToast(error.message, 'error', 'Sign Up Error');
+      const errMsg = error.message.toLowerCase();
+      if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
+        setErrors({ email: "This email is already registered." });
+      } else {
+        showToast(error.message, 'error', 'Sign Up Error');
+      }
     } finally {
       setLoading(false);
     }
@@ -284,19 +321,33 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Province</Text>
                 <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" value={province} onChangeText={(t) => { setProvince(t); if (errors.province) setErrors({ ...errors, province: null }); }} />
-                {errors.province && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.province}</Text>}
+                {errors.province && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.province}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>City</Text>
                 <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" value={city} onChangeText={(t) => { setCity(t); if (errors.city) setErrors({ ...errors, city: null }); }} />
-                {errors.city && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.city}</Text>}
+                {errors.city && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.city}</Text>}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Email</Text>
-              <TextInput style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="email@example.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }} />
-              {errors.email && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
+              <TextInput 
+                style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
+                placeholder="email@example.com" 
+                keyboardType="email-address" 
+                autoCapitalize="none" 
+                value={email} 
+                onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }} 
+                onBlur={() => {
+                  const em = email.trim();
+                  const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+                  if (em && !emailRegex.test(em)) {
+                    setErrors(prev => ({ ...prev, email: "Please enter a valid Gmail address (e.g. user@gmail.com)" }));
+                  }
+                }}
+              />
+              {errors.email && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
@@ -307,13 +358,30 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                   placeholder="••••••••"
                   secureTextEntry={secureTextEntry}
                   value={password}
-                  onChangeText={(t) => { setPassword(t); if (errors.password) setErrors({ ...errors, password: null }); }}
+                  onChangeText={(t) => { setPassword(t); if (errors.password) setErrors({ ...errors, password: null, confirmPassword: null }); }}
                 />
                 <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
                   <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
-              {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -10, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
+              {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.labelShadow}>Confirm Password</Text>
+              <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.confirmPassword ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
+                <TextInput
+                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  placeholder="••••••••"
+                  secureTextEntry={confirmSecureTextEntry}
+                  value={confirmPassword}
+                  onChangeText={(t) => { setConfirmPassword(t); if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null }); }}
+                />
+                <TouchableOpacity onPress={() => setConfirmSecureTextEntry(!confirmSecureTextEntry)}>
+                  <FontAwesome5 name={confirmSecureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.confirmPassword}</Text>}
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20, paddingHorizontal: 5 }}>
@@ -335,7 +403,7 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                 {termsAccepted && <FontAwesome5 name="check" size={10} color="#421C00" />}
               </TouchableOpacity>
             </View>
-            {errors.terms && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: -15, marginBottom: 15, marginLeft: 5, fontWeight: 'bold' }}>{errors.terms}</Text>}
+            {errors.terms && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginBottom: 15, marginLeft: 5, fontWeight: 'bold' }}>{errors.terms}</Text>}
 
             <TouchableOpacity style={[styles.bubblePrimaryBtn, { marginTop: 10 }]} onPress={handleRegister} disabled={loading}>
               {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>SIGN UP</Text>}
