@@ -48,7 +48,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers }) {
       const parsedUrl = Linking.parse(url);
       const queryParams = parsedUrl.queryParams || {};
       
-      if (queryParams.confirmed === 'true' || url.includes('confirmed=true')) {
+      if (queryParams.confirmed === 'true' || url.includes('confirmed=true') || url.includes('access_token=') || url.includes('code=')) {
         setShowConfirmOverlay(true);
       }
     }

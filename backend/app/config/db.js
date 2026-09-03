@@ -12,6 +12,11 @@ dotenv.config();
 const supabase = createClient(
     process.env.SUPABASE_URL, 
     process.env.SUPABASE_ANON_KEY,
+    {
+        auth: {
+            flowType: 'implicit',
+        }
+    }
 );
 const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
