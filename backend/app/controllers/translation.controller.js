@@ -116,6 +116,79 @@ export const translateDocument = async (req, res, next) => {
     } catch (err) { next(err); }
 };
 
+/**
+ * Base64 document translation endpoint — accepts file data as base64-encoded JSON
+ * instead of multipart FormData. This bypasses Android's FormData file upload bug
+ * in Expo Go while allowing configurable timeouts via standard fetch.
+ * POST /translate/document-base64
+ */
+export const translateDocumentBase64 = async (req, res, next) => {
+    try {
+        const { fileBase64, fileName, mimeType, sourceLang, targetLang, source_language_id, target_language_id, targetDialect, withBreakdown } = req.body;
+
+        if (!fileBase64) return res.status(400).json({ message: "No file data provided" });
+
+        console.log('[translateDocumentBase64] Received base64 file:', fileName, 'mimeType:', mimeType);
+
+        // Write base64 to a temp file so extractTextFromFilepath can process it
+        const tempDir = 'uploads';
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        
+        const ext = fileName?.split('.').pop() || 'tmp';
+        const tempPath = `${tempDir}/${Date.now()}_upload.${ext}`;
+        fs.writeFileSync(tempPath, Buffer.from(fileBase64, 'base64'));
+
+        // 1. Extract text
+        const extraction = await FileService.extractTextFromFilepath(tempPath, mimeType);
+        const extractedText = extraction.text;
+        const ocrDetails = extraction.ocrDetails;
+        const layoutHints = extraction.layoutHints;
+
+        console.log('[translateDocumentBase64] Extracted text length:', extractedText?.length, 'chars');
+        console.log('[translateDocumentBase64] First 200 chars:', extractedText?.slice(0, 200));
+        console.log('[translateDocumentBase64] Temp file size:', fs.existsSync(tempPath) ? fs.statSync(tempPath).size : 'deleted', 'bytes');
+
+        // 2. Clean up temp file
+        try { fs.unlinkSync(tempPath); } catch (e) {}
+
+        if (!extractedText || !extractedText.trim()) {
+            return res.status(400).json({ message: "No text could be extracted from the file." });
+        }
+
+        // 3. Translate
+        const shouldBreakdown = withBreakdown === 'true' || withBreakdown === true;
+        const result = await TranslationService.performDocumentTranslation(
+            extractedText, sourceLang, targetLang, targetDialect || null, req.token,
+            ocrDetails, layoutHints, shouldBreakdown
+        );
+
+        let savedRecord = null;
+        if (req.user?.id) {
+            const { data, error } = await TranslationService.saveHistory(req.user.id, {
+                sourceText: extractedText,
+                translatedText: result.translatedText,
+                sourceLanguageId: source_language_id,
+                targetLanguageId: target_language_id,
+                sourceType: 'document'
+            }, req.token);
+            if (!error) savedRecord = data?.[0];
+        }
+
+        res.status(200).json({
+            success: true,
+            translatedText: result.translatedText,
+            sourceText: extractedText,
+            historyRecord: savedRecord,
+            preprocessing: result.preprocessing,
+            dialectization: result.dialectization,
+            breakdown: result.breakdown || null,
+            documentType: result.documentType || null,
+            formattedSourceText: result.formattedSourceText || null,
+            segments: result.segments || null,
+        });
+    } catch (err) { next(err); }
+};
+
 // LLM Meta-Layer: Explain a specific paragraph/segment the user tapped on
 export const explainSegment = async (req, res, next) => {
     try {

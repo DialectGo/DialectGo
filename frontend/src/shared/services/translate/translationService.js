@@ -313,7 +313,11 @@ export const translateDocument = async ({
   sourceLangId,
   targetLangId,
 }) => {
+  console.log('[Translate] Step 1: Getting session...');
   const session = await getValidSession();
+
+  console.log('[Translate] Step 2: Importing FileSystem...');
+  const { readAsStringAsync, EncodingType } = await import('expo-file-system/legacy');
 
   const getMimeType = (asset) => {
     if (asset.mimeType) return asset.mimeType;
@@ -325,44 +329,59 @@ export const translateDocument = async ({
 
   const mimeType = getMimeType(fileAsset);
   let uploadUri = fileAsset.uri;
+  console.log('[Translate] Step 3: File info -', { uri: uploadUri?.slice(-50), mimeType, name: fileAsset.fileName || fileAsset.name });
 
   // ── Image Compression ─────────────────────────────────────────────────────
-  // For images (not PDFs/DOCX), compress before upload to cut OCR processing
-  // time by 50-80%. This is the single biggest win for image/document latency.
   if (mimeType.startsWith('image/')) {
     uploadUri = await compressImageForOCR(fileAsset.uri);
   }
 
-  const formData = new FormData();
-  
-  // Append a timestamp to the filename to force React Native Android to treat it as a new file.
-  // This bypasses a known OkHttp/FormData bug where uploading the exact same local URI twice hangs.
-  const originalFileName = fileAsset.fileName || fileAsset.name || 'upload.jpg';
-  const uniqueFileName = `${Date.now()}_${originalFileName}`;
-
-  formData.append('file', {
-    uri: uploadUri,
-    name: uniqueFileName,
-    type: mimeType,
+  // Read file as base64 to send as JSON — this bypasses the Android FormData
+  // file upload bug in Expo Go that causes "Network request failed".
+  console.log('[Translate] Step 4: Reading file as base64...');
+  const fileBase64 = await readAsStringAsync(uploadUri, {
+    encoding: EncodingType.Base64,
   });
-  formData.append('sourceLang', sourceLang);
-  formData.append('targetLang', targetLang);
-  if (targetDialect) formData.append('targetDialect', targetDialect);
-  if (sourceLangId) formData.append('source_language_id', sourceLangId);
-  if (targetLangId) formData.append('target_language_id', targetLangId);
-  // withBreakdown removed — breakdown is now served via POST /translate/breakdown SSE endpoint
+  console.log('[Translate] Step 5: Base64 length:', fileBase64.length, 'chars (~', Math.round(fileBase64.length / 1024), 'KB)');
 
-  const response = await fetch(`${API_URL}/document`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    body: formData,
-  });
+  const fileName = fileAsset.fileName || fileAsset.name || 'upload.file';
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.message || 'Document translation failed');
+  console.log('[Translate] Step 6: Sending to backend...');
+
+  // 5-minute timeout for slow HuggingFace translations
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+  try {
+    const response = await fetch(`${API_URL}/document-base64`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        fileBase64,
+        fileName,
+        mimeType,
+        sourceLang,
+        targetLang,
+        targetDialect: targetDialect || undefined,
+        source_language_id: sourceLangId || undefined,
+        target_language_id: targetLangId || undefined,
+      }),
+      signal: controller.signal,
+    });
+
+    console.log('[Translate] Step 7: Response received, status:', response.status);
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.message || 'Document translation failed');
+    }
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return response.json();
 };
 
 /**
