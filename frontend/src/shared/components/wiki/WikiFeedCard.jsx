@@ -34,14 +34,23 @@ export default function WikiFeedCard({ item, router, handleVote, styles, isBookm
     >
       {/* Header: Avatar, Name, Date */}
       <View style={styles.cardHeaderRow}>
-        <View style={styles.authorAvatar}>
+        <View style={[styles.authorAvatar, {
+          width: 38,
+          height: 38,
+          borderRadius: 19,
+          backgroundColor: '#FFFFFF',
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 1.5,
+          borderColor: '#E5E7EB',
+        }]}>
           {getAvatarSource(item.profiles?.profile_avatar_url) ? (
             <Image 
               source={getAvatarSource(item.profiles.profile_avatar_url)} 
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E5E7EB' }} 
+              style={{ width: 30, height: 30, borderRadius: 15, resizeMode: 'contain' }} 
             />
           ) : (
-            <Ionicons name="person-circle" size={36} color="#D1D5DB" />
+            <Ionicons name="person-circle" size={30} color="#D1D5DB" />
           )}
         </View>
         <View style={styles.headerAuthorInfo}>
