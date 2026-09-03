@@ -311,10 +311,10 @@ glassBtn: {
     resizeMode: 'contain',
   },
   notificationIcon: {
-  width: 42,
-  height: 42,
-  resizeMode: 'contain',
-},
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
+  },
 });
 
 export default TopBar;
