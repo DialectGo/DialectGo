@@ -52,10 +52,6 @@ export default function SubmissionDetailScreen({ id }) {
       duration: Platform.OS === 'ios' ? 250 : 200,
       useNativeDriver: false,
     }).start();
-    // Auto-scroll so comments and input area are visible
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 300);
   };
 
   // When input loses focus, restore safe area bottom padding
@@ -107,7 +103,7 @@ export default function SubmissionDetailScreen({ id }) {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <StatusBar barStyle="dark-content" />
 

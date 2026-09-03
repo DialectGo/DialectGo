@@ -37,7 +37,7 @@ app.use(cors({
 }));
 
 // Body parsers — MUST be before routes
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ─── Routes ──────────────────────────────────────────────────────────────────

@@ -512,10 +512,28 @@ export const performDocumentTranslation = async (
         if (withBreakdown) {
             result = await performTranslationWithBreakdown(textToTranslate, sourceLang, targetLang, targetDialect, token);
         } else {
-            // Re-use already-computed preprocessResult: translate directly without re-preprocessing
-            const lines = textToTranslate.split('\n');
-            const lineResults = await parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
-            const finalTranslatedText = lineResults.map(r => r.finalText).join('\n');
+            // Chunk text into larger blocks to reduce API calls to Hugging Face
+            const paragraphs = textToTranslate.split('\n');
+            const chunks = [];
+            let currentChunk = [];
+            let currentLen = 0;
+            
+            for (const para of paragraphs) {
+                if (currentLen + para.length > 1000 && currentChunk.length > 0) {
+                    chunks.push(currentChunk.join('\n'));
+                    currentChunk = [para];
+                    currentLen = para.length;
+                } else {
+                    currentChunk.push(para);
+                    currentLen += para.length + 1;
+                }
+            }
+            if (currentChunk.length > 0) chunks.push(currentChunk.join('\n'));
+
+            console.log(`[DocPipeline] Chunked document into ${chunks.length} blocks for Hugging Face to avoid timeout`);
+            
+            const chunkResults = await parallelTranslateLines(chunks, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
+            const finalTranslatedText = chunkResults.map(r => r.finalText).join('\n');
             result = {
                 originalText: text,
                 canonicalizedText: textToTranslate,
@@ -527,8 +545,8 @@ export const performDocumentTranslation = async (
                     metadata: preprocessResult.metadata,
                 },
                 dialectization: targetDialect ? {
-                    wasModified: lineResults.some(r => r.wasModified),
-                    replacements: lineResults.flatMap(r => r.replacements),
+                    wasModified: chunkResults.some(r => r.wasModified),
+                    replacements: chunkResults.flatMap(r => r.replacements),
                     targetDialect,
                 } : null,
             };

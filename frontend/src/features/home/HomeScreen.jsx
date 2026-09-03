@@ -21,6 +21,7 @@ import TopBar from '../../components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import HomeSkeleton from '../../shared/components/HomeSkeleton';
 import HomeCard from '../../shared/components/HomeCard';
+import HomeCarousel from '../../shared/components/HomeCarousel';
 import WordOfDayOverlay from '../../shared/components/WordOfDayOverlay';
 import { getStreakAsset } from '../../shared/utils/streakAssets';
 import { styles } from './styles/HomeStyles';
@@ -196,59 +197,8 @@ export default function HomeScreen({ onNavigate, activeTab }) {
             </View>
           </HomeCard>
 
-          {/* CHATBOT PROMO SECTION */}
-          <View style={styles.chatPromoWrapper}>
-            <View style={[styles.chatBubbleSmall, styles.chatBubbleOne]}>
-              <Text style={styles.chatBubbleEmoji}>💬</Text>
-            </View>
-            <View style={[styles.chatBubbleSmall, styles.chatBubbleTwo]}>
-              <Text style={styles.chatBubbleEmoji}>✨</Text>
-            </View>
-
-            <HomeCard style={{ marginTop: 15, flexDirection: 'row', alignItems: 'center' }}>
-              <View style={styles.chatBeeContainer}>
-                <Image
-                  source={require('../../../assets/logo/bee.png')}
-                  style={styles.chatPromoBee}
-                  resizeMode="contain"
-                />
-                <View style={styles.beeChatBubble}>
-                  <Text style={styles.beeChatText}>
-                    Kumusta! 👋
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.chatPromoContent}>
-                <Text style={styles.chatPromoLabel}>
-                  NEED A LITTLE HELP?
-                </Text>
-                <Text style={styles.chatPromoTitle}>
-                  Talk with
-                  <Text style={styles.chatPromoTitleAccent}>
-                    {' '}DialectGo
-                  </Text>
-                </Text>
-                <Text style={styles.chatPromoDescription}>
-                  Ask questions, practice languages,
-                  and learn something new with your
-                  AI language buddy!
-                </Text>
-                <TouchableOpacity
-                  style={styles.chatExploreBtn}
-                  activeOpacity={0.85}
-                  onPress={() => router.push('/Chatbot/ChatOnboarding')}
-                >
-                  <Text style={styles.chatExploreBtnText}>
-                    Chat Now
-                  </Text>
-                  <Text style={styles.chatExploreArrow}>
-                    →
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </HomeCard>
-          </View>
+          {/* CAROUSEL PROMO SECTION */}
+          <HomeCarousel />
 
         </RefreshContainer>
       </View>

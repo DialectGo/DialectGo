@@ -7,6 +7,7 @@ import {
     translateImage, 
     translateAudio, 
     translateDocument,
+    translateDocumentBase64,
     downloadDocument,
     submitUserTranslation, 
     customizeTranslation,
@@ -33,6 +34,7 @@ translateRouter.post('/contribute', verifyToken, validateUserTranslationSubmit, 
 translateRouter.post('/image', verifyToken, validateTranslateImage, translateImage);
 translateRouter.post('/audio', verifyToken, upload.single('audio'), translateAudio);
 translateRouter.post('/document', verifyToken, upload.single('file'), translateDocument);
+translateRouter.post('/document-base64', verifyToken, translateDocumentBase64);
 translateRouter.post('/download', verifyToken, downloadDocument);
 translateRouter.post('/customize', verifyToken, validateCustomizeRequest, customizeTranslation);
 translateRouter.post('/explain-segment', verifyToken, explainSegment);
