@@ -21,8 +21,8 @@ import TopBar from '../../components/TopBar';
 import RefreshContainer from '../../shared/components/RefreshContainer';
 import HomeSkeleton from '../../shared/components/HomeSkeleton';
 import HomeCard from '../../shared/components/HomeCard';
-
 import WordOfDayOverlay from '../../shared/components/WordOfDayOverlay';
+import { getStreakAsset } from '../../shared/utils/streakAssets';
 import { styles } from './styles/HomeStyles';
 
 export default function HomeScreen({ onNavigate, activeTab }) {
@@ -157,7 +157,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
 
               <View style={styles.tripleFlameWrapper}>
                 <Image
-                  source={require('../../../assets/icons/profile/streak_icon.png')}
+                  source={getStreakAsset(streakData.streak)}
                   style={styles.centerFlame}
                   resizeMode="contain"
                 />

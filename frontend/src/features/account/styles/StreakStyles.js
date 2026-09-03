@@ -35,146 +35,196 @@ export const styles = StyleSheet.create({
   scrollBody: {
     backgroundColor: '#FFFFFF',
   },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: 30,
+  contentWrapper: {
+    paddingTop: 30,
+    paddingBottom: 100,
   },
-  avatarWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#F5F5F5', // Ginawang light grey ang circle background ng avatar
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  bigFireIcon: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-  },
-  userName: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#2D1606',
-    marginTop: 10,
-    fontFamily: 'Poppins-Bold',
-  },
-  streakSubtext: {
-    fontSize: 18,
-    color: '#777',
-    fontWeight: '600',
-  },
-  settingsContainer: {
-    backgroundColor: '#F8F9FA', // Mula Yellow, ginawang Light Grey/White background
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    paddingHorizontal: 20,
-    paddingTop: 35,
-    flex: 1,
-    minHeight: 500,
-    // Dagdag shadow para lumitaw ang card section
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+  whiteCardWrapper: {
+    paddingHorizontal: 16,
   },
   whiteCard: {
-    backgroundColor: '#FFFFFF', // Ginawang pure white ang cards
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: '#FFFDF5',
+    borderRadius: 32,
+    padding: 22,
     marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    elevation: 7,
+    shadowColor: '#8A6200',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F4E7BF',
   },
   cardLabel: {
     fontSize: 13,
     fontFamily: 'Poppins-Bold',
-    color: '#2D1606',
+    color: '#374151',
     marginBottom: 15,
-    opacity: 0.5,
-  },
-  weekGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dayColumn: {
-    alignItems: 'center',
-  },
-  dayCircle: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  activeDayCircle: {
-    backgroundColor: '#FFD54F', // Dito na lang itinira ang yellow bilang accent
-    borderWidth: 0,
-  },
-  inactiveDayCircle: {
-    backgroundColor: '#F0F0F0',
-  },
-  checkIcon: {
-    width: 18,
-    height: 18,
-    resizeMode: 'contain',
-    tintColor: '#2D1606',
-  },
-  dayLabel: {
-    fontSize: 12,
-    fontFamily: 'Poppins-Bold',
-    color: '#2D1606',
+    opacity: 0.8,
   },
   milestoneDesc: {
-    fontSize: 16,
-    color: '#2D1606',
+    fontSize: 14,
+    color: '#6B7280',
     fontFamily: 'Poppins-Medium',
     marginBottom: 15,
   },
   progressBarBg: {
     height: 10,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F3E9D8',
     borderRadius: 5,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#FFD54F', // Yellow progress bar para sa visual pop
+    backgroundColor: '#FFD54F',
     borderRadius: 5,
   },
-  statsRow: {
+  
+  // HOME CARD STYLES COPIED
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFDF5',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#F4E7BF',
+  },
+  activeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#D97706',
+    marginRight: 6,
+  },
+  streakBadgeText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 9,
+    color: '#8A6200',
+    letterSpacing: 0.8,
+  },
+  progressTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 5,
-  },
-  statItem: {
-    backgroundColor: '#FFFFFF', // Puti na rin ang stat boxes
-    width: '48%',
-    padding: 15,
-    borderRadius: 20,
     alignItems: 'center',
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    minHeight: 115,
   },
-  statNumber: {
-    fontSize: 22,
+  streakSmallLabel: {
     fontFamily: 'Poppins-Bold',
-    color: '#2D1606',
+    fontSize: 10,
+    color: '#9CA3AF',
+    letterSpacing: 1.3,
+    marginBottom: 2,
   },
-  statSub: {
-    fontSize: 12,
-    color: '#2D1606',
-    opacity: 0.5,
+  streakNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  streakNumberLarge: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 58,
+    color: '#374151',
+    lineHeight: 64,
+    letterSpacing: -2,
+  },
+  streakDays: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    color: '#8A6200',
+    marginLeft: 7,
+    letterSpacing: 1,
+  },
+  superStreakBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#374151',
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 15,
+    marginTop: 4,
+  },
+  superStreakText: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 9,
+    color: '#FFD54F',
+    letterSpacing: 0.4,
+  },
+  tripleFlameWrapper: {
+    width: 140, // Enlarge wrapper
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    marginRight: 5,
+  },
+  centerFlame: {
+    width: 140, // Increased from 100 for bigger asset
+    height: 140,
+    zIndex: 2,
+  },
+  weeklyProgressContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 23,
+    paddingHorizontal: 13,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: '#F3E9D8',
+    marginTop: 10,
+  },
+  weeklyProgressTitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 9,
+    color: '#9CA3AF',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  largeWeekRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginLeft: -4, // Shift slightly left as requested by user
+  },
+  largeDayBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCircleLarge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  dayActive: {
+    backgroundColor: '#FFD54F',
+    borderWidth: 2,
+    borderColor: '#D97706',
+    elevation: 3,
+    shadowColor: '#B45309',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  dayInactive: {
+    backgroundColor: '#F5F1EA',
+    borderWidth: 1,
+    borderColor: '#E8DED0',
+  },
+  checkMarkLarge: {
+    fontSize: 13,
+    color: '#374151',
+    fontFamily: 'Poppins-Bold',
+  },
+  lockIcon: {
+    fontSize: 9,
+    opacity: 0.35,
+  },
+  largeDayText: {
+    fontSize: 8.5,
+    fontFamily: 'Poppins-Bold',
+    color: '#9CA3AF',
+    letterSpacing: 0.2,
   },
 });

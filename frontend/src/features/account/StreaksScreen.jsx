@@ -8,6 +8,8 @@ import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import { getWeeklyStatus } from '../../shared/utils/dateUtils';
 import { useProfileContext } from '../../shared/context/ProfileContext';
+import HomeCard from '../../shared/components/HomeCard';
+import { getStreakAsset } from '../../shared/utils/streakAssets';
 
 export default function StreaksScreen() { 
   const router = useRouter(); 
@@ -15,7 +17,7 @@ export default function StreaksScreen() {
 
   const currentStreak = streakCount || 0;
   const currentWeekNum = Math.floor(currentStreak / 7) + 1;
-  const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   const weeklyStatus = getWeeklyStatus(activeDays || []);
 
@@ -31,46 +33,93 @@ export default function StreaksScreen() {
       <ProfileTopBar title="Streaks" />
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarWrapper}>
-            <Image source={require('../../../assets/images/flame.png')} style={styles.bigFireIcon} />
-          </View>
-          <Text style={styles.userName}>{currentStreak}</Text>
-          <Text style={styles.streakSubtext}>Day Streak!</Text>
-          <Text style={styles.weekIndicator}>Week {currentWeekNum}</Text>
-        </View>
-
-        <View style={styles.settingsContainer}>
-          <View style={styles.whiteCard}>
-            <Text style={styles.cardLabel}>WEEK {currentWeekNum} PROGRESS</Text>
-            <View style={styles.weekGrid}>
-              {daysOfWeek.map((day, index) => (
-                <View key={index} style={styles.dayColumn}>
-                  <View style={[
-                    styles.dayCircle, 
-                    weeklyStatus[index] ? styles.activeDayCircle : styles.inactiveDayCircle
-                  ]}>
-                    {weeklyStatus[index] && (
-                      <Image source={require('../../../assets/icons/status/check_icon.png')} style={styles.checkIcon} />
-                    )}
-                  </View>
-                  <Text style={styles.dayLabel}>{day}</Text>
+        <View style={styles.contentWrapper}>
+          <HomeCard
+            title="Your Progress"
+            subtitle="Keep the streak alive! 🐝"
+            rightBadge={
+              <View style={styles.streakBadge}>
+                <View style={styles.activeDot} />
+                <Text style={styles.streakBadgeText}>ACTIVE</Text>
+              </View>
+            }
+          >
+            <View style={styles.progressTopRow}>
+              <View style={styles.streakTextGroup}>
+                <Text style={styles.streakSmallLabel}>
+                  CURRENT STREAK
+                </Text>
+                <View style={styles.streakNumberRow}>
+                  <Text style={styles.streakNumberLarge}>
+                    {currentStreak}
+                  </Text>
+                  <Text style={styles.streakDays}>
+                    DAYS
+                  </Text>
                 </View>
-              ))}
+                {currentStreak >= 7 && (
+                  <View style={styles.superStreakBadge}>
+                    <Text style={styles.superStreakText}>
+                      🔥 SUPER STREAK!
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.tripleFlameWrapper}>
+                <Image
+                  source={getStreakAsset(currentStreak)}
+                  style={styles.centerFlame}
+                  resizeMode="contain"
+                />
+              </View>
             </View>
-          </View>
+            
+            {/* WEEKLY PROGRESS */}
+            <View style={styles.weeklyProgressContainer}>
+              <Text style={styles.weeklyProgressTitle}>
+                THIS WEEK
+              </Text>
+              <View style={styles.largeWeekRow}>
+                {daysOfWeek.map(
+                  (day, index) => {
+                    const completed = weeklyStatus[index];
+                    return (
+                      <View key={index} style={styles.largeDayBox}>
+                        <View
+                          style={[
+                            styles.dayCircleLarge,
+                            completed ? styles.dayActive : styles.dayInactive
+                          ]}
+                        >
+                          {completed ? (
+                            <Text style={styles.checkMarkLarge}>✓</Text>
+                          ) : (
+                            <Text style={styles.lockIcon}>🔒</Text>
+                          )}
+                        </View>
+                        <Text style={styles.largeDayText}>{day}</Text>
+                      </View>
+                    );
+                  }
+                )}
+              </View>
+            </View>
+          </HomeCard>
 
           {/* PROGRESS TO NEXT 7-DAY MILESTONE */}
-          <View style={styles.whiteCard}>
-            <Text style={styles.cardLabel}>NEXT WEEK: WEEK {currentWeekNum + 1}</Text>
-            <Text style={styles.milestoneDesc}>
-              {7 - (currentStreak % 7)} days left until your next week milestone!
-            </Text>
-            <View style={styles.progressBarBg}>
-              <View style={[
-                styles.progressBarFill, 
-                { width: `${((currentStreak % 7) / 7) * 100}%` }
-              ]} />
+          <View style={styles.whiteCardWrapper}>
+            <View style={styles.whiteCard}>
+              <Text style={styles.cardLabel}>NEXT WEEK: WEEK {currentWeekNum + 1}</Text>
+              <Text style={styles.milestoneDesc}>
+                {7 - (currentStreak % 7)} days left until your next week milestone!
+              </Text>
+              <View style={styles.progressBarBg}>
+                <View style={[
+                  styles.progressBarFill, 
+                  { width: `${((currentStreak % 7) / 7) * 100}%` }
+                ]} />
+              </View>
             </View>
           </View>
         </View>
