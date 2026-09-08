@@ -42,7 +42,7 @@ export default function AuthTransition() {
   const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
   const [isQuickLoggingIn, setIsQuickLoggingIn] = useState(false);
   const { showToast } = useToast();
-  const { hydrateProfileData } = useProfileContext();
+  const { hydrateProfileData, isConnected } = useProfileContext();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -105,6 +105,10 @@ export default function AuthTransition() {
   ).current;
 
   const handlePress = (formType, email = '') => {
+    if (!isConnected) {
+      showToast('Connection Issue Detected. Please check your Wi-Fi or mobile data.', 'error');
+      return;
+    }
     setActiveForm(formType);
     setInitialEmail(email);
     openSheet();
@@ -185,6 +189,11 @@ export default function AuthTransition() {
                 key={p.user_id}
                 profile={p}
                 onPress={async (profile) => {
+                  if (!isConnected) {
+                    showToast('Connection Issue Detected. Please check your Wi-Fi or mobile data.', 'error');
+                    return;
+                  }
+
                   // Pre-hydrate the profile globally BEFORE starting the login request!
                   if (hydrateProfileData) {
                     hydrateProfileData(profile);

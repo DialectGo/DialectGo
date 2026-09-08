@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { ProfileProvider } from '../src/shared/context/ProfileContext';
@@ -9,6 +9,8 @@ import OfflineScreen from '../src/shared/components/OfflineScreen';
 
 export default function RootLayout() {
   const [isConnected, setIsConnected] = useState(true);
+  const segments = useSegments();
+  const inTabs = segments[0] === '(tabs)';
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -30,7 +32,7 @@ export default function RootLayout() {
               animationDuration: 250,
             }}
           />
-          {!isConnected && <OfflineScreen />}
+          {!isConnected && inTabs && <OfflineScreen />}
         </ProfileProvider>
       </ToastProvider>
     </SafeAreaProvider>
