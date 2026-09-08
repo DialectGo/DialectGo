@@ -34,14 +34,21 @@ export const ProfileProvider = ({ children }) => {
         return;
       }
 
-      // 1. INSTANT HYDRATION: Read from cache if available so UI doesn't say "User"
+      // 1. INSTANT HYDRATION: Read from dedicated current user cache so UI doesn't say "User"
       try {
-        const cachedStr = await AsyncStorage.getItem('dialectgo_saved_profiles_cache');
-        if (cachedStr) {
-          const cachedProfiles = JSON.parse(cachedStr);
-          const myProfile = cachedProfiles.find(p => p.user_id === session.user.id);
-          if (myProfile) {
-            profileData.hydrateProfileData(myProfile);
+        const cachedUserStr = await AsyncStorage.getItem('dialectgo_current_user_cache');
+        if (cachedUserStr) {
+          const cachedUser = JSON.parse(cachedUserStr);
+          profileData.hydrateProfileData(cachedUser);
+        } else {
+          // Fallback: Check multi-profile cache if current user cache is missing
+          const cachedProfilesStr = await AsyncStorage.getItem('dialectgo_saved_profiles_cache');
+          if (cachedProfilesStr) {
+            const cachedProfiles = JSON.parse(cachedProfilesStr);
+            const myProfile = cachedProfiles.find(p => p.user_id === session.user.id);
+            if (myProfile) {
+              profileData.hydrateProfileData(myProfile);
+            }
           }
         }
       } catch (cacheErr) {

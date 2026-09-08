@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchUserProfileData, fetchUserStreakData } from '../../services/profile/userService';
 import { availableAvatars } from './constants';
 
@@ -38,6 +39,13 @@ export const useProfileData = () => {
           const matched = availableAvatars.find(a => a.name === user.profile_avatar_url);
           if (matched) setUserAvatar(matched.source);
         }
+
+        // Save to dedicated current user cache for instant hydration on app reload
+        AsyncStorage.setItem('dialectgo_current_user_cache', JSON.stringify({
+          first_name: user.first_name,
+          last_name: user.last_name,
+          avatar_url: user.profile_avatar_url
+        })).catch(() => {});
       }
     } catch (error) {
       console.error("Profile Fetch Error:", error);

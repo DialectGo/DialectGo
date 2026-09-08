@@ -1,5 +1,6 @@
 // shared/hooks/useDictionaryBrowse.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../api/supabase';
 import { endpoints } from '../../api/client';
 
@@ -12,9 +13,32 @@ export function useDictionaryBrowse(searchQuery) {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [selectedLang, setSelectedLang] = useState(null);
   const [selectedLetter, setSelectedLetter] = useState(null);
+  const fetchIdRef = useRef(0);
 
   const fetchBrowseData = async (pageNum, isInitial = false) => {
-    if (isFetchingMore) return;
+    // Only block pagination requests if currently fetching. 
+    // Initial fetches (like filter changes) must ALWAYS proceed.
+    if (isFetchingMore && !isInitial) return;
+    
+    // Increment and capture the ID for this specific request
+    fetchIdRef.current += 1;
+    const currentFetchId = fetchIdRef.current;
+    
+    const cacheKey = `dialectgo_dict_browse_${selectedLang || 'all'}_${selectedLetter || 'all'}`;
+
+    // INSTANT HYDRATION: If initial load, immediately populate with cached data while fetching fresh data
+    if (isInitial && pageNum === 1) {
+      try {
+        const cachedStr = await AsyncStorage.getItem(cacheKey);
+        // Only hydrate if another request hasn't superseded us
+        if (cachedStr && currentFetchId === fetchIdRef.current) {
+          setBrowseData(JSON.parse(cachedStr));
+        }
+      } catch (e) {
+        // ignore cache errors
+      }
+    }
+
     setIsFetchingMore(true);
 
     try {
@@ -29,17 +53,29 @@ export function useDictionaryBrowse(searchQuery) {
       });
       const result = await response.json();
 
+      // Only update state if this is still the most recent request
+      if (currentFetchId !== fetchIdRef.current) return;
+
       if (result.success && result.data.length > 0) {
         setBrowseData(prev => isInitial ? result.data : [...prev, ...result.data]);
         setHasMore(result.data.length === 15);
+        
+        // Cache the fresh first page for instant hydration next time
+        if (isInitial && pageNum === 1) {
+          AsyncStorage.setItem(cacheKey, JSON.stringify(result.data)).catch(() => {});
+        }
       } else {
         if (isInitial) setBrowseData([]);
         setHasMore(false);
       }
     } catch (err) {
-      console.error("Browse Fetch Error:", err);
+      if (currentFetchId === fetchIdRef.current) {
+        console.error("Browse Fetch Error:", err);
+      }
     } finally {
-      setIsFetchingMore(false);
+      if (currentFetchId === fetchIdRef.current) {
+        setIsFetchingMore(false);
+      }
     }
   };
 
