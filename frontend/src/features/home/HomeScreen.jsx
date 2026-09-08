@@ -29,10 +29,10 @@ import { styles } from './styles/HomeStyles';
 export default function HomeScreen({ onNavigate, activeTab }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  
+
   const [wotdModalVisible, setWotdModalVisible] = useState(false);
 
-  
+
   // Custom Hooks Encapsulating Business Logic
   const mascotAnim = useMascotAnimation(-8, 1200);
   const {
@@ -62,7 +62,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
             {/* LEFT — BEE */}
             <View style={styles.heroBeeContainer}>
               <Animated.Image
-                source={require('../../../assets/logo/bee.png')}
+                source={require('../../../assets/bee-logo-images/bee_logo_5.png')}
                 style={[
                   styles.heroBee,
                   { transform: [{ translateY: mascotAnim }] }
@@ -164,7 +164,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
                 />
               </View>
             </View>
-            
+
             {/* WEEKLY PROGRESS */}
             <View style={styles.weeklyProgressContainer}>
               <Text style={styles.weeklyProgressTitle}>
@@ -205,10 +205,10 @@ export default function HomeScreen({ onNavigate, activeTab }) {
       <BottomNav activeTab={activeTab} setActiveTab={onNavigate} />
 
       {/* WORD OF THE DAY MODAL */}
-      <WordOfDayOverlay 
-        visible={wotdModalVisible} 
-        onClose={() => setWotdModalVisible(false)} 
-        wordData={wordOfDay} 
+      <WordOfDayOverlay
+        visible={wotdModalVisible}
+        onClose={() => setWotdModalVisible(false)}
+        wordData={wordOfDay}
       />
     </View>
   );

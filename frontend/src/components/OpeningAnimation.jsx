@@ -15,7 +15,10 @@ import {
 // ============================================================
 
 const JEEP_IMG  = require('../../assets/on-boarding-animation/dialectgo_jeep_image.png');
-const BEE_IMG   = require('../../assets/on-boarding-animation/dialectgo_bee_mascot_image.png');
+const BEE_IMG_1 = require('../../assets/bee-logo-images/bee_logo_1.png');
+const BEE_IMG_2 = require('../../assets/bee-logo-images/bee_logo_2.png');
+const BEE_IMG_4 = require('../../assets/bee-logo-images/bee_logo_4.png');
+const BEE_IMG_6 = require('../../assets/bee-logo-images/bee_logo_6.png');
 const TEXT_IMG  = require('../../assets/on-boarding-animation/dialectgo_text.png');
 const BUBBLE_L  = require('../../assets/on-boarding-animation/left_chat_bubble_image.png');
 const BUBBLE_R  = require('../../assets/on-boarding-animation/right_chat_bubble_image.png');
@@ -47,7 +50,7 @@ const JEEP_CENTER_X = (width - JEEP_W) / 2;
 const JEEP_TOP_Y    = height / 2 - JEEP_H / 2;
 
 // Logo row: bee + text sit right next to each other, combo centered horizontally
-const LOGO_GAP    = 0;   // no gap — bee and text touch
+const LOGO_GAP    = -35;   // Negative gap to counteract PNG transparent padding
 const BEE_FINAL_X = (width - BEE_SIZE - LOGO_GAP - (width * 0.62)) / 2;
 const BEE_FINAL_Y = height / 2 - BEE_SIZE / 2;
 // Trail images used in trailDots (computed inside component)
@@ -155,6 +158,7 @@ export default function OpeningAnimation({ onFinish }) {
   const [leftBubbleVisible,    setLeftBubbleVisible]    = useState(false);
   const [salamatBubbleVisible, setSalamatBubbleVisible] = useState(false);
   const [glitterTrigger,       setGlitterTrigger]       = useState(false);
+  const [currentBeeImage,      setCurrentBeeImage]      = useState(BEE_IMG_1);
 
   // --- Animated values ---
   const jeepX     = useRef(new Animated.Value(width + JEEP_W)).current;
@@ -211,8 +215,8 @@ export default function OpeningAnimation({ onFinish }) {
   const startHover = () => {
     hoverRef.current = Animated.loop(
       Animated.sequence([
-        Animated.timing(beeHoverY, { toValue: -6, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(beeHoverY, { toValue:  0, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(beeHoverY, { toValue: -12, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(beeHoverY, { toValue:  0, duration: 600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
     hoverRef.current.start();
@@ -269,6 +273,8 @@ export default function OpeningAnimation({ onFinish }) {
                   useNativeDriver: true,
                 }),
               ]).start(() => {
+                // Start the hovering/flying animation immediately so it bobs while waiting and moving
+                startHover();
 
                 // "salamat po!" bubble top-left of bee
                 setSalamatBubbleVisible(true);
@@ -277,6 +283,7 @@ export default function OpeningAnimation({ onFinish }) {
                   setSalamatBubbleVisible(false);
 
                   // ── PHASE 5: Jeep exits left ────────────────────────
+                  setCurrentBeeImage(BEE_IMG_4);
                   Animated.timing(jeepX, {
                     toValue: -(JEEP_W + 80),
                     duration: 1800,
@@ -286,6 +293,7 @@ export default function OpeningAnimation({ onFinish }) {
 
                     // ── PHASE 6: Bee moves left with glitter trail ──────
                     setGlitterTrigger(true);
+                    setCurrentBeeImage(BEE_IMG_2);
 
                     Animated.parallel([
                       Animated.timing(beeX, {
@@ -302,8 +310,8 @@ export default function OpeningAnimation({ onFinish }) {
                       }),
                     ]).start(() => {
 
-                      // ── PHASE 7: Logo text fades in ─────────────────
-                      startHover();
+                      // ── PHASE 7: Logo text fades in & Final Bee form ─────────────────
+                      setCurrentBeeImage(BEE_IMG_6);
 
                       Animated.sequence([
                         Animated.delay(200),
@@ -467,7 +475,7 @@ export default function OpeningAnimation({ onFinish }) {
 
       {/* ── BEE MASCOT  (zIndex 20) ─────────────────────────── */}
       <Animated.Image
-        source={BEE_IMG}
+        source={currentBeeImage}
         style={[
           styles.bee,
           {
@@ -578,16 +586,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  // Bigger text inside the smaller bubble
+  // Adjusted text size and centering
   bubbleText: {
-    fontSize: 11,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#421C00',
     textAlign: 'center',
-    paddingHorizontal: 5,
-    paddingBottom: 4,
-    letterSpacing: -0.3,
-    lineHeight: 13,
+    paddingHorizontal: 8,
+    paddingBottom: 8, // Increased to push text up away from the tail
+    letterSpacing: -0.2,
+    lineHeight: 12,
   },
 
   bubbleTextLeft: {
