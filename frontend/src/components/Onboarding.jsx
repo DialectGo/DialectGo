@@ -2,8 +2,9 @@ import React, { useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, Image, Text, TouchableOpacity, View } from 'react-native';
 
 // GO UP TWO LEVELS: components/ -> shared/ -> frontend/ -> assets/
-import beeImg from '../../assets/logo/bee.png';
-import dialectTextImg from '../../assets/logo/dialectgo_text.png';
+import beeLogo4 from '../../assets/bee-logo-images/bee_logo_4.png';
+import beeLogo3 from '../../assets/bee-logo-images/bee_logo_3.png';
+import beeLogo5 from '../../assets/bee-logo-images/bee_logo_5.png';
 
 // Path for styles (Assuming they are in shared/styles/)
 import { styles } from '../shared/theme/OnboardingStyles';
@@ -15,19 +16,19 @@ const DATA = [
     id: '1',
     title: 'Translate with Ease!',
     description: 'Speak freely and connect easily with DialectGo, your go-to translator for Tagalog, English, and Cebuano',
-    image: beeImg,
+    image: beeLogo4,
   },
   {
     id: '2',
-    title: 'Smart Dictionary',
-    description: 'Discover different translations for the same word and learn how to use them in context with our smart dictionary feature.',
-    image: dialectTextImg,
+    title: 'DialectGo AI and Smart Dictionary',
+    description: 'Chat, learn, and translate smarter with DialectGo’s AI Chatbot and Dictionary.',
+    image: beeLogo3,
   },
   {
     id: '3',
     title: 'Ready to Start?',
     description: 'Log in now to begin your trilingual translation journey.',
-    image: beeImg,
+    image: beeLogo5,
   },
 ];
 
