@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../api/supabase';
 import { useToast } from '../../context/ToastContext';
 import { dictionaryHistoryService } from '../../services/dictionary/dictionaryHistoryService';
 
@@ -12,10 +14,29 @@ export function useDictionaryHistory() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchHistory = async (showInitialSpinner = false) => {
-    if (showInitialSpinner) setLoading(true);
+    let cacheKey = 'dialectgo_dict_history_fallback';
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) cacheKey = `dialectgo_dict_history_${session.user.id}`;
+      
+      if (showInitialSpinner) {
+        const cachedStr = await AsyncStorage.getItem(cacheKey);
+        if (cachedStr) {
+          setHistoryItems(JSON.parse(cachedStr));
+          setLoading(false); // Instantly hide spinner if cache exists
+        } else {
+          setLoading(true);
+        }
+      }
+    } catch (e) {
+      if (showInitialSpinner) setLoading(true);
+    }
+
     try {
       const data = await dictionaryHistoryService.getDictionaryHistory();
       setHistoryItems(data);
+      AsyncStorage.setItem(cacheKey, JSON.stringify(data)).catch(() => {});
     } catch (error) {
       console.error("Error loading history from API:", error);
     } finally {
