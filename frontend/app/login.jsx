@@ -293,7 +293,6 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
                 <FontAwesome5 name="google" size={20} color="#DB4437" />
                 <Text style={styles.googleBtnText}>Sign In with Google</Text>
               </TouchableOpacity>
-              <Text style={styles.soonText}>More sign-in options coming soon...</Text>
             </View>
 
             <View style={styles.footer}>

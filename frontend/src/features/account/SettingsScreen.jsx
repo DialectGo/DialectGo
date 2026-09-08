@@ -25,17 +25,17 @@ export default function SettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollBody} contentContainerStyle={{ paddingBottom: 110 }}>
         <View style={{ marginTop: 20 }}>
           <ProfileMenuItem 
-            iconSource={require('../../../assets/icons/profile/help_icon.png')} 
+            iconSource={require('../../../assets/icons/profile/settings/how_to_use_icon.png')} 
             text="How to Use"
             onPress={() => handlePress('guide')}
           />
           <ProfileMenuItem 
-            iconSource={require('../../../assets/icons/profile/terms_icon.png')} 
+            iconSource={require('../../../assets/icons/profile/settings/terms_and_conditions_icon.png')} 
             text="Terms and Conditions"
             onPress={() => handlePress('terms')}
           />
           <ProfileMenuItem 
-            iconSource={require('../../../assets/icons/profile/privacy_icon.png')} 
+            iconSource={require('../../../assets/icons/profile/settings/privacy_policy_icon.png')} 
             text="Privacy Policy"
             onPress={() => handlePress('privacy')}
           />

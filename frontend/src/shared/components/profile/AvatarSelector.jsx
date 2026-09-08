@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Image, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import SwipeableBottomSheet from '../SwipeableBottomSheet';
 
 export default function AvatarSelector({ currentAvatar, availableAvatars, isModalVisible, setIsModalVisible, onSelect }) {
   if (!currentAvatar) return null;
@@ -21,35 +22,28 @@ export default function AvatarSelector({ currentAvatar, availableAvatars, isModa
         <Text style={styles.changeText}>Tap to change avatar</Text>
       </View>
 
-      <Modal
+      <SwipeableBottomSheet
         visible={isModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsModalVisible(false)}
+        onClose={() => setIsModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Avatar</Text>
-            <View style={styles.avatarGrid}>
-              {availableAvatars.map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  onPress={() => onSelect(item)}
-                  style={[
-                    styles.avatarOption,
-                    currentAvatar.id === item.id && styles.activeAvatarOption
-                  ]}
-                >
-                  <Image source={item.source} style={styles.modalAvatarImg} />
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setIsModalVisible(false)}>
-              <Text style={styles.closeBtnText}>Cancel</Text>
-            </TouchableOpacity>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Choose Avatar</Text>
+          <View style={styles.avatarGrid}>
+            {availableAvatars.map((item) => (
+              <TouchableOpacity 
+                key={item.id} 
+                onPress={() => onSelect(item)}
+                style={[
+                  styles.avatarOption,
+                  currentAvatar.id === item.id && styles.activeAvatarOption
+                ]}
+              >
+                <Image source={item.source} style={styles.modalAvatarImg} />
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
-      </Modal>
+      </SwipeableBottomSheet>
     </>
   );
 }
@@ -106,18 +100,11 @@ const styles = StyleSheet.create({
     color: '#8D8D8D',
     fontFamily: 'Poppins-Medium',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   modalContent: {
-    width: '85%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    padding: 25,
+    width: '100%',
+    padding: 20,
     alignItems: 'center',
+    paddingBottom: 40,
   },
   modalTitle: {
     fontSize: 20,

@@ -420,7 +420,6 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                 <FontAwesome5 name="google" size={20} color="#DB4437" />
                 <Text style={styles.googleBtnText}>Sign Up with Google</Text>
               </TouchableOpacity>
-              <Text style={styles.soonText}>More sign-up options coming soon...</Text>
             </View>
 
             <View style={styles.footer}>

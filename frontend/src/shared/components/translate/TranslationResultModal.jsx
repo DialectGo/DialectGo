@@ -3,12 +3,14 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   ScrollView, ActivityIndicator, LayoutAnimation,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import BreakdownPanel from './BreakdownPanel';
 import LoadingModal from '../../../shared/components/LoadingModal';
+import { colors } from '../../theme/colorPalette';
 
 import { TRANSLATION_API_BASE } from '../../../shared/api/client';
 import { supabase } from '../../../shared/api/supabase';
@@ -271,9 +273,9 @@ export default function TranslationResultModal({ visible, onClose, isLoading, re
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" statusBarTranslucent={true}>
       <View style={styles.overlay}>
-        <View style={styles.modalContent}>
+        <SafeAreaView style={styles.modalContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Translation Result</Text>
             <TouchableOpacity onPress={handleClose}>
@@ -365,18 +367,13 @@ export default function TranslationResultModal({ visible, onClose, isLoading, re
               {/* Footer Actions */}
               <View style={styles.footer}>
                 <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPdf}>
-                  <Ionicons name="document-text" size={20} color="#FFF" />
+                  <Ionicons name="document-text" size={20} color={colors.textPrimary} />
                   <Text style={styles.downloadButtonText}>Save PDF</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={[styles.downloadButton, styles.txtButton]} onPress={handleDownloadTxt}>
-                  <Ionicons name="document" size={20} color="#1F2937" />
-                  <Text style={[styles.downloadButtonText, { color: '#1F2937' }]}>Save TXT</Text>
                 </TouchableOpacity>
               </View>
             </>
           )}
-        </View>
+        </SafeAreaView>
       </View>
     </Modal>
   );
@@ -395,7 +392,9 @@ const styles = StyleSheet.create({
     height: '85%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.1,
@@ -775,29 +774,28 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 12,
+    marginTop: 16,
+    marginBottom: 0,
   },
   downloadButton: {
     flex: 1,
-    backgroundColor: '#D97706',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  txtButton: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: colors.shadowGold,
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 5,
+    gap: 10,
   },
   downloadButtonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '600',
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
   },
   reviewBreakdownBtn: {
     flexDirection: 'row',
