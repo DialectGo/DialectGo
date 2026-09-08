@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   emptySubtitle: { fontSize: 13, color: '#9CA3AF', marginTop: 5, textAlign: 'center' },
   fabContainer: { position: 'absolute', bottom: 120, right: 20, gap: 12, alignItems: 'center' },
   fab: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.surfaceLight, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
-  aiFab: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
+  aiFab: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center', shadowOpacity: 0, elevation: 0 },
   fabIcon: { width: 28, height: 28, resizeMode: 'contain' },
-  aiFabIcon: { width: 42, height: 42, resizeMode: 'contain' },
+  aiFabIcon: { width: 64, height: 64, resizeMode: 'contain' },
 });
