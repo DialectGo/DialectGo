@@ -173,7 +173,7 @@ export default function AuthTransition() {
         <View style={{ flex: 1, width: '100%', paddingHorizontal: 20, paddingTop: 60 }}>
           <View style={{ alignItems: 'center', marginBottom: 30 }}>
             <Image 
-              source={require('../../assets/logo/bee.png')} 
+              source={require('../../assets/bee-logo-images/bee_logo_2.png')} 
               style={{ width: 60, height: 60 }} 
               resizeMode="contain" 
             />
@@ -229,7 +229,7 @@ export default function AuthTransition() {
         <>
           <View style={styles.content}>
             <Image 
-              source={require('../../assets/logo/bee.png')} 
+              source={require('../../assets/bee-logo-images/bee_logo_2.png')} 
               style={styles.logo} 
               resizeMode="contain" 
             />

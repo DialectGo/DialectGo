@@ -62,7 +62,7 @@ export default function HomeScreen({ onNavigate, activeTab }) {
             {/* LEFT — BEE */}
             <View style={styles.heroBeeContainer}>
               <Animated.Image
-                source={require('../../../assets/logo/bee.png')}
+                source={require('../../../assets/bee-logo-images/bee_logo_5.png')}
                 style={[
                   styles.heroBee,
                   { transform: [{ translateY: mascotAnim }] }
