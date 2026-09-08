@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../../context/ToastContext';
 import { fetchSubmissions as fetchSubmissionsService, voteSubmission } from '../../services/wiki/wikiService';
 
@@ -24,8 +25,13 @@ export function useWikiFeed() {
   const [showAiModal, setShowAiModal] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
+  const fetchIdRef = useRef(0);
+
   const fetchSubmissions = useCallback(
     async (pageNum = 1, append = false) => {
+      fetchIdRef.current += 1;
+      const currentFetchId = fetchIdRef.current;
+
       try {
         const filters = {
           sort: activeSort,
@@ -35,21 +41,44 @@ export function useWikiFeed() {
           search,
         };
 
+        const cacheKey = `dialectgo_wiki_feed_${activeSort}_${activeRegion}_${activeCategory}_${activeType}`;
+
+        // INSTANT HYDRATION: Read from cache if page 1 and no search
+        if (pageNum === 1 && !search.trim()) {
+          try {
+            const cachedStr = await AsyncStorage.getItem(cacheKey);
+            if (cachedStr && currentFetchId === fetchIdRef.current) {
+              setSubmissions(JSON.parse(cachedStr));
+              setLoading(false);
+            }
+          } catch (e) {}
+        }
+
         const { data, pagination } = await fetchSubmissionsService(pageNum, filters);
+
+        if (currentFetchId !== fetchIdRef.current) return;
 
         if (append) {
           setSubmissions(prev => [...prev, ...data]);
         } else {
           setSubmissions(data);
+          // Update cache
+          if (pageNum === 1 && !search.trim()) {
+            AsyncStorage.setItem(cacheKey, JSON.stringify(data)).catch(() => {});
+          }
         }
 
         setTotal(pagination.total);
         setHasMore(data.length === 20);
       } catch (err) {
-        console.error('[WikiFeed] Fetch error:', err);
+        if (currentFetchId === fetchIdRef.current) {
+          console.error('[WikiFeed] Fetch error:', err);
+        }
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (currentFetchId === fetchIdRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [activeRegion, activeCategory, activeSort, activeType, search]
