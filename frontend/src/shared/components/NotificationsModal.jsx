@@ -1,6 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,  TouchableWithoutFeedback } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../api/supabase';
 import { NOTIFICATIONS_API_BASE } from '../api/client';
@@ -23,16 +24,32 @@ export default function NotificationsModal({ visible, onClose }) {
   };
 
   const fetchNotifications = async () => {
-    setLoading(true);
     try {
       const session = await getSession();
       if (!session) return;
+
+      const cacheKey = `dialectgo_notifications_${session.user.id}`;
+
+      // INSTANT HYDRATION
+      try {
+        const cachedStr = await AsyncStorage.getItem(cacheKey);
+        if (cachedStr) {
+          setNotifications(JSON.parse(cachedStr));
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+      } catch (e) {
+        setLoading(true);
+      }
+
       const response = await fetch(NOTIFICATIONS_API_BASE, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const json = await response.json();
       if (json.success) {
         setNotifications(json.data);
+        AsyncStorage.setItem(cacheKey, JSON.stringify(json.data)).catch(() => {});
       }
     } catch (err) {
       console.error('[Notifications] Fetch error:', err);
