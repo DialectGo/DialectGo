@@ -15,7 +15,10 @@ import {
 // ============================================================
 
 const JEEP_IMG  = require('../../assets/on-boarding-animation/dialectgo_jeep_image.png');
-const BEE_IMG   = require('../../assets/on-boarding-animation/dialectgo_bee_mascot_image.png');
+const BEE_IMG_1 = require('../../assets/bee-logo-images/bee_logo_1.png');
+const BEE_IMG_2 = require('../../assets/bee-logo-images/bee_logo_2.png');
+const BEE_IMG_4 = require('../../assets/bee-logo-images/bee_logo_4.png');
+const BEE_IMG_6 = require('../../assets/bee-logo-images/bee_logo_6.png');
 const TEXT_IMG  = require('../../assets/on-boarding-animation/dialectgo_text.png');
 const BUBBLE_L  = require('../../assets/on-boarding-animation/left_chat_bubble_image.png');
 const BUBBLE_R  = require('../../assets/on-boarding-animation/right_chat_bubble_image.png');
@@ -155,6 +158,7 @@ export default function OpeningAnimation({ onFinish }) {
   const [leftBubbleVisible,    setLeftBubbleVisible]    = useState(false);
   const [salamatBubbleVisible, setSalamatBubbleVisible] = useState(false);
   const [glitterTrigger,       setGlitterTrigger]       = useState(false);
+  const [currentBeeImage,      setCurrentBeeImage]      = useState(BEE_IMG_1);
 
   // --- Animated values ---
   const jeepX     = useRef(new Animated.Value(width + JEEP_W)).current;
@@ -279,6 +283,7 @@ export default function OpeningAnimation({ onFinish }) {
                   setSalamatBubbleVisible(false);
 
                   // ── PHASE 5: Jeep exits left ────────────────────────
+                  setCurrentBeeImage(BEE_IMG_4);
                   Animated.timing(jeepX, {
                     toValue: -(JEEP_W + 80),
                     duration: 1800,
@@ -288,6 +293,7 @@ export default function OpeningAnimation({ onFinish }) {
 
                     // ── PHASE 6: Bee moves left with glitter trail ──────
                     setGlitterTrigger(true);
+                    setCurrentBeeImage(BEE_IMG_2);
 
                     Animated.parallel([
                       Animated.timing(beeX, {
@@ -304,7 +310,8 @@ export default function OpeningAnimation({ onFinish }) {
                       }),
                     ]).start(() => {
 
-                      // ── PHASE 7: Logo text fades in ─────────────────
+                      // ── PHASE 7: Logo text fades in & Final Bee form ─────────────────
+                      setCurrentBeeImage(BEE_IMG_6);
 
                       Animated.sequence([
                         Animated.delay(200),
@@ -468,7 +475,7 @@ export default function OpeningAnimation({ onFinish }) {
 
       {/* ── BEE MASCOT  (zIndex 20) ─────────────────────────── */}
       <Animated.Image
-        source={BEE_IMG}
+        source={currentBeeImage}
         style={[
           styles.bee,
           {
