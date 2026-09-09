@@ -260,6 +260,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               <TextInput
                 style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}
                 placeholder="juan@example.com"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -281,7 +282,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
                 <TextInput
                   style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
                   placeholder="••••••••"
-                  placeholderTextColor="#BDBDBD"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={secureTextEntry}
                   value={password}
                   onChangeText={(text) => {
