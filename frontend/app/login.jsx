@@ -280,7 +280,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               <Text style={styles.labelShadow}>Password</Text>
               <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput
-                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  style={{ flex: 1, paddingVertical: 16, color: '#000' }}
                   placeholder="••••••••"
                   placeholderTextColor="#9CA3AF"
                   secureTextEntry={secureTextEntry}
