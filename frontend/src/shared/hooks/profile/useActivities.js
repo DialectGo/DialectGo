@@ -28,7 +28,7 @@ export const useActivities = () => {
   };
 
   const navigateToWiki = (id) => {
-    if (id) router.push({ pathname: '/(tabs)/Wiki/SubmissionDetail', params: { id } });
+    if (id) router.push({ pathname: '/(tabs)/Wiki/[id]', params: { id } });
   };
 
   return {

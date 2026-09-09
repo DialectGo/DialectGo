@@ -4,4 +4,5 @@ node_modules/
 .expo/
 dist/
 *.log
-.agentfrontend/eas.json
+.agent/
+frontend/eas.json

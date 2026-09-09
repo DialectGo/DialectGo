@@ -17,21 +17,37 @@ export default function MainIndex() {
   // 1. Check session once when the app starts
   useEffect(() => {
     const checkState = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+      try {
+        // Enforce a 10-second timeout on the entire startup check
+        // If the backend (Render) is asleep, we won't wait forever.
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Startup timeout')), 10000)
+        );
 
-      if (session) {
-        setCurrentScreen('home'); // Skip everything if they have a session
-        return; // Fast path!
-      }
+        const logicPromise = (async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          setSession(session);
 
-      // SLOW PATH: Only fetch saved profiles if they are not logged in
-      const profiles = await getSavedProfiles();
+          if (session) {
+            setCurrentScreen('home'); 
+            return; 
+          }
 
-      if (profiles && profiles.length > 0) {
-        setCurrentScreen('auth'); // Skip animations and go to Profile List
-      } else {
-        setCurrentScreen('intro-splash'); // First-time user, no profiles
+          const profiles = await getSavedProfiles();
+          if (profiles && profiles.length > 0) {
+            setCurrentScreen('auth'); 
+          } else {
+            setCurrentScreen('intro-splash'); 
+          }
+        })();
+
+        await Promise.race([logicPromise, timeoutPromise]);
+        
+      } catch (error) {
+        console.warn("Startup check timed out or failed (this is normal if network is slow):", error);
+        // On any failure, default to the safest possible state
+        // This ensures the user is never stuck on 'loading'
+        setCurrentScreen('intro-splash');
       }
     };
 

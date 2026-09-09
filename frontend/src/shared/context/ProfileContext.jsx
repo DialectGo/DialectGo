@@ -57,7 +57,7 @@ export const ProfileProvider = ({ children }) => {
 
       // 2. BACKGROUND FETCH: Get fresh data from the server
       await Promise.all([
-        profileData.fetchUserProfile(session.access_token),
+        profileData.fetchUserProfile(session),
         profileData.fetchStreak(session.access_token)
       ]);
 

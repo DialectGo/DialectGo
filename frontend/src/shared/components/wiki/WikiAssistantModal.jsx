@@ -24,7 +24,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
 
   // Animated values for keyboard handling
   const keyboardAnim = useRef(new Animated.Value(0)).current; // iOS modal offset
-  const paddingBottomAnim = useRef(new Animated.Value(Math.max(32, insets.bottom + 8))).current;
+  const paddingBottomAnim = useRef(new Animated.Value(insets.bottom + 12)).current;
 
   useEffect(() => {
     if (visible && messages.length === 0) {
@@ -46,6 +46,8 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard.addListener(showEvent, (e) => {
+      // On Android with statusBarTranslucent=true, adjustResize is broken.
+      // So we manually animate the offset on BOTH iOS and Android!
       Animated.timing(keyboardAnim, {
         toValue: e.endCoordinates.height,
         duration: e.duration || 250,
@@ -80,7 +82,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
   const handleInputFocus = () => {
     inputFocusedRef.current = true;
     Animated.timing(paddingBottomAnim, {
-      toValue: Platform.OS === 'ios' ? 8 : Math.max(32, insets.bottom + 8),
+      toValue: Platform.OS === 'ios' ? 12 : insets.bottom + 12,
       duration: Platform.OS === 'ios' ? 250 : 200,
       useNativeDriver: false,
     }).start();
@@ -90,7 +92,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
   const handleInputBlur = () => {
     inputFocusedRef.current = false;
     Animated.timing(paddingBottomAnim, {
-      toValue: Math.max(32, insets.bottom + 8),
+      toValue: insets.bottom + 12,
       duration: Platform.OS === 'ios' ? 250 : 200,
       useNativeDriver: false,
     }).start();
@@ -186,7 +188,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent={true}>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent={true} navigationBarTranslucent={true}>
       <View style={styles.overlay}>
         {/* Tappable backdrop to dismiss keyboard */}
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
