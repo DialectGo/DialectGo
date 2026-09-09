@@ -42,6 +42,12 @@ export const useProfileData = () => {
         fName = result.data.first_name || '';
         lName = result.data.last_name || '';
         avatar = result.data.profile_avatar_url;
+        
+        if (!fName) {
+          console.log('[ProfileData] Backend returned empty first_name, will try Google metadata fallback');
+        }
+      } else {
+        console.log('[ProfileData] Backend profile fetch returned:', result?.success, result?.data ? 'has data' : 'no data');
       }
 
       // Fallback to Google Auth Metadata if backend profile is missing/incomplete
