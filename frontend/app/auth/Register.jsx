@@ -276,12 +276,12 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>First Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" value={firstName} onChangeText={(t) => { setFirstName(t); if (errors.firstName) setErrors({ ...errors, firstName: null }); }} />
+                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" placeholderTextColor="#9CA3AF" value={firstName} onChangeText={(t) => { setFirstName(t); if (errors.firstName) setErrors({ ...errors, firstName: null }); }} />
                 {errors.firstName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.firstName}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Last Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" value={lastName} onChangeText={(t) => { setLastName(t); if (errors.lastName) setErrors({ ...errors, lastName: null }); }} />
+                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" placeholderTextColor="#9CA3AF" value={lastName} onChangeText={(t) => { setLastName(t); if (errors.lastName) setErrors({ ...errors, lastName: null }); }} />
                 {errors.lastName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.lastName}</Text>}
               </View>
             </View>
@@ -312,7 +312,7 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
             {/* Country */}
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Country</Text>
-              <TextInput style={[styles.bubbleInput, errors.country ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Country" value={country} onChangeText={(t) => { setCountry(t); if (errors.country) setErrors({ ...errors, country: null }); }} />
+              <TextInput style={[styles.bubbleInput, errors.country ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Country" placeholderTextColor="#9CA3AF" value={country} onChangeText={(t) => { setCountry(t); if (errors.country) setErrors({ ...errors, country: null }); }} />
               {errors.country && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.country}</Text>}
             </View>
 
@@ -320,12 +320,12 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Province</Text>
-                <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" value={province} onChangeText={(t) => { setProvince(t); if (errors.province) setErrors({ ...errors, province: null }); }} />
+                <TextInput style={[styles.bubbleInput, errors.province ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Province" placeholderTextColor="#9CA3AF" value={province} onChangeText={(t) => { setProvince(t); if (errors.province) setErrors({ ...errors, province: null }); }} />
                 {errors.province && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.province}</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>City</Text>
-                <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" value={city} onChangeText={(t) => { setCity(t); if (errors.city) setErrors({ ...errors, city: null }); }} />
+                <TextInput style={[styles.bubbleInput, errors.city ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="City" placeholderTextColor="#9CA3AF" value={city} onChangeText={(t) => { setCity(t); if (errors.city) setErrors({ ...errors, city: null }); }} />
                 {errors.city && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.city}</Text>}
               </View>
             </View>
@@ -335,6 +335,7 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
               <TextInput 
                 style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
                 placeholder="email@example.com" 
+                placeholderTextColor="#9CA3AF"
                 keyboardType="email-address" 
                 autoCapitalize="none" 
                 value={email} 
@@ -354,8 +355,9 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
               <Text style={styles.labelShadow}>Password</Text>
               <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput
-                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  style={{ flex: 1, paddingVertical: 16, color: '#000' }}
                   placeholder="••••••••"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={secureTextEntry}
                   value={password}
                   onChangeText={(t) => { setPassword(t); if (errors.password) setErrors({ ...errors, password: null, confirmPassword: null }); }}
@@ -371,8 +373,9 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
               <Text style={styles.labelShadow}>Confirm Password</Text>
               <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.confirmPassword ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput
-                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  style={{ flex: 1, paddingVertical: 16, color: '#000' }}
                   placeholder="••••••••"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={confirmSecureTextEntry}
                   value={confirmPassword}
                   onChangeText={(t) => { setConfirmPassword(t); if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null }); }}

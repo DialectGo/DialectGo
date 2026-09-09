@@ -55,9 +55,15 @@ export const ProfileProvider = ({ children }) => {
         // ignore cache errors
       }
 
+      // UNBLOCK UI INSTANTLY: We have either hydrated from cache or used defaults.
+      // Do not wait for the slow backend to wake up before showing the screen.
+      if (!hasInitialized.current && !isManualRefresh) {
+        setLoading(false);
+      }
+
       // 2. BACKGROUND FETCH: Get fresh data from the server
       await Promise.all([
-        profileData.fetchUserProfile(session.access_token),
+        profileData.fetchUserProfile(session),
         profileData.fetchStreak(session.access_token)
       ]);
 
@@ -65,6 +71,7 @@ export const ProfileProvider = ({ children }) => {
       console.log('Profile load error:', error);
       resetProfileData();
     } finally {
+      hasInitialized.current = true;
       setLoading(false);
       setRefreshing(false);
     }

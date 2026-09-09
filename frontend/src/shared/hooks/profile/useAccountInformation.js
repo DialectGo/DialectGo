@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatAddress, parseAddress } from '../../utils/stringUtils';
 import { fetchUserProfile, updateUserProfile } from '../../services/profile/userService';
 import { useProfileContext } from '../../context/ProfileContext';
@@ -17,7 +18,29 @@ export const useAccountInformation = (router) => {
 
 
   const fetchProfile = useCallback(async () => {
+    let hasCache = false;
     try {
+      // 1. INSTANT HYDRATION: Try to load from cache first
+      const cachedStr = await AsyncStorage.getItem('dialectgo_account_info_cache');
+      if (cachedStr) {
+        const user = JSON.parse(cachedStr);
+        setFirstName(user.first_name || '');
+        setLastName(user.last_name || '');
+        setBirthDate(user.birth_date || '');
+        setEmail(user.email || '');
+        setAddress(formatAddress(user.country, user.province, user.city));
+        setLoading(false);
+        hasCache = true;
+      }
+    } catch (e) {
+      // ignore cache errors
+    }
+
+    // Unblock UI immediately so the user isn't stuck on a spinner
+    if (!hasCache) setLoading(false);
+
+    try {
+      // 2. BACKGROUND FETCH: Get fresh data from the server
       const user = await fetchUserProfile();
       if (user) {
         setFirstName(user.first_name || '');
@@ -25,16 +48,15 @@ export const useAccountInformation = (router) => {
         setBirthDate(user.birth_date || '');
         setEmail(user.email || '');
         setAddress(formatAddress(user.country, user.province, user.city));
-
-
-      } else {
+        
+        // Update cache
+        AsyncStorage.setItem('dialectgo_account_info_cache', JSON.stringify(user)).catch(() => {});
+      } else if (!hasCache) {
         showToast('Failed to load profile.', 'error', 'Error');
       }
     } catch (error) {
       console.error('Fetch Profile Error:', error);
-      showToast('Could not connect to the server.', 'error', 'Error');
-    } finally {
-      setLoading(false);
+      if (!hasCache) showToast('Could not connect to the server.', 'error', 'Error');
     }
   }, []);
 

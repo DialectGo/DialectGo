@@ -73,7 +73,7 @@ export default function NotificationsModal({ visible, onClose }) {
       // Navigate based on type
       onClose();
       if (type.startsWith('wiki_') && referenceId) {
-        router.push({ pathname: '/(tabs)/Wiki/SubmissionDetail', params: { id: referenceId } });
+        router.push({ pathname: '/(tabs)/Wiki/[id]', params: { id: referenceId } });
       }
     } catch (err) {
       console.error('[Notifications] Mark read error:', err);

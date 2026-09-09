@@ -54,6 +54,11 @@ export function useSubmissionDetail(id) {
     if (id) {
       fetchDetail();
       fetchComments();
+    } else {
+      // If there is no ID, immediately stop the loading spinner
+      // so it doesn't spin forever.
+      setLoading(false);
+      setLoadingComments(false);
     }
   }, [id, fetchDetail, fetchComments]);
 

@@ -27,7 +27,7 @@ export default function WikiFeedCard({ item, router, handleVote, styles, isBookm
       activeOpacity={0.75}
       onPress={() =>
         router.push({
-          pathname: '/(tabs)/Wiki/SubmissionDetail',
+          pathname: '/(tabs)/Wiki/[id]',
           params: { id: item.id },
         })
       }

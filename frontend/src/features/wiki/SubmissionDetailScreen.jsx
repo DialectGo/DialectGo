@@ -305,6 +305,6 @@ const styles = StyleSheet.create({
   commentInputFb: { flex: 1, fontSize: 15, color: '#1F2937', paddingTop: 10, paddingBottom: 10, paddingRight: 8 },
   commentSendBtnFb: { paddingLeft: 8, paddingVertical: 8 },
 
-  aiFab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', shadowColor: colors.shadowGold, shadowOpacity: 0.3, shadowOffset: { width: 0, height: 3 }, shadowRadius: 5, elevation: 5 },
-  aiFabIcon: { width: 42, height: 42, resizeMode: 'contain' },
+  aiFab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center', shadowOpacity: 0, elevation: 0 },
+  aiFabIcon: { width: 64, height: 64, resizeMode: 'contain' },
 });

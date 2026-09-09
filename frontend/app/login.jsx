@@ -133,6 +133,9 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
 
@@ -167,6 +170,41 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
                 throw sessionError;
               }
               console.log("Successfully set Supabase OAuth session! Session Data:", sessionData ? (sessionData.session ? 'Exists' : 'Null') : 'No Data');
+
+              // ─── Sync Google name to backend profiles table ───
+              // The Supabase DB trigger creates a profiles row but does NOT
+              // extract first_name/last_name from Google metadata, so we do it here.
+              try {
+                const user = sessionData?.session?.user;
+                const metadata = user?.user_metadata || {};
+                const identityData = user?.identities?.[0]?.identity_data || {};
+                const fullName = metadata.full_name || metadata.name || identityData.full_name || identityData.name;
+
+                if (fullName) {
+                  const nameParts = fullName.trim().split(' ');
+                  const googleFirstName = nameParts[0];
+                  const googleLastName = nameParts.slice(1).join(' ');
+
+                  console.log("[GoogleSync] Syncing Google name to profile:", googleFirstName, googleLastName);
+
+                  await fetch(endpoints.USER_PROFILE, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${params.access_token}`,
+                    },
+                    body: JSON.stringify({
+                      firstName: googleFirstName,
+                      lastName: googleLastName || '',
+                    }),
+                  });
+                } else {
+                  console.warn("[GoogleSync] No name found in Google metadata:", JSON.stringify(metadata));
+                }
+              } catch (syncErr) {
+                // Non-fatal: profile will still load, just without the name pre-filled
+                console.warn("[GoogleSync] Could not sync Google name to profile:", syncErr);
+              }
             }
           }
 
@@ -222,6 +260,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               <TextInput
                 style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}
                 placeholder="juan@example.com"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
@@ -241,9 +280,9 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               <Text style={styles.labelShadow}>Password</Text>
               <View style={[styles.bubbleInput, { flexDirection: 'row', alignItems: 'center', paddingRight: 15, paddingVertical: 0 }, errors.password ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}>
                 <TextInput
-                  style={{ flex: 1, paddingVertical: Platform.OS === 'ios' ? 12 : 10, color: '#000' }}
+                  style={{ flex: 1, paddingVertical: 16, color: '#000' }}
                   placeholder="••••••••"
-                  placeholderTextColor="#BDBDBD"
+                  placeholderTextColor="#9CA3AF"
                   secureTextEntry={secureTextEntry}
                   value={password}
                   onChangeText={(text) => {
