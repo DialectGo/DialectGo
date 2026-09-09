@@ -84,7 +84,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
               setSourceLang(targetLang); 
               setTargetLang(tempLang);
               setTargetDialect(null);
-
+              setBreakdownData(null); // Invalidate stale breakdown on switch
               if (inputText && translation) {
                 skipDebounceRef.current = true;
                 const prevInput = inputText;
