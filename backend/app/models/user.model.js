@@ -1,6 +1,5 @@
 import { supabase, supabaseAdmin, getAuthClient } from '../config/db.js';
 import { createClient } from '@supabase/supabase-js';
-import { updateUser } from './user.model.js';
 
 const getAuthenticatedClient = (token) => {
   return createClient(
