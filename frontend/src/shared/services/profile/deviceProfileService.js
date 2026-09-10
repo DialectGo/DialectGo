@@ -128,6 +128,19 @@ export const removeProfileFromDevice = async (userId) => {
     const result = await response.json();
     if (result.success) {
       await SecureStore.deleteItemAsync(`dialectgo_refresh_${userId}`);
+      
+      // INSTANT CACHE UPDATE: Unblock the UI from showing deleted profiles
+      try {
+        const cachedData = await AsyncStorage.getItem('dialectgo_saved_profiles_cache');
+        if (cachedData) {
+          const profiles = JSON.parse(cachedData);
+          const updatedProfiles = profiles.filter(p => p.user_id !== userId);
+          await AsyncStorage.setItem('dialectgo_saved_profiles_cache', JSON.stringify(updatedProfiles));
+        }
+      } catch (cacheErr) {
+        console.error('Failed to update cache after removal:', cacheErr);
+      }
+      
       return true;
     }
     return false;
