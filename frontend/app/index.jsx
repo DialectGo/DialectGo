@@ -6,47 +6,43 @@ import OpeningAnimation from '../src/components/OpeningAnimation';
 import AutoSplash from '../src/components/AutoSplash';
 import Onboarding from '../src/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
-
-import { getSavedProfiles } from '../src/shared/services/profile/deviceProfileService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function MainIndex() {
   const [currentScreen, setCurrentScreen] = useState('loading');
   const [session, setSession] = useState(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  // 1. Check session once when the app starts
+  // 1. Check session once when the app starts — 100% LOCAL, no backend dependency
   useEffect(() => {
     const checkState = async () => {
       try {
-        // Enforce a 10-second timeout on the entire startup check
-        // If the backend (Render) is asleep, we won't wait forever.
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Startup timeout')), 10000)
-        );
+        // 1. Check local Supabase session (reads from AsyncStorage — instant)
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
 
-        const logicPromise = (async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          setSession(session);
+        if (session) {
+          setCurrentScreen('home');
+          return;
+        }
 
-          if (session) {
-            setCurrentScreen('home'); 
-            return; 
+        // 2. Check LOCAL saved profiles cache only (no network call)
+        // This avoids blocking on Render cold start during app launch
+        const cachedProfiles = await AsyncStorage.getItem('dialectgo_saved_profiles_cache');
+        if (cachedProfiles) {
+          const profiles = JSON.parse(cachedProfiles);
+          if (profiles.length > 0) {
+            setCurrentScreen('auth');
+            return;
           }
+        }
 
-          const profiles = await getSavedProfiles();
-          if (profiles && profiles.length > 0) {
-            setCurrentScreen('auth'); 
-          } else {
-            setCurrentScreen('intro-splash'); 
-          }
-        })();
+        // 3. No session, no cached profiles → first-time user
+        setCurrentScreen('intro-splash');
 
-        await Promise.race([logicPromise, timeoutPromise]);
-        
       } catch (error) {
-        console.warn("Startup check timed out or failed (this is normal if network is slow):", error);
+        console.warn("Startup check failed:", error);
         // On any failure, default to the safest possible state
-        // This ensures the user is never stuck on 'loading'
         setCurrentScreen('intro-splash');
       }
     };
