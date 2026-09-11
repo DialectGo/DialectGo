@@ -60,6 +60,32 @@ export const saveProfileToDevice = async ({ email, first_name, last_name, avatar
       if (session.refresh_token && session.user?.id) {
         await SecureStore.setItemAsync(`dialectgo_refresh_${session.user.id}`, session.refresh_token);
       }
+
+      // INSTANT CACHE UPDATE: Ensure the saved profiles cache includes this profile
+      // so AuthTransition shows the profile list immediately after the first logout.
+      try {
+        const savedProfile = result.data || {
+          user_id: session.user?.id,
+          email,
+          first_name,
+          last_name,
+          avatar_url,
+          auth_provider: auth_provider || 'email',
+        };
+        const cachedStr = await AsyncStorage.getItem('dialectgo_saved_profiles_cache');
+        let profiles = cachedStr ? JSON.parse(cachedStr) : [];
+        // Replace existing entry or add new one
+        const existingIdx = profiles.findIndex(p => p.user_id === savedProfile.user_id);
+        if (existingIdx >= 0) {
+          profiles[existingIdx] = { ...profiles[existingIdx], ...savedProfile };
+        } else {
+          profiles.unshift(savedProfile);
+        }
+        await AsyncStorage.setItem('dialectgo_saved_profiles_cache', JSON.stringify(profiles));
+      } catch (cacheErr) {
+        console.warn('Failed to update saved profiles cache:', cacheErr);
+      }
+
       return result.data;
     }
     return null;
