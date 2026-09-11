@@ -5,8 +5,8 @@ import { availableAvatars } from '../../hooks/profile/constants';
 
 export default function WikiFeedCard({ item, router, handleVote, styles, isBookmarked }) {
   const authorName =
-    item.profiles?.username ||
     `${item.profiles?.first_name || ''} ${item.profiles?.last_name || ''}`.trim() ||
+    item.profiles?.username ||
     'Anonymous';
 
   const isQuestion = item.type === 'Question';

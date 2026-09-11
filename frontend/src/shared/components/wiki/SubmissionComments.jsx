@@ -29,8 +29,8 @@ export default function SubmissionComments({
         </View>
       ) : (
         comments.map(comment => {
-          const commentAuthor = comment.profiles?.username
-            || `${comment.profiles?.first_name || ''} ${comment.profiles?.last_name || ''}`.trim()
+          const commentAuthor = `${comment.profiles?.first_name || ''} ${comment.profiles?.last_name || ''}`.trim()
+            || comment.profiles?.username
             || 'Anonymous';
 
           return (

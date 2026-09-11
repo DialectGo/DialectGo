@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-
+  StyleSheet,
   ScrollView,
   Text,
   TextInput,
@@ -35,7 +35,7 @@ const API_URL = endpoints.USER_REGISTER;
 
 export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   const router = useRouter();
-  const { refreshProfile } = useProfileContext();
+  const { refreshProfile, hydrateProfileData } = useProfileContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -57,6 +57,8 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   const [dateSelected, setDateSelected] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoadingMsg, setGoogleLoadingMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState({});
   const { showToast } = useToast();
@@ -158,7 +160,7 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   };
 
   const handleGoogleSignIn = async () => {
-    if (loading) return;
+    if (loading || googleLoading) return;
     setLoading(true);
     try {
       const redirectUrl = makeRedirectUri({ scheme: 'dialectgo' });
@@ -176,7 +178,9 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
         if (result.type === 'success' && result.url) {
-          console.log("Supabase WebBrowser Google Login success!");
+          // Show full-screen loading overlay from this point
+          setGoogleLoading(true);
+          setGoogleLoadingMsg('Authenticating...');
 
           // Extract tokens from the URL hash
           const hashSplit = result.url.split('#');
@@ -188,15 +192,63 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
             });
 
             if (params.access_token && params.refresh_token) {
-              const { error: sessionError } = await supabase.auth.setSession({
+              setGoogleLoadingMsg('Setting up your session...');
+
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
                 access_token: params.access_token,
                 refresh_token: params.refresh_token,
               });
               if (sessionError) throw sessionError;
-              console.log("Successfully set Supabase OAuth session!");
+
+              // ─── STEP 1: Immediately hydrate profile from Google metadata ───
+              const user = sessionData?.session?.user;
+              const metadata = user?.user_metadata || {};
+              const identityData = user?.identities?.[0]?.identity_data || {};
+              const fullName = metadata.full_name || metadata.name || identityData.full_name || identityData.name;
+              const nameParts = (fullName || '').trim().split(' ');
+              const googleFirstName = nameParts[0] || 'User';
+              const googleLastName = nameParts.slice(1).join(' ') || '';
+
+              // Hydrate context instantly so all screens show real name
+              if (hydrateProfileData) {
+                hydrateProfileData({ first_name: googleFirstName, last_name: googleLastName });
+              }
+
+              // Write to cache so subsequent app loads are instant
+              await AsyncStorage.setItem('dialectgo_current_user_cache', JSON.stringify({
+                first_name: googleFirstName,
+                last_name: googleLastName,
+                avatar_url: null,
+              }));
+
+              // ─── STEP 2: Sync Google name to backend (await with timeout) ───
+              setGoogleLoadingMsg('Syncing your profile...');
+              if (fullName) {
+                try {
+                  const syncPromise = fetch(endpoints.USER_PROFILE, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${params.access_token}`,
+                    },
+                    body: JSON.stringify({
+                      firstName: googleFirstName,
+                      lastName: googleLastName || '',
+                    }),
+                  });
+                  const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Sync timeout')), 15000)
+                  );
+                  await Promise.race([syncPromise, timeoutPromise]);
+                  console.log("[GoogleSync] Backend profile sync completed");
+                } catch (syncErr) {
+                  console.warn("[GoogleSync] Backend sync timed out or failed (non-fatal):", syncErr);
+                }
+              }
             }
           }
 
+          setGoogleLoadingMsg('Almost there...');
           await AsyncStorage.removeItem('@guest_mode');
           await AsyncStorage.setItem('@user_role', 'authenticated');
 
@@ -212,11 +264,25 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
       showToast(error.message || 'Authentication failed', 'error', 'Google Sign-In Error');
     } finally {
       setLoading(false);
+      setGoogleLoading(false);
+      setGoogleLoadingMsg('');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Google Sign-In Loading Overlay */}
+      {googleLoading && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.85)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#FFD54F" />
+          <Text style={{ color: '#FFF', marginTop: 16, fontFamily: 'Poppins-Medium', fontSize: 16, textAlign: 'center' }}>
+            {googleLoadingMsg || 'Setting up your account...'}
+          </Text>
+          <Text style={{ color: '#AAA', marginTop: 8, fontFamily: 'Poppins-Regular', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 }}>
+            This may take a moment on first sign-in
+          </Text>
+        </View>
+      )}
       <TermsAndAgreementModal
         visible={showTerms}
         onClose={() => setShowTerms(false)}

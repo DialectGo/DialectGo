@@ -6,7 +6,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-
+  StyleSheet,
   ScrollView,
   Text,
   TextInput,
@@ -32,11 +32,13 @@ const LOGIN_URL = endpoints.USER_LOGIN;
 
 export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail = '' }) {
   const router = useRouter();
-  const { refreshProfile } = useProfileContext();
+  const { refreshProfile, hydrateProfileData } = useProfileContext();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoadingMsg, setGoogleLoadingMsg] = useState('');
   const [errors, setErrors] = useState({});
   const { showToast } = useToast();
 
@@ -124,7 +126,7 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
   };
 
   const handleGoogleSignIn = async () => {
-    if (loading) return;
+    if (loading || googleLoading) return;
     setLoading(true);
     try {
       const redirectUrl = makeRedirectUri({ scheme: 'dialectgo' });
@@ -145,7 +147,9 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
         if (result.type === 'success' && result.url) {
-          console.log("Supabase WebBrowser Google Login success! URL:", result.url);
+          // Show full-screen loading overlay from this point
+          setGoogleLoading(true);
+          setGoogleLoadingMsg('Authenticating...');
 
           // Extract tokens from the URL hash
           const hashSplit = result.url.split('#');
@@ -156,11 +160,9 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
               params[key] = decodeURIComponent(value);
             });
 
-            console.log("Parsed OAuth Params keys:", Object.keys(params));
-            console.log("Has access_token:", !!params.access_token);
-            console.log("Has refresh_token:", !!params.refresh_token);
-
             if (params.access_token && params.refresh_token) {
+              setGoogleLoadingMsg('Setting up your session...');
+
               const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
                 access_token: params.access_token,
                 refresh_token: params.refresh_token,
@@ -169,25 +171,34 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
                 console.error("setSession error:", sessionError);
                 throw sessionError;
               }
-              console.log("Successfully set Supabase OAuth session! Session Data:", sessionData ? (sessionData.session ? 'Exists' : 'Null') : 'No Data');
 
-              // ─── Sync Google name to backend profiles table ───
-              // The Supabase DB trigger creates a profiles row but does NOT
-              // extract first_name/last_name from Google metadata, so we do it here.
-              try {
-                const user = sessionData?.session?.user;
-                const metadata = user?.user_metadata || {};
-                const identityData = user?.identities?.[0]?.identity_data || {};
-                const fullName = metadata.full_name || metadata.name || identityData.full_name || identityData.name;
+              // ─── STEP 1: Immediately hydrate profile from Google metadata ───
+              // This ensures screens NEVER show "Guest User"
+              const user = sessionData?.session?.user;
+              const metadata = user?.user_metadata || {};
+              const identityData = user?.identities?.[0]?.identity_data || {};
+              const fullName = metadata.full_name || metadata.name || identityData.full_name || identityData.name;
+              const nameParts = (fullName || '').trim().split(' ');
+              const googleFirstName = nameParts[0] || 'User';
+              const googleLastName = nameParts.slice(1).join(' ') || '';
 
-                if (fullName) {
-                  const nameParts = fullName.trim().split(' ');
-                  const googleFirstName = nameParts[0];
-                  const googleLastName = nameParts.slice(1).join(' ');
+              // Hydrate context instantly so all screens show real name
+              if (hydrateProfileData) {
+                hydrateProfileData({ first_name: googleFirstName, last_name: googleLastName });
+              }
 
-                  console.log("[GoogleSync] Syncing Google name to profile:", googleFirstName, googleLastName);
+              // Write to cache so subsequent app loads are instant
+              await AsyncStorage.setItem('dialectgo_current_user_cache', JSON.stringify({
+                first_name: googleFirstName,
+                last_name: googleLastName,
+                avatar_url: null,
+              }));
 
-                  await fetch(endpoints.USER_PROFILE, {
+              // ─── STEP 2: Sync Google name to backend (await with timeout) ───
+              setGoogleLoadingMsg('Syncing your profile...');
+              if (fullName) {
+                try {
+                  const syncPromise = fetch(endpoints.USER_PROFILE, {
                     method: 'PUT',
                     headers: {
                       'Content-Type': 'application/json',
@@ -198,16 +209,19 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
                       lastName: googleLastName || '',
                     }),
                   });
-                } else {
-                  console.warn("[GoogleSync] No name found in Google metadata:", JSON.stringify(metadata));
+                  const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Sync timeout')), 15000)
+                  );
+                  await Promise.race([syncPromise, timeoutPromise]);
+                  console.log("[GoogleSync] Backend profile sync completed");
+                } catch (syncErr) {
+                  console.warn("[GoogleSync] Backend sync timed out or failed (non-fatal):", syncErr);
                 }
-              } catch (syncErr) {
-                // Non-fatal: profile will still load, just without the name pre-filled
-                console.warn("[GoogleSync] Could not sync Google name to profile:", syncErr);
               }
             }
           }
 
+          setGoogleLoadingMsg('Almost there...');
           await AsyncStorage.removeItem('@guest_mode');
           await AsyncStorage.setItem('@user_role', 'authenticated');
 
@@ -223,11 +237,25 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
       showToast(error.message || 'Authentication failed', 'error', 'Google Sign-In Error');
     } finally {
       setLoading(false);
+      setGoogleLoading(false);
+      setGoogleLoadingMsg('');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Google Sign-In Loading Overlay */}
+      {googleLoading && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.85)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#FFD54F" />
+          <Text style={{ color: '#FFF', marginTop: 16, fontFamily: 'Poppins-Medium', fontSize: 16, textAlign: 'center' }}>
+            {googleLoadingMsg || 'Setting up your account...'}
+          </Text>
+          <Text style={{ color: '#AAA', marginTop: 8, fontFamily: 'Poppins-Regular', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 }}>
+            This may take a moment on first sign-in
+          </Text>
+        </View>
+      )}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

@@ -36,7 +36,9 @@ export const clearAuthSession = async (keepServerSession = false) => {
       key.includes('supabase') || 
       key.startsWith('sb-') ||      // Catches sb-{project-ref}-auth-token
       key.startsWith('@user_') ||    // Catches @user_token, @user_role, @user_metadata
-      key.startsWith('@guest_')      // Catches @guest_mode, @guest_history_cache, @guest_saved_words
+      key.startsWith('@guest_') ||   // Catches @guest_mode, @guest_history_cache, @guest_saved_words
+      key === 'dialectgo_current_user_cache' ||    // User-specific profile cache
+      key === 'dialectgo_account_info_cache'        // Account info screen cache
     );
     
     if (authKeys.length > 0) {
