@@ -1381,3 +1381,57 @@ export async function askGlobalWikiAssistant({ userMessage, conversationHistory 
         };
     }
 }
+// ─── Semantic Sentence Chunking [Groq] ─────────────────────────────────────
+
+/**
+ * Intelligently splits a large block of text into semantically complete, bite-sized
+ * sentences or clauses suitable for NLLB translation, avoiding arbitrary character cuts.
+ *
+ * @param {string} text - Raw text (e.g. a long paragraph)
+ * @returns {Promise<string[]>} Array of semantic chunks (sentences)
+ */
+export async function splitIntoSemanticChunks(text) {
+    const startTime = Date.now();
+    if (!text || !text.trim()) return [text];
+
+    try {
+        const client = getGroqClient();
+        const completion = await withTimeout(
+            client.chat.completions.create({
+                model: GROQ_MODEL,
+                temperature: 0.1,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a text segmentation expert. Your job is to split the user's text into an array of semantically complete sentences.
+Rules:
+1. Break long paragraphs into individual sentences.
+2. Do NOT translate or alter the words.
+3. Preserve all punctuation.
+4. Output ONLY a raw JSON array of strings. No markdown formatting, no explanations.`
+                    },
+                    {
+                        role: 'user',
+                        content: text
+                    }
+                ],
+            }),
+            GROQ_TIMEOUT_MS,
+            'splitIntoSemanticChunks'
+        );
+
+        const rawContent = completion.choices?.[0]?.message?.content;
+        const jsonStr = rawContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const chunks = JSON.parse(jsonStr);
+
+        if (Array.isArray(chunks) && chunks.length > 0) {
+            logger.info('Semantic chunking successful', { chunks: chunks.length, ms: Date.now() - startTime });
+            return chunks;
+        }
+        throw new Error("Groq returned invalid array format");
+    } catch (error) {
+        logger.warn('Semantic chunking failed, falling back to regex split', { error: error.message });
+        // Fallback: Regex sentence boundary splitting
+        return text.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g).map(s => s.trim()).filter(s => s.length > 0);
+    }
+}

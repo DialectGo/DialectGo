@@ -55,13 +55,8 @@ If there are no proper nouns, return exactly the word "NONE".`;
     }
 }
 
-const SAFE_PLACEHOLDERS = [
-    'John', 'Mary', 'David', 'Sarah', 'Michael', 
-    'Jessica', 'Christopher', 'Amanda', 'Matthew', 'Ashley'
-];
-
 /**
- * Masks proper nouns in the text with safe placeholder names.
+ * Masks proper nouns in the text with safe placeholder tags.
  * @returns {Promise<{ maskedText: string, entityMap: Record<string, string> }>}
  */
 export async function maskProperNouns(text) {
@@ -73,14 +68,10 @@ export async function maskProperNouns(text) {
 
     let maskedText = text;
     const entityMap = {};
-    const lowerText = text.toLowerCase();
-    
-    // Find placeholders that aren't already used in the text
-    const availablePlaceholders = SAFE_PLACEHOLDERS.filter(p => !lowerText.includes(p.toLowerCase()));
 
     entities.forEach((entity, index) => {
-        // Fallback to ZNAME if we somehow run out of standard safe names
-        const placeholder = availablePlaceholders[index] || `ZNAME${index}`;
+        // Use an XML-like tag which NLLB generally passes through untouched (e.g. <n0>)
+        const placeholder = `<n${index}>`;
         entityMap[placeholder] = entity;
         
         // Replace all occurrences of the entity (case-insensitive for safety, but respecting word boundaries)
@@ -102,11 +93,25 @@ export function unmaskProperNouns(maskedText, entityMap) {
     if (!entityMap || Object.keys(entityMap).length === 0) return maskedText;
 
     let restoredText = maskedText;
-    
-    for (const [placeholder, entity] of Object.entries(entityMap)) {
-        // NLLB might lowercase or slightly alter the casing of the safe name placeholder
-        const placeholderRegex = new RegExp(`\\b${placeholder}\\b`, 'gi');
-        restoredText = restoredText.replace(placeholderRegex, entity);
+
+    // Sort by tag index so <n0> is processed before <n1> etc., preventing partial matches
+    const sortedEntries = Object.entries(entityMap).sort((a, b) => {
+        const idxA = parseInt(a[0].match(/\d+/)?.[0] ?? '0');
+        const idxB = parseInt(b[0].match(/\d+/)?.[0] ?? '0');
+        return idxA - idxB;
+    });
+
+    for (const [placeholder, entity] of sortedEntries) {
+        // Simple, reliable global string replacement.
+        // NLLB occasionally adds a space inside tags e.g. < n0 > — handle both variants.
+        restoredText = restoredText.split(placeholder).join(entity);
+        
+        // Also catch NLLB's spaced-out variant: < n0 >
+        const index = placeholder.match(/\d+/)?.[0];
+        if (index !== undefined) {
+            const spacedVariant = `< n${index} >`;
+            restoredText = restoredText.split(spacedVariant).join(entity);
+        }
     }
 
     return restoredText;
