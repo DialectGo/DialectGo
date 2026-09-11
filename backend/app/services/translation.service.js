@@ -14,6 +14,7 @@ import {
     createLineCacheKey,
 } from './cache.service.js';
 import { translateWithGroq, translateDocumentWithGroq } from './groqTranslation.service.js';
+import { maskProperNouns, unmaskProperNouns } from './ner.service.js';
 
 // Maximum number of concurrent NLLB line translation calls
 const TRANSLATION_CONCURRENCY = 5;
@@ -288,16 +289,19 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
     const preprocessResult = await preprocessText(text, sourceLang, token);
     const textForTranslation = preprocessResult.canonicalizedText;
 
+    // Step 1.5: Mask proper nouns (NER) to prevent NLLB from translating names
+    const { maskedText, entityMap } = await maskProperNouns(textForTranslation);
+
     console.log(`[PreprocessedTranslation] Preprocessing done in ${preprocessResult.metadata?.pipelineMs ?? 0}ms, sending to HuggingFace...`);
 
-    const lines = textForTranslation.split('\n');
+    const lines = maskedText.split('\n');
 
     // Translate all lines IN PARALLEL (batched concurrency)
     const lineResults = await parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
 
-    // Reconstruct the exact structure from sorted parallel results
-    const finalTranslatedLines = lineResults.map(r => r.finalText);
-    const rawNllbOutputs = lineResults.filter(r => r.nllbOutput !== r.finalText || !targetDialect).map(r => r.nllbOutput);
+    // Reconstruct the exact structure from sorted parallel results, unmasking entities
+    const finalTranslatedLines = lineResults.map(r => unmaskProperNouns(r.finalText, entityMap));
+    const rawNllbOutputs = lineResults.filter(r => r.nllbOutput !== r.finalText || !targetDialect).map(r => unmaskProperNouns(r.nllbOutput, entityMap));
 
     let wasDialectModified = lineResults.some(r => r.wasModified);
     let allDialectReplacements = lineResults.flatMap(r => r.replacements);
