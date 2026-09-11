@@ -6,7 +6,7 @@ import FormDataLib from 'form-data';
 import { Client } from '@gradio/client';
 import { preprocessText } from './preprocessor.service.js';
 import { dialectize } from './reverseCanonicalizer.service.js';
-import { analyzeTranslation, analyzeDocumentType, reconstructLayout, normalizeInformalText } from './metaLayer.service.js';
+import { analyzeTranslation, analyzeDocumentType, reconstructLayout, normalizeInformalText, splitIntoSemanticChunks } from './metaLayer.service.js';
 import {
     translationCache,
     lineTranslationCache,
@@ -14,6 +14,7 @@ import {
     createLineCacheKey,
 } from './cache.service.js';
 import { translateWithGroq, translateDocumentWithGroq } from './groqTranslation.service.js';
+import { maskProperNouns, unmaskProperNouns } from './ner.service.js';
 
 // Maximum number of concurrent NLLB line translation calls
 const TRANSLATION_CONCURRENCY = 5;
@@ -91,11 +92,110 @@ const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
 };
 
 /**
- * PRIMARY translation function — Groq-first with HuggingFace/Flask fallback.
+ * Heuristic to detect NLLB seq2seq hallucinations.
+ * NLLB hallucinates on non-grammatical fragments, all-caps strings, or heavy NER masks.
  *
- * Speed comparison:
- *   Groq LLM:      ~800ms-1.5s  ← PRIMARY
- *   HF/Flask NLLB: 3-6 minutes  ← FALLBACK only
+ * NOTE: Filipino/Tagalog is naturally ~30-50% MORE verbose than English.
+ * Thresholds must be set generously to avoid false positives on valid translations.
+ */
+const isHallucination = (sourceText, translatedText) => {
+    if (!translatedText || !translatedText.trim()) return true;
+
+    // 1. Extreme length explosion — valid Filipino translations can be 2-3x longer.
+    // Only flag if output is 8x the source length to avoid false positives.
+    if (sourceText.length > 30 && translatedText.length > sourceText.length * 8) {
+        return true;
+    }
+
+    // 2. Repeated word loops — the classic infinite loop hallucination.
+    // Check BOTH consecutive (AAAAA) and alternating (ABABAB) patterns.
+    const words = translatedText.split(/\s+/);
+    if (words.length > 8) {
+        let maxConsecutive = 0;
+        let currentConsecutive = 1;
+
+        for (let i = 1; i < words.length; i++) {
+            if (words[i].toLowerCase() === words[i-1].toLowerCase() && words[i].length > 2) {
+                currentConsecutive++;
+                maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+            } else {
+                currentConsecutive = 1;
+            }
+        }
+        if (maxConsecutive >= 6) return true;
+
+        // Alternating A-B-A-B pattern: count word frequency at even vs odd positions.
+        // If any word > 3 chars appears at ≥ 40% of positions, it's looping.
+        const freqMap = {};
+        for (const w of words) {
+            if (w.length > 3) {
+                const lw = w.toLowerCase();
+                freqMap[lw] = (freqMap[lw] || 0) + 1;
+            }
+        }
+        const topWordCount = Math.max(0, ...Object.values(freqMap));
+        if (topWordCount >= 4 && topWordCount / words.length >= 0.25) return true;
+    }
+
+    // 3. Lost NER tags — if source had <n0> but output dropped it, NLLB hallucinated.
+    const sourceTags = sourceText.match(/<n\d+>/g) || [];
+    if (sourceTags.length > 0) {
+        let missingTags = 0;
+        for (const tag of sourceTags) {
+            if (!translatedText.includes(tag)) missingTags++;
+        }
+        // Flag only if ALL tags are lost (NLLB completely ignored the placeholders)
+        if (missingTags === sourceTags.length) return true;
+    }
+
+    return false;
+};
+
+/**
+ * Checks if text is an untranslatable fragment — i.e., contains no meaningful
+ * translatable words after stripping NER tags, numbers, dates, and academic codes.
+ * These should be passed through as-is to avoid HF hallucinations and Groq empty returns.
+ *
+ * Examples caught:
+ *   "<n3> April 30, 2026 BSIT 3-1" → nothing to translate
+ *   "<n2> <n1> <n6>"               → just proper-noun tags
+ *   "<n8> 2"                        → tag + page number
+ *   "https://doi.org/10.1234"       → URL
+ */
+const isUntranslatableFragment = (text) => {
+    let stripped = text;
+
+    // 1. Remove NER placeholder tags
+    stripped = stripped.replace(/<n\d+>/gi, '');
+
+    // 2. If the core content is a URL (after stripping tags), treat as untranslatable.
+    //    e.g. "https://opinion.<n9>/188998/english-should-be-a-border..."
+    //    After tag strip: "https://opinion./188998/english-should-be-a-border..."
+    if (/^\s*https?:\/\//i.test(stripped)) return true;
+
+    // 3. Remove common English month names (already untranslatable in academic context)
+    stripped = stripped.replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi, '');
+
+    // 4. Remove common Philippine academic course codes (BSIT, BSCS, AB, BS, etc.) and honorifics
+    stripped = stripped.replace(/\b(BS[A-Z]{0,6}|AB|MA|PhD|MS|Mr|Mrs|Ms|Dr|Prof)\b/gi, '');
+
+    // 5. Remove remaining URLs
+    stripped = stripped.replace(/https?:\/\/\S+/gi, '');
+
+    // 6. Remove numbers, whitespace, and all punctuation
+    stripped = stripped.replace(/[\d\s.,;:\-()\[\]/#@&%+='"!?|_~`^●]/g, '').trim();
+
+    return stripped.length === 0;
+};
+
+// ─── In-flight document request deduplication ───────────────────────────────
+// Prevents double-tap / rapid retry from spinning up two full parallel pipelines
+// that both hit Groq rate limits and waste compute.
+const inFlightDocumentRequests = new Map();
+
+
+/**
+ * PRIMARY translation function — HF-first with Groq/Flask fallback.
  *
  * @param {string} text - Text to translate
  * @param {string} sourceLang
@@ -106,29 +206,37 @@ const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
 export const performTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
     if (!text || !text.trim()) return text;
 
+    // ── Guard: untranslatable fragments (NER tags, numbers, punctuation only) ──
+    // e.g. "<n8> 2" or "<n2> <n1> <n6>" — pass straight through; LLMs can't translate these.
+    if (isUntranslatableFragment(text)) {
+        return text;
+    }
+
     // ── Per-line translation cache check ──────────────────────────────────────
     const lineCacheKey = createLineCacheKey(text, sourceLang, targetLang);
     const cachedLine = lineTranslationCache.get(lineCacheKey);
     if (cachedLine !== undefined) {
-        console.log(`[Cache] Line cache HIT: "${text.slice(0, 40)}..."`);
         return cachedLine;
     }
 
     let result = null;
 
-    // ── Step 1: Try HuggingFace (slow) ──────────────────────────────────────
+    // ── Step 1: Try HuggingFace (slow but free) ──────────────────────────────────────
     try {
         const translatedText = await callHuggingFaceTranslation(text, sourceLang, targetLang);
-        if (translatedText) result = translatedText;
+        if (translatedText && !isHallucination(text, translatedText)) {
+            result = translatedText;
+        } else if (translatedText) {
+            console.warn(`[Translation] HF Hallucination detected for: "${text.slice(0, 30)}...". Falling back to Groq.`);
+        }
     } catch (hfError) {
         console.warn('[Translation] HuggingFace failed, falling back to Groq:', hfError.message);
     }
 
-    // ── Step 2: Groq fallback (fast — ~800ms) ──────────────────────────────────────
+    // ── Step 2: Groq fallback (fast, handles complex fragments well) ──────────────────────────────────────
     if (!result) {
         try {
             result = await translateWithGroq(text, sourceLang, targetLang, targetDialect);
-            console.log(`[Translation] Groq: "${text.slice(0, 40)}" → "${result?.slice(0, 40)}"`);
         } catch (groqError) {
             console.warn('[Translation] Groq fallback failed:', groqError.message);
         }
@@ -143,8 +251,9 @@ export const performTranslation = async (text, sourceLang, targetLang, targetDia
             );
             result = response.data.translation;
         } catch (flaskError) {
-            console.error('[Translation] All fallbacks failed:', flaskError.message);
-            throw new Error(`Translation failed for: "${text.slice(0, 50)}". All backends unavailable.`);
+            console.warn('[Translation] All fallbacks failed — returning original text:', flaskError.message);
+            // Gracefully return original rather than crashing the entire document pipeline
+            return text;
         }
     }
 
@@ -288,21 +397,63 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
     const preprocessResult = await preprocessText(text, sourceLang, token);
     const textForTranslation = preprocessResult.canonicalizedText;
 
+    // Step 1.5: Mask proper nouns (NER) to prevent NLLB from translating names
+    const { maskedText, entityMap } = await maskProperNouns(textForTranslation);
+
     console.log(`[PreprocessedTranslation] Preprocessing done in ${preprocessResult.metadata?.pipelineMs ?? 0}ms, sending to HuggingFace...`);
 
-    const lines = textForTranslation.split('\n');
+    // For documents, PDFs often have hard line-breaks (\n) at the end of every visual line (~80 chars).
+    // This bypassed the >150 char chunking threshold and fed fragmented sentences to NLLB.
+    // Fix: Split by double newlines for true paragraphs, and merge single newlines.
+    const splitRegex = isDocument ? /\n\s*\n/ : /\n/;
+    const paragraphs = maskedText.split(splitRegex);
+    
+    let semanticSentences = [];
+    let sentenceToParagraphMap = [];
+    
+    for (let i = 0; i < paragraphs.length; i++) {
+        let para = paragraphs[i];
+        
+        if (isDocument) {
+            // Unwrap hard line breaks within the true paragraph
+            para = para.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        }
 
-    // Translate all lines IN PARALLEL (batched concurrency)
-    const lineResults = await parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
+        // Only run the LLM chunker on long paragraphs to save time on short chat messages
+        if (!para.trim() || para.length < 150) {
+            semanticSentences.push(para);
+            sentenceToParagraphMap.push(i);
+        } else {
+            console.log(`[Chunking] Splitting paragraph ${i+1} (${para.length} chars) into semantic sentences...`);
+            const sentences = await splitIntoSemanticChunks(para);
+            for (const s of sentences) {
+                semanticSentences.push(s);
+                sentenceToParagraphMap.push(i);
+            }
+        }
+    }
 
-    // Reconstruct the exact structure from sorted parallel results
-    const finalTranslatedLines = lineResults.map(r => r.finalText);
-    const rawNllbOutputs = lineResults.filter(r => r.nllbOutput !== r.finalText || !targetDialect).map(r => r.nllbOutput);
+    // Translate all sentences IN PARALLEL (batched concurrency)
+    const chunkResults = await parallelTranslateLines(semanticSentences, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
 
-    let wasDialectModified = lineResults.some(r => r.wasModified);
-    let allDialectReplacements = lineResults.flatMap(r => r.replacements);
+    // Reconstruct the paragraphs from translated sentences, unmasking entities
+    const translatedParagraphs = new Array(paragraphs.length).fill('');
+    for (let i = 0; i < chunkResults.length; i++) {
+        const pIdx = sentenceToParagraphMap[i];
+        const unmaskedText = unmaskProperNouns(chunkResults[i].finalText, entityMap);
+        
+        if (translatedParagraphs[pIdx] && unmaskedText) {
+            // Join sentences within a paragraph with a space
+            translatedParagraphs[pIdx] += ' ' + unmaskedText;
+        } else {
+            translatedParagraphs[pIdx] += unmaskedText;
+        }
+    }
 
-    let finalTranslatedText = finalTranslatedLines.join('\n');
+    let wasDialectModified = chunkResults.some(r => r.wasModified);
+    let allDialectReplacements = chunkResults.flatMap(r => r.replacements);
+
+    let finalTranslatedText = translatedParagraphs.join('\n');
     let dialectMeta = null;
 
     if (targetDialect) {
@@ -359,9 +510,9 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
  * @param {string|null} targetDialect - Optional dialect variant
  * @returns {Promise<Object>} Full translation result + breakdown
  */
-export const performTranslationWithBreakdown = async (text, sourceLang, targetLang, targetDialect = null, token = null) => {
+export const performTranslationWithBreakdown = async (text, sourceLang, targetLang, targetDialect = null, token = null, isDocument = false) => {
     // Step 1-3: Run the existing pipeline (preprocess → NLLB → dialectize)
-    const result = await performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect, token);
+    const result = await performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect, token, isDocument);
 
     // Step 4: Run LLM Meta-Layer analysis on the translation pair
     const breakdown = await analyzeTranslation({
@@ -414,11 +565,25 @@ export const performDocumentTranslation = async (
     const docCacheKey = createTranslationCacheKey(`${cachePrefix}_${text}`, sourceLang, targetLang, targetDialect);
     const cachedResult = translationCache.get(docCacheKey);
     if (cachedResult) {
-        console.log(`[Cache] Document translation cache HIT — skipping full pipeline (~<10ms)`);
+        console.log(`[Cache] Document translation cache HIT — skipping full pipeline (<10ms)`);
         return cachedResult;
     }
 
+    // ── In-flight request deduplication ───────────────────────────────────────
+    // If an identical document is already being translated, wait for that result
+    // instead of spinning up a second full pipeline (prevents double-tap 429s).
+    if (inFlightDocumentRequests.has(docCacheKey)) {
+        console.log(`[DocPipeline] Duplicate request detected \u2014 waiting for in-flight result...`);
+        return inFlightDocumentRequests.get(docCacheKey);
+    }
+
     // Steps 1+2: Run DocType Detection AND Layout Reconstruction concurrently.
+    // Register the in-flight promise so duplicate requests can await it.
+    let resolvePipeline, rejectPipeline;
+    const pipelinePromise = new Promise((res, rej) => { resolvePipeline = res; rejectPipeline = rej; });
+    inFlightDocumentRequests.set(docCacheKey, pipelinePromise);
+
+    try {
     // These are independent of each other so we fire both at the same time.
     console.log('[DocPipeline] Steps 1+2 — Detecting doc type & reconstructing layout concurrently...');
     const docTypePromise = analyzeDocumentType(text);
@@ -489,17 +654,13 @@ export const performDocumentTranslation = async (
         return finalOutput;
     } else {
         // No OCR spatial data (PDF/DOCX) — skip layout reconstruction.
-        // Run docType and preprocessing concurrently since they are independent.
-        const [docType, preprocessResult] = await Promise.all([
-            docTypePromise,
-            preprocessText(text, sourceLang, token),
-        ]);
+        const docType = await docTypePromise;
 
         console.log('[DocPipeline] Step 2 — No spatial data, skipping layout reconstruction');
         console.log('[DocPipeline] Step 3 — Translating...');
 
         let result;
-        let textToTranslate = preprocessResult.canonicalizedText || text;
+        let textToTranslate = text;
 
         if (docType.documentType === 'casual_chat' || 
             docType.toneGuidance?.formality === 'informal' || 
@@ -508,71 +669,48 @@ export const performDocumentTranslation = async (
             textToTranslate = await normalizeInformalText(textToTranslate, sourceLang);
         }
 
-        // Translate lines in parallel — pass isDocument=true to skip full-result caching
+        // The unified performPreprocessedTranslation pipeline automatically handles:
+        // 1. Preprocessing (tokenization, sentiment)
+        // 2. NER Masking
+        // 3. Semantic Sentence Chunking for long text blocks
         if (withBreakdown) {
-            result = await performTranslationWithBreakdown(textToTranslate, sourceLang, targetLang, targetDialect, token);
+            result = await performTranslationWithBreakdown(textToTranslate, sourceLang, targetLang, targetDialect, token, true);
         } else {
-            // Chunk text into larger blocks to reduce API calls to Hugging Face
-            const paragraphs = textToTranslate.split('\n');
-            const chunks = [];
-            let currentChunk = [];
-            let currentLen = 0;
-            
-            for (const para of paragraphs) {
-                if (currentLen + para.length > 1000 && currentChunk.length > 0) {
-                    chunks.push(currentChunk.join('\n'));
-                    currentChunk = [para];
-                    currentLen = para.length;
-                } else {
-                    currentChunk.push(para);
-                    currentLen += para.length + 1;
-                }
-            }
-            if (currentChunk.length > 0) chunks.push(currentChunk.join('\n'));
-
-            console.log(`[DocPipeline] Chunked document into ${chunks.length} blocks for Hugging Face to avoid timeout`);
-            
-            const chunkResults = await parallelTranslateLines(chunks, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
-            const finalTranslatedText = chunkResults.map(r => r.finalText).join('\n');
-            result = {
-                originalText: text,
-                canonicalizedText: textToTranslate,
-                translatedText: finalTranslatedText,
-                preprocessing: {
-                    wasModified: preprocessResult.wasModified,
-                    replacements: preprocessResult.replacements,
-                    sentimentAnalysis: preprocessResult.sentimentAnalysis,
-                    metadata: preprocessResult.metadata,
-                },
-                dialectization: targetDialect ? {
-                    wasModified: chunkResults.some(r => r.wasModified),
-                    replacements: chunkResults.flatMap(r => r.replacements),
-                    targetDialect,
-                } : null,
-            };
+            result = await performPreprocessedTranslation(textToTranslate, sourceLang, targetLang, targetDialect, token, true);
         }
 
-        // Build segments from paragraph breaks in the translated text
-        const translatedParagraphs = result.translatedText.split('\n').filter(p => p.trim());
-        const translatedSegments = translatedParagraphs.map((para, i) => ({
-            index: i,
-            sourceText: '', // Can't map back without layout data
-            translatedText: para.trim(),
-            isHeader: false,
-            type: 'paragraph',
-        }));
-
         console.log(`[DocPipeline] Complete in ${Date.now() - pipelineStart}ms`);
+
+        // Use the exact same split regex as performPreprocessedTranslation to ensure a 1:1 mapping.
+        // The translation pipeline handles internal paragraph unwrapping.
+        const sourceParagraphs = textToTranslate.split(/\n\s*\n/);
+        
+        const sourceSegments = sourceParagraphs.map((para, i) => ({
+            index: i,
+            text: para.trim(),
+            isHeader: false,
+            type: 'paragraph'
+        })).filter(seg => seg.text.length > 0);
 
         const finalOutput = {
             ...result,
             documentType: docType,
-            formattedSourceText: text,
-            segments: translatedSegments,
+            formattedSourceText: textToTranslate,
+            segments: buildTranslatedSegments(sourceSegments, result.translatedText),
             layoutReconstruction: null,
+            breakdown: result.breakdown || null,
         };
+        
         translationCache.set(docCacheKey, finalOutput);
+        resolvePipeline(finalOutput);
         return finalOutput;
+    } // end else (no OCR data)
+    } catch (pipelineError) {
+        rejectPipeline(pipelineError);
+        throw pipelineError;
+    } finally {
+        // Always clean up the in-flight entry so future requests don't get stuck waiting
+        inFlightDocumentRequests.delete(docCacheKey);
     }
 };
 

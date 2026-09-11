@@ -73,7 +73,8 @@ Rules:
 - Preserve the original paragraph structure and line breaks exactly.
 - Use natural, fluent ${tgt} — not word-for-word literal translation.
 - For Filipino dialects: use culturally appropriate vocabulary for ${targetDialect || 'standard'} usage.
-- Preserve proper nouns, names, and brand names as-is.
+- IMPORTANT: The text may contain placeholder tags like <n0>, <n1>, <n2>, etc. These represent masked proper nouns (names, places, brands). You MUST keep these tags EXACTLY as-is in your output — do NOT translate, remove, or alter them in any way.
+- Preserve all URLs, citation numbers, DOI links, and punctuation marks exactly.
 - If the text contains mixed languages (code-switching), translate the ${src} parts only.
 - Do NOT add markdown formatting like ** or ## unless the original had them.`;
 
