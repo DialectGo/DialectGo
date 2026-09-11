@@ -130,7 +130,7 @@ export default function SubmissionDetailScreen({ id }) {
           </View>
           <View style={styles.headerAuthorInfo}>
             <Text style={styles.headerAuthorName}>
-              {submission.profiles?.username || `${submission.profiles?.first_name || ''} ${submission.profiles?.last_name || ''}`.trim() || 'Anonymous'}
+              {`${submission.profiles?.first_name || ''} ${submission.profiles?.last_name || ''}`.trim() || submission.profiles?.username || 'Anonymous'}
             </Text>
             <Text style={styles.headerAuthorDate}>
               {new Date(submission.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}

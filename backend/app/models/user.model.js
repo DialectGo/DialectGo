@@ -97,6 +97,15 @@ export const updateProfileById = async (userId, updateData, token) => {
         dbData[dbKey] = value;
     }
 
+    // Sanitize: Convert empty strings to null for columns that don't accept them
+    // (e.g., DATE columns like birth_date reject '' but accept null)
+    const dateColumns = ['birth_date'];
+    for (const col of dateColumns) {
+        if (dbData[col] !== undefined && dbData[col] === '') {
+            dbData[col] = null;
+        }
+    }
+
     // Perform the update
     const { data, error } = await client
         .from('profiles')
