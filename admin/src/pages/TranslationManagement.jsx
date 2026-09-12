@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Globe, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
 import { apiFetch } from '../services/apiService';
 import CardSkeleton from '../components/fallbacks/CardSkeleton';
 import TableSkeleton from '../components/fallbacks/TableSkeleton';
@@ -77,35 +78,29 @@ const TranslationManagement = () => {
   return (
     <div>
       {/* Stats */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--info-bg)', color: 'var(--info)' }}>🌍</div>
-          <div><div className="stat-label">Total</div><div className="stat-value">{stats.total}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>⏳</div>
-          <div><div className="stat-label">Pending</div><div className="stat-value">{stats.pending}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>✅</div>
-          <div><div className="stat-label">Approved</div><div className="stat-value">{stats.approved}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>❌</div>
-          <div><div className="stat-label">Rejected</div><div className="stat-value">{stats.rejected}</div></div>
-        </div>
+      <div className="stats-grid" style={{ marginBottom: 24 }}>
+        {[
+          { icon: Globe,         label: 'Total',    value: stats.total,    color: 'var(--info)',    bg: 'var(--info-bg)' },
+          { icon: Clock,         label: 'Pending',  value: stats.pending,  color: 'var(--warning)', bg: 'var(--warning-bg)' },
+          { icon: CheckCircle,   label: 'Approved', value: stats.approved, color: 'var(--success)', bg: 'var(--success-bg)' },
+          { icon: XCircle,       label: 'Rejected', value: stats.rejected, color: 'var(--danger)',  bg: 'var(--danger-bg)' },
+        ].map(s => (
+          <div key={s.label} className="stat-card">
+            <div className="stat-icon" style={{ background: s.bg, color: s.color }}><s.icon size={20} /></div>
+            <div><div className="stat-label">{s.label}</div><div className="stat-value">{s.value}</div></div>
+          </div>
+        ))}
       </div>
 
       {/* Toolbar */}
       <div className="toolbar">
         <div className="search-wrapper" style={{ flex: 1 }}>
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Search size={15} /></span>
           <input
             className="input"
-            style={{ paddingLeft: 40 }}
-            placeholder="Search source or translated text..."
+            placeholder="Search source or translated text…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
         <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>

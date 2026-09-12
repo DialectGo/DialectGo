@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Search } from 'lucide-react';
 import { apiFetch } from '../services/apiService';
 import CardSkeleton from '../components/fallbacks/CardSkeleton';
 import TableSkeleton from '../components/fallbacks/TableSkeleton';
@@ -111,7 +112,7 @@ const DictionaryManagement = () => {
       {/* Toolbar */}
       <div className="toolbar">
         <div className="search-wrapper" style={{ flex: 1 }}>
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Search size={15} /></span>
           <input
             className="input"
             style={{ paddingLeft: 40 }}
