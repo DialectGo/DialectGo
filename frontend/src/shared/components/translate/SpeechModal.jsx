@@ -14,6 +14,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import { supabase } from '../../../shared/api/supabase';
 import SwipeableBottomSheet from '../../../shared/components/SwipeableBottomSheet';
+import ConfirmOverlay from '../../../shared/components/ConfirmOverlay';
 import { TRANSLATION_API_BASE } from '../../../shared/api/client';
 
 const LANGUAGE_MAP = [
@@ -48,6 +49,8 @@ export default function SpeechModal({
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingAudioUri, setPendingAudioUri] = useState(null);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef(null);
@@ -110,17 +113,37 @@ export default function SpeechModal({
     }
   };
 
-  const stopRecording = async () => {
+  const handleStopListening = async () => {
     if (!recording) return;
 
     setIsListening(false);
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      setPendingAudioUri(uri);
+      setShowConfirm(true);
+    } catch (err) {
+      console.error('[SpeechModal] handleStopListening error:', err);
+      Alert.alert('Error', 'Failed to stop recording. Please try again.');
+    }
+  };
+
+  const cancelAudioTranslation = () => {
+    setShowConfirm(false);
+    setPendingAudioUri(null);
+  };
+
+  const confirmAudioTranslation = async () => {
+    setShowConfirm(false);
+    if (!pendingAudioUri) return;
+
     setIsLoading(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
+      const uri = pendingAudioUri;
 
       const formData = new FormData();
       formData.append('audio', { uri, type: 'audio/m4a', name: 'speech.m4a' });
@@ -162,13 +185,14 @@ export default function SpeechModal({
       Alert.alert('Error', 'Audio processing failed. Please try again.');
     } finally {
       setIsLoading(false);
+      setPendingAudioUri(null);
     }
   };
 
   const handleMicPress = () => {
-    if (isLoading) return;
+    if (isLoading || showConfirm) return;
     if (isListening) {
-      stopRecording();
+      handleStopListening();
     } else {
       startRecording();
     }
@@ -228,6 +252,17 @@ export default function SpeechModal({
             : `Speaking in ${sourceLang} \u2192 ${targetLang}`}
         </Text>
       </View>
+
+      <ConfirmOverlay
+        visible={showConfirm}
+        title="Processing Time"
+        message="This speech translation may take up to 1-2 minutes to process. Are you sure you want to proceed?"
+        confirmText="Yes, Translate"
+        cancelText="Cancel"
+        type="success"
+        onConfirm={confirmAudioTranslation}
+        onCancel={cancelAudioTranslation}
+      />
     </SwipeableBottomSheet>
   );
 }
