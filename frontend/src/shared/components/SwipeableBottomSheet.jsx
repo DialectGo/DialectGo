@@ -9,6 +9,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -28,11 +29,12 @@ export default function SwipeableBottomSheet({ visible, onClose, children }) {
 
   // The threshold in pixels the user must drag down before it registers as a dismiss
   const DISMISS_THRESHOLD = 150;
-  // If the user flicks downwards fast, we also dismiss regardless of threshold
+  // If the user flick downwards fast, we also dismiss regardless of threshold
   const VELOCITY_THRESHOLD = 1.0;
 
   useEffect(() => {
     if (visible) {
+      Keyboard.dismiss();
       // Slide up and fade in
       Animated.parallel([
         Animated.spring(translateY, {
@@ -113,7 +115,7 @@ export default function SwipeableBottomSheet({ visible, onClose, children }) {
       onRequestClose={onClose}
       statusBarTranslucent={true}
     >
-      <KeyboardAvoidingView behavior="padding" style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
         <TouchableWithoutFeedback onPress={onClose}>
           <Animated.View
             style={[
