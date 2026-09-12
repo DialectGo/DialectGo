@@ -5,7 +5,6 @@ import { LayoutDashboard, Users, BookOpen, Globe, FileText, Bell, LineChart } fr
 
 const MENU = [
   { name: 'Dashboard',    icon: <LayoutDashboard size={20} /> },
-  { name: 'Analytics',    icon: <LineChart size={20} /> },
   { name: 'Users',        icon: <Users size={20} /> },
   { name: 'Dictionary',   icon: <BookOpen size={20} /> },
   { name: 'Translations', icon: <Globe size={20} /> },

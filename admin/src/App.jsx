@@ -8,7 +8,6 @@ import TranslationManagement from './pages/TranslationManagement';
 import WikiManagement from './pages/WikiManagement';
 import Notifications from './pages/Notifications';
 import Login from './pages/Login';
-import Analytics from './pages/Analytics';
 import { authService } from './services/authService';
 import './index.css';
 
@@ -60,7 +59,6 @@ function App() {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'Dashboard':       return <Dashboard onNavigate={handleTabChange} />;
-      case 'Analytics':       return <Analytics />;
       case 'Users':           return <UserManagement />;
       case 'Dictionary':      return <DictionaryManagement />;
       case 'Translations':    return <TranslationManagement />;
@@ -108,7 +106,6 @@ function App() {
               <h1 className="navbar-title">{activeTab}</h1>
               <div className="navbar-subtitle">
                 {activeTab === 'Dashboard'     && 'AI Operations & Data Governance Command Center'}
-                {activeTab === 'Analytics'     && 'Translation Quality & Hallucination Monitoring'}
                 {activeTab === 'Users'         && 'Manage user accounts and permissions'}
                 {activeTab === 'Dictionary'    && 'Manage dialect dictionary entries'}
                 {activeTab === 'Translations'  && 'Review user-recommended translations'}

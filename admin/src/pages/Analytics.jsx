@@ -10,8 +10,9 @@ import {
 import {
   BarChart2, AlertTriangle, ThumbsDown, ThumbsUp,
   Download, RefreshCw, Filter, Layers, Info,
-  TrendingDown, Zap, Database, ChevronRight, CheckCircle
+  TrendingDown, Zap, Database, ChevronRight, CheckCircle, X
 } from 'lucide-react';
+import JsonView from '@uiw/react-json-view';
 import { apiFetch } from '../services/apiService';
 
 ChartJS.register(
@@ -275,13 +276,19 @@ const Analytics = () => {
     .slice(0, 50);
 
   // ── Export dataset ─────────────────────────────────────────────────────
-  const handleExportDataset = async () => {
+  const handleExportDataset = async (downloadOnly = true) => {
     setExporting(true);
     try {
       const res = await apiFetch('/api/admin/analytics/export-dataset');
       const dataset = res?.data ?? [];
       const json = JSON.stringify(dataset, null, 2);
-      setExportPreview(json.slice(0, 2000) + (json.length > 2000 ? '\n  ...' : ''));
+      
+      // Keep up to 100 items for the interactive preview
+      setExportPreview(dataset.slice(0, 100));
+
+      if (!downloadOnly) {
+        return;
+      }
 
       // Trigger download
       const blob = new Blob([json], { type: 'application/json' });
@@ -361,27 +368,37 @@ const Analytics = () => {
           TAB: Hallucination Detection
       ════════════════════════════════════════════════════════════════ */}
       {activeTab === 'hallucination' && (
-        <>
-          {/* Bar chart */}
-          <div className="chart-container">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          
+          {/* ── Main Content: Chart & Table ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            
+            {/* Bar chart */}
+            <div className="chart-container" style={{ margin: 0 }}>
             <div className="chart-header">
               <div>
                 <div className="chart-title">Flagged Translation Pairs — By Language</div>
                 <div className="chart-subtitle">Number of hallucination-suspect pairs per language pair based on negative feedback</div>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={handleExportDataset} disabled={exporting}>
-                {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
-                {exporting ? 'Exporting…' : 'Export Dataset'}
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => handleExportDataset(false)} disabled={exporting}>
+                  {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Database size={13} />}
+                  View JSON
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={() => handleExportDataset(true)} disabled={exporting}>
+                  {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                  Export Dataset
+                </button>
+              </div>
             </div>
             <div style={{ height: 280 }}>
               <Bar data={hallucinationBarData} options={CHART_DEFAULTS} />
             </div>
           </div>
 
-          {/* Filters + Table */}
-          <div className="table-wrapper">
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Filters + Table */}
+            <div className="table-wrapper" style={{ margin: 0 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 <Filter size={14} /> Filters:
               </div>
@@ -467,23 +484,57 @@ const Analytics = () => {
                   })}
                 </tbody>
               </table>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Export Preview */}
+          {/* ── Right Column: JSON Viewer (Fixed Drawer) ── */}
           {exportPreview && (
-            <div className="card mt-20">
-              <div className="section-header">
-                <div>
-                  <div className="section-title">Dataset Export Preview</div>
-                  <div className="section-subtitle">Structured in HuggingFace dataset-phrases.json format — ready for NLLB fine-tuning</div>
+            <>
+              <div 
+                className="sidebar-overlay" 
+                onClick={() => setExportPreview(null)} 
+                style={{ zIndex: 100 }} 
+              />
+              <div 
+                className="card" 
+                style={{ 
+                  margin: 0, 
+                  position: 'fixed', 
+                  right: 0, 
+                  top: 0, 
+                  bottom: 0,
+                  width: 'min(90vw, 450px)',
+                  height: '100vh',
+                  borderRadius: 0,
+                  zIndex: 101,
+                  boxShadow: '-4px 0 24px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  animation: 'slideInRight 0.3s ease'
+                }}
+              >
+                <div className="section-header" style={{ padding: '24px 24px 16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: 0 }}>
+                  <div>
+                    <div className="section-title">Dataset Export Preview</div>
+                    <div className="section-subtitle">Structured for NLLB fine-tuning</div>
+                  </div>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setExportPreview(null)} aria-label="Close" style={{ padding: 8 }}>
+                    <X size={18} />
+                  </button>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setExportPreview(null)}>Dismiss</button>
+                <div className="dataset-preview" style={{ padding: 24, overflow: 'auto', flex: 1, background: 'var(--bg-primary)' }}>
+                  <JsonView 
+                    value={exportPreview} 
+                    displayDataTypes={false} 
+                    displayObjectSize={true} 
+                    collapsed={2} 
+                  />
+                </div>
               </div>
-              <div className="dataset-preview">{exportPreview}</div>
-            </div>
+            </>
           )}
-        </>
+        </div>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════
