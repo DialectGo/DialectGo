@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 
+import { LayoutDashboard, Users, BookOpen, Globe, FileText, Bell, LineChart } from 'lucide-react';
+
 const MENU = [
-  { name: 'Dashboard',    icon: '⊞' },
-  { name: 'Users',        icon: '👥' },
-  { name: 'Dictionary',   icon: '📖' },
-  { name: 'Translations', icon: '🌍' },
-  { name: 'Wiki',         icon: '📝' },
-  { name: 'Notifications',icon: '🔔' },
+  { name: 'Dashboard',    icon: <LayoutDashboard size={20} /> },
+  { name: 'Analytics',    icon: <LineChart size={20} /> },
+  { name: 'Users',        icon: <Users size={20} /> },
+  { name: 'Dictionary',   icon: <BookOpen size={20} /> },
+  { name: 'Translations', icon: <Globe size={20} /> },
+  { name: 'Wiki',         icon: <FileText size={20} /> },
+  { name: 'Notifications',icon: <Bell size={20} /> },
 ];
 
 const Sidebar = ({ isOpen, activeTab, onTabChange, onLogout }) => {
