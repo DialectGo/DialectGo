@@ -58,6 +58,15 @@ export default function DocumentUploadModal({ visible, onClose, onFileSelected }
         <Text style={styles.title}>Upload File</Text>
         <Text style={styles.subtitle}>Select the type of file you want to translate</Text>
 
+        <View style={styles.limitBox}>
+          <Ionicons name="information-circle-outline" size={20} color="#B91C1C" style={styles.limitIcon} />
+          <View style={styles.limitTextContainer}>
+            <Text style={styles.limitTitle}>Translation Limits</Text>
+            <Text style={styles.limitText}>• Max file size: 2 MB</Text>
+            <Text style={styles.limitText}>• Max characters: ~5,000 characters</Text>
+          </View>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.optionButton} onPress={handlePickDocument}>
             <Ionicons name="document-text-outline" size={32} color="#1F2937" />
@@ -92,7 +101,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
+    marginBottom: 16,
+  },
+  limitBox: {
+    flexDirection: 'row',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 24,
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+  limitIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  limitTextContainer: {
+    flex: 1,
+  },
+  limitTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#991B1B',
+    marginBottom: 4,
+  },
+  limitText: {
+    fontSize: 13,
+    color: '#991B1B',
+    lineHeight: 18,
   },
   buttonContainer: {
     flexDirection: 'row',

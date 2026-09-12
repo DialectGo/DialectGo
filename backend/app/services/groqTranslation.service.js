@@ -80,7 +80,7 @@ Rules:
 
     const completion = await client.chat.completions.create({
         model: GROQ_TRANSLATION_MODEL,
-        max_tokens: Math.min(4096, Math.ceil(text.length * 1.5) + 100),
+        max_tokens: Math.min(8192, Math.max(1024, Math.ceil(text.length * 2) + 500)),
         temperature: 0.1, // Very low — we want consistent, accurate translations
         messages: [
             { role: 'system', content: systemPrompt },
