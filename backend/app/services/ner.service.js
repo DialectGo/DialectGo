@@ -55,8 +55,18 @@ If there are no proper nouns, return exactly the word "NONE".`;
     }
 }
 
+const NAME_PLACEHOLDERS = [
+    'John', 'Mary', 'David', 'Sarah', 'Michael', 'Jessica', 'Christopher', 'Amanda', 
+    'Matthew', 'Ashley', 'Robert', 'Emily', 'William', 'Elizabeth', 'Joseph', 
+    'Megan', 'Thomas', 'Lauren', 'Charles', 'Nicole', 'Daniel', 'Samantha',
+    'Paul', 'Rachel', 'Mark', 'Hannah', 'George', 'Olivia', 'Steven', 'Chloe'
+];
+
 /**
- * Masks proper nouns in the text with safe placeholder tags.
+ * Masks proper nouns in the text with safe placeholder names.
+ * We use generic names (John, Mary) instead of <n0> tags because
+ * Seq2Seq models like NLLB perfectly preserve real names but
+ * tend to drop or hallucinate on XML-like syntax.
  * @returns {Promise<{ maskedText: string, entityMap: Record<string, string> }>}
  */
 export async function maskProperNouns(text) {
@@ -69,9 +79,15 @@ export async function maskProperNouns(text) {
     let maskedText = text;
     const entityMap = {};
 
+    // Only use placeholders that do not already exist in the original text
+    // to avoid accidentally replacing valid words during unmasking.
+    const availablePlaceholders = NAME_PLACEHOLDERS.filter(
+        name => !text.toLowerCase().includes(name.toLowerCase())
+    );
+
     entities.forEach((entity, index) => {
-        // Use an XML-like tag which NLLB generally passes through untouched (e.g. <n0>)
-        const placeholder = `<n${index}>`;
+        // Fallback to <nX> only if we miraculously run out of 30 common names
+        const placeholder = availablePlaceholders[index] || `<n${index}>`;
         entityMap[placeholder] = entity;
         
         // Replace all occurrences of the entity (case-insensitive for safety, but respecting word boundaries)
@@ -94,23 +110,21 @@ export function unmaskProperNouns(maskedText, entityMap) {
 
     let restoredText = maskedText;
 
-    // Sort by tag index so <n0> is processed before <n1> etc., preventing partial matches
-    const sortedEntries = Object.entries(entityMap).sort((a, b) => {
-        const idxA = parseInt(a[0].match(/\d+/)?.[0] ?? '0');
-        const idxB = parseInt(b[0].match(/\d+/)?.[0] ?? '0');
-        return idxA - idxB;
-    });
+    // Sort placeholders by length descending to prevent partial match replacement
+    // e.g. if we have "John" and "Johnathan", we replace "Johnathan" first.
+    const sortedEntries = Object.entries(entityMap).sort((a, b) => b[0].length - a[0].length);
 
     for (const [placeholder, entity] of sortedEntries) {
         // Simple, reliable global string replacement.
-        // NLLB occasionally adds a space inside tags e.g. < n0 > — handle both variants.
         restoredText = restoredText.split(placeholder).join(entity);
         
-        // Also catch NLLB's spaced-out variant: < n0 >
-        const index = placeholder.match(/\d+/)?.[0];
-        if (index !== undefined) {
-            const spacedVariant = `< n${index} >`;
-            restoredText = restoredText.split(spacedVariant).join(entity);
+        // If we fell back to <n0> tags, catch NLLB's spaced-out variant: < n0 >
+        if (placeholder.startsWith('<n')) {
+            const index = placeholder.match(/\d+/)?.[0];
+            if (index !== undefined) {
+                const spacedVariant = `< n${index} >`;
+                restoredText = restoredText.split(spacedVariant).join(entity);
+            }
         }
     }
 

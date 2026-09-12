@@ -95,25 +95,31 @@ const callHuggingFaceTranslation = async (text, sourceLang, targetLang) => {
  * Heuristic to detect NLLB seq2seq hallucinations.
  * NLLB hallucinates on non-grammatical fragments, all-caps strings, or heavy NER masks.
  *
- * NOTE: Filipino/Tagalog is naturally ~30-50% MORE verbose than English.
- * Thresholds must be set generously to avoid false positives on valid translations.
+ * IMPORTANT: Filipino/Tagalog is naturally 30-50% MORE verbose than English and
+ * reuses short function words (sa, ng, ang, na, ay) in nearly every sentence.
+ * Thresholds MUST be generous to avoid triggering Groq on valid translations.
+ *
+ * Rule of thumb — only flag OBVIOUS machine meltdowns, not imperfect-but-usable output.
  */
 const isHallucination = (sourceText, translatedText) => {
     if (!translatedText || !translatedText.trim()) return true;
 
-    // 1. Extreme length explosion — valid Filipino translations can be 2-3x longer.
-    // Only flag if output is 8x the source length to avoid false positives.
-    if (sourceText.length > 30 && translatedText.length > sourceText.length * 8) {
+    // 1. Catastrophic length explosion — valid Filipino translations can be 2-3x longer.
+    //    Only flag if output is MORE than 10x the source length (true infinite loops).
+    if (sourceText.length > 30 && translatedText.length > sourceText.length * 10) {
         return true;
     }
 
     // 2. Repeated word loops — the classic infinite loop hallucination.
-    // Check BOTH consecutive (AAAAA) and alternating (ABABAB) patterns.
+    //    Only fires on OBVIOUS repetition: 8+ identical words in a row, or a
+    //    single word taking up 50%+ of the output (excluding short Filipino
+    //    function words that legitimately repeat: sa, ng, na, ang, ay, at, ni).
+    const FILIPINO_STOP_WORDS = new Set(['sa', 'ng', 'na', 'ang', 'ay', 'at', 'ni', 'si', 'ko', 'mo', 'ka', 'pa', 'din', 'rin', 'nang', 'lang', 'po']);
     const words = translatedText.split(/\s+/);
-    if (words.length > 8) {
+    if (words.length > 10) {
+        // Check for 8+ consecutive identical words (true infinite loop)
         let maxConsecutive = 0;
         let currentConsecutive = 1;
-
         for (let i = 1; i < words.length; i++) {
             if (words[i].toLowerCase() === words[i-1].toLowerCase() && words[i].length > 2) {
                 currentConsecutive++;
@@ -122,29 +128,30 @@ const isHallucination = (sourceText, translatedText) => {
                 currentConsecutive = 1;
             }
         }
-        if (maxConsecutive >= 6) return true;
+        if (maxConsecutive >= 8) return true;
 
-        // Alternating A-B-A-B pattern: count word frequency at even vs odd positions.
-        // If any word > 3 chars appears at ≥ 40% of positions, it's looping.
+        // Alternating A-B-A-B: only flag if a single CONTENT word (>4 chars, not a
+        // stop word) dominates >= 50% of the output — that's a genuine loop.
         const freqMap = {};
         for (const w of words) {
-            if (w.length > 3) {
-                const lw = w.toLowerCase();
+            const lw = w.toLowerCase().replace(/[.,!?;:]/g, '');
+            if (lw.length > 4 && !FILIPINO_STOP_WORDS.has(lw)) {
                 freqMap[lw] = (freqMap[lw] || 0) + 1;
             }
         }
         const topWordCount = Math.max(0, ...Object.values(freqMap));
-        if (topWordCount >= 4 && topWordCount / words.length >= 0.25) return true;
+        if (topWordCount >= 6 && topWordCount / words.length >= 0.50) return true;
     }
 
-    // 3. Lost NER tags — if source had <n0> but output dropped it, NLLB hallucinated.
+    // 3. Lost NER tags — if source had <n0> but output dropped ALL of them, NLLB
+    //    completely ignored the placeholders. Only flag if EVERY tag is missing.
     const sourceTags = sourceText.match(/<n\d+>/g) || [];
     if (sourceTags.length > 0) {
         let missingTags = 0;
         for (const tag of sourceTags) {
             if (!translatedText.includes(tag)) missingTags++;
         }
-        // Flag only if ALL tags are lost (NLLB completely ignored the placeholders)
+        // Only flag if ALL tags are completely missing (not just one or two)
         if (missingTags === sourceTags.length) return true;
     }
 
@@ -196,18 +203,19 @@ const inFlightDocumentRequests = new Map();
 
 /**
  * PRIMARY translation function — HF-first with Groq/Flask fallback.
+ * Accepts an optional `groqBudget` ref so callers can cap Groq usage across a
+ * full document pipeline (e.g. max 3 Groq rescues per document).
  *
  * @param {string} text - Text to translate
  * @param {string} sourceLang
  * @param {string} targetLang
- * @param {string|null} targetDialect - Passed to Groq for better dialect-aware output
- * @returns {Promise<string>} Translated text
+ * @param {string|null} targetDialect
+ * @param {{ used: number, max: number } | null} groqBudget - Shared counter across all lines
  */
-export const performTranslation = async (text, sourceLang, targetLang, targetDialect = null) => {
+export const performTranslation = async (text, sourceLang, targetLang, targetDialect = null, groqBudget = null) => {
     if (!text || !text.trim()) return text;
 
     // ── Guard: untranslatable fragments (NER tags, numbers, punctuation only) ──
-    // e.g. "<n8> 2" or "<n2> <n1> <n6>" — pass straight through; LLMs can't translate these.
     if (isUntranslatableFragment(text)) {
         return text;
     }
@@ -221,25 +229,39 @@ export const performTranslation = async (text, sourceLang, targetLang, targetDia
 
     let result = null;
 
-    // ── Step 1: Try HuggingFace (slow but free) ──────────────────────────────────────
+    // ── Step 1: Try HuggingFace (slow but free, the primary engine) ──────────
     try {
-        const translatedText = await callHuggingFaceTranslation(text, sourceLang, targetLang);
-        if (translatedText && !isHallucination(text, translatedText)) {
-            result = translatedText;
-        } else if (translatedText) {
-            console.warn(`[Translation] HF Hallucination detected for: "${text.slice(0, 30)}...". Falling back to Groq.`);
+        const hfOutput = await callHuggingFaceTranslation(text, sourceLang, targetLang);
+        if (hfOutput && !isHallucination(text, hfOutput)) {
+            result = hfOutput;
+        } else if (hfOutput) {
+            // HF produced a hallucination (loop, length explosion, or dropped NER tag).
+            const budgetAvailable = !groqBudget || groqBudget.used < groqBudget.max;
+            if (budgetAvailable) {
+                console.warn(`[Translation] HF hallucination for: "${text.slice(0, 30)}...". Falling back to Groq (budget: ${groqBudget ? `${groqBudget.used}/${groqBudget.max}` : 'unlimited'}).`);
+            } else {
+                // Budget exhausted — accept the HF output rather than nothing.
+                console.warn(`[Translation] HF hallucination for: "${text.slice(0, 30)}...". Groq budget exhausted — accepting HF output as-is.`);
+                result = hfOutput;
+            }
         }
     } catch (hfError) {
         console.warn('[Translation] HuggingFace failed, falling back to Groq:', hfError.message);
     }
 
-    // ── Step 2: Groq fallback (fast, handles complex fragments well) ──────────────────────────────────────
-    if (!result) {
+    // ── Step 2: Groq fallback (only if budget allows) ────────────────────────
+    const groqBudgetAvailable = !groqBudget || groqBudget.used < groqBudget.max;
+    if (!result && groqBudgetAvailable) {
         try {
             result = await translateWithGroq(text, sourceLang, targetLang, targetDialect);
+            if (groqBudget) groqBudget.used++;
         } catch (groqError) {
             console.warn('[Translation] Groq fallback failed:', groqError.message);
         }
+    } else if (!result && !groqBudgetAvailable) {
+        // Budget exhausted and HF returned nothing — return original text
+        console.warn(`[Translation] Groq budget exhausted and HF empty for: "${text.slice(0, 30)}...". Returning original.`);
+        return text;
     }
 
     // ── Step 3: Flask/Colab fallback (last resort) ────────────────────────────
@@ -252,44 +274,40 @@ export const performTranslation = async (text, sourceLang, targetLang, targetDia
             result = response.data.translation;
         } catch (flaskError) {
             console.warn('[Translation] All fallbacks failed — returning original text:', flaskError.message);
-            // Gracefully return original rather than crashing the entire document pipeline
             return text;
         }
     }
 
-    // Cache the result for reuse
     if (result) lineTranslationCache.set(lineCacheKey, result);
-
-    return result || text; // Ultimate fallback: return original text
+    return result || text;
 };
 
 /**
  * Translate an array of lines in parallel with a concurrency limit.
- * This replaces the serial for-loop and is the primary speed improvement.
+ * A shared `groqBudget` object is passed to all lines so that at most
+ * `groqBudget.max` sentences escalate to Groq for the entire document.
  *
- * @param {string[]} lines - Array of text lines to translate
+ * @param {string[]} lines
  * @param {string} sourceLang
  * @param {string} targetLang
  * @param {string|null} targetDialect
- * @param {number} batchSize - Max concurrent requests
- * @returns {Promise<{nllbOutput: string, finalText: string, wasModified: boolean, replacements: Array}[]>}
+ * @param {number} batchSize
+ * @param {{ used: number, max: number } | null} groqBudget - Shared Groq call counter
  */
-async function parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, batchSize = TRANSLATION_CONCURRENCY) {
+async function parallelTranslateLines(lines, sourceLang, targetLang, targetDialect, batchSize = TRANSLATION_CONCURRENCY, groqBudget = null) {
     const results = new Array(lines.length);
 
-    // Process lines in batches to limit concurrency
     for (let i = 0; i < lines.length; i += batchSize) {
         const batch = lines.slice(i, i + batchSize);
 
         const batchPromises = batch.map(async (line, batchIdx) => {
             const globalIdx = i + batchIdx;
 
-            // Preserve empty lines without any API call
             if (line.trim().length === 0) {
                 return { index: globalIdx, nllbOutput: line, finalText: line, wasModified: false, replacements: [] };
             }
 
-            const nllbOutput = await performTranslation(line, sourceLang, targetLang);
+            const nllbOutput = await performTranslation(line, sourceLang, targetLang, targetDialect, groqBudget);
 
             if (targetDialect) {
                 const dialectResult = await dialectize(nllbOutput, targetDialect);
@@ -433,8 +451,15 @@ export const performPreprocessedTranslation = async (text, sourceLang, targetLan
         }
     }
 
+    // ─── Groq rescue budget ───────────────────────────────────────────────────
+    // At most 3 sentences per document pipeline may escalate to Groq as fallback.
+    // Beyond that, HuggingFace output is accepted as-is (imperfect but usable).
+    // This keeps Groq TPM usage low and ensures HF remains the primary engine.
+    const groqBudget = { used: 0, max: 3 };
+
     // Translate all sentences IN PARALLEL (batched concurrency)
-    const chunkResults = await parallelTranslateLines(semanticSentences, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY);
+    const chunkResults = await parallelTranslateLines(semanticSentences, sourceLang, targetLang, targetDialect, TRANSLATION_CONCURRENCY, groqBudget);
+    console.log(`[DocPipeline] Groq rescues used: ${groqBudget.used}/${groqBudget.max}`);
 
     // Reconstruct the paragraphs from translated sentences, unmasking entities
     const translatedParagraphs = new Array(paragraphs.length).fill('');
