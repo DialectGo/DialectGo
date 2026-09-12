@@ -1,36 +1,36 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { FileText, Globe, AlertTriangle, Users, Bell, Settings, Trash2, CheckCheck, X, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../services/apiService';
 import ListSkeleton from '../components/fallbacks/TableSkeleton';
 
-// ─── Configuration ──────────────────────────────────────────────────────────
 const TYPE_META = {
   "New Submission": {
     label: "Wiki",
     fullTitle: "New Wiki Submission",
     color: "var(--info)",
     bgClass: "badge-admin",
-    icon: "📝",
+    Icon: FileText,
   },
   "Translation Review": {
     label: "Translations",
     fullTitle: "Translation Needs Review",
     color: "var(--warning)",
     bgClass: "badge-pending",
-    icon: "🌍",
+    Icon: Globe,
   },
   "System Alert": {
     label: "System",
     fullTitle: "System Alert",
     color: "var(--danger)",
     bgClass: "badge-rejected",
-    icon: "⚠️",
+    Icon: AlertTriangle,
   },
   "Account Activity": {
     label: "Accounts",
     fullTitle: "Account Activity",
     color: "var(--success)",
     bgClass: "badge-verified",
-    icon: "👥",
+    Icon: Users,
   }
 };
 
@@ -43,10 +43,10 @@ const resolveNotificationType = (item) => {
 const getMeta = (typeKey) => TYPE_META[typeKey] ?? TYPE_META["System Alert"];
 
 const TAB_CATEGORIES = [
-  { id: "All", label: "All Alerts", types: null, icon: "🔔" },
-  { id: "Wiki", label: "Wiki", types: ["New Submission"], icon: "📝" },
-  { id: "Translations", label: "Translations", types: ["Translation Review"], icon: "🌍" },
-  { id: "System", label: "System", types: ["System Alert", "Account Activity"], icon: "⚙️" },
+  { id: "All",          label: "All Alerts",    types: null,                                  Icon: Bell },
+  { id: "Wiki",         label: "Wiki",           types: ["New Submission"],                     Icon: FileText },
+  { id: "Translations", label: "Translations",   types: ["Translation Review"],                Icon: Globe },
+  { id: "System",       label: "System",         types: ["System Alert", "Account Activity"],  Icon: Settings },
 ];
 
 // ─── Notification Card Item ─────────────────────────────────────────────────
@@ -72,10 +72,10 @@ const NotificationCardItem = ({ item, onSelect, onMarkAsRead, onDelete }) => {
         style={{ 
           background: isUnread ? 'var(--accent-glow)' : 'var(--bg-glass)', 
           color: meta.color,
-          fontSize: '1.4rem'
+          flexShrink: 0,
         }}
       >
-        {meta.icon}
+        <meta.Icon size={20} />
       </div>
 
       <div style={{ flex: 1 }}>
@@ -338,7 +338,7 @@ const Notifications = () => {
               onClick={() => setActiveTab(tab.id)}
               style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
             >
-              <span>{tab.icon} {tab.label}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><tab.Icon size={14} /> {tab.label}</span>
               {count > 0 && (
                 <span style={{ 
                   background: isActive ? 'var(--accent)' : 'var(--border-strong)', 
