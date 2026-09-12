@@ -17,8 +17,8 @@ export default function ToastMessage({ visible, message, title, type = 'info' })
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-150)).current;
 
-  // The distance it should drop down (status bar height + small padding)
-  const topOffset = Math.max(insets.top, 20) + 10;
+  // Ensure it drops far enough down to clear Android notches and status bars
+  const topOffset = Math.max(insets.top, 45) + 15;
 
   useEffect(() => {
     if (visible) {
