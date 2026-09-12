@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FileText, Clock, CheckCircle, XCircle, Search, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { apiFetch } from '../services/apiService';
 import CardSkeleton from '../components/fallbacks/CardSkeleton';
 import TableSkeleton from '../components/fallbacks/TableSkeleton';
@@ -110,23 +111,18 @@ const WikiManagement = () => {
   return (
     <div>
       {/* Stats */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--info-bg)', color: 'var(--info)' }}>📝</div>
-          <div><div className="stat-label">Total Submissions</div><div className="stat-value">{stats.total}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>⏳</div>
-          <div><div className="stat-label">Pending</div><div className="stat-value">{stats.pending}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>✅</div>
-          <div><div className="stat-label">Verified</div><div className="stat-value">{stats.verified}</div></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}>❌</div>
-          <div><div className="stat-label">Rejected</div><div className="stat-value">{stats.rejected}</div></div>
-        </div>
+      <div className="stats-grid" style={{ marginBottom: 20 }}>
+        {[
+          { icon: FileText, label: 'Total Submissions', value: stats.total, color: 'var(--info)', bg: 'var(--info-bg)' },
+          { icon: Clock, label: 'Pending', value: stats.pending, color: 'var(--warning)', bg: 'var(--warning-bg)' },
+          { icon: CheckCircle, label: 'Verified', value: stats.verified, color: 'var(--success)', bg: 'var(--success-bg)' },
+          { icon: XCircle, label: 'Rejected', value: stats.rejected, color: 'var(--danger)', bg: 'var(--danger-bg)' },
+        ].map(s => (
+          <div key={s.label} className="stat-card">
+            <div className="stat-icon" style={{ background: s.bg, color: s.color }}><s.icon size={20} /></div>
+            <div><div className="stat-label">{s.label}</div><div className="stat-value">{s.value}</div></div>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}
@@ -144,13 +140,12 @@ const WikiManagement = () => {
           {/* Toolbar */}
           <div className="toolbar">
             <div className="search-wrapper" style={{ flex: 1 }}>
-              <span className="search-icon">🔍</span>
+              <span className="search-icon"><Search size={15} /></span>
               <input
                 className="input"
-                style={{ paddingLeft: 40 }}
-                placeholder="Search by term or translation..."
+                placeholder="Search by term or translation…"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
             <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -266,11 +261,11 @@ const WikiManagement = () => {
           {/* Corpus Pagination */}
           {corpusTotalPages > 1 && (
             <div className="pagination">
-              <button className="page-btn" disabled={corpusPage <= 1} onClick={() => setCorpusPage(corpusPage - 1)}>‹</button>
+              <button className="page-btn" disabled={corpusPage <= 1} onClick={() => setCorpusPage(corpusPage - 1)}><ChevronLeft size={14} /></button>
               {Array.from({ length: Math.min(corpusTotalPages, 5) }, (_, i) => i + 1).map(p => (
                 <button key={p} className={`page-btn ${corpusPage === p ? 'active' : ''}`} onClick={() => setCorpusPage(p)}>{p}</button>
               ))}
-              <button className="page-btn" disabled={corpusPage >= corpusTotalPages} onClick={() => setCorpusPage(corpusPage + 1)}>›</button>
+              <button className="page-btn" disabled={corpusPage >= corpusTotalPages} onClick={() => setCorpusPage(corpusPage + 1)}><ChevronRight size={14} /></button>
             </div>
           )}
         </>
