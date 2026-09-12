@@ -6,6 +6,8 @@ import { useToast } from '../../context/ToastContext';
 
 export const useTranslationDocument = ({ sourceLang, targetLang, targetDialect }) => {
   const [docUploadVisible, setDocUploadVisible] = useState(false);
+  const [docConfirmVisible, setDocConfirmVisible] = useState(false);
+  const [pendingFileAsset, setPendingFileAsset] = useState(null);
   const [docResultVisible, setDocResultVisible] = useState(false);
   const [isDocTranslating, setIsDocTranslating] = useState(false);
   const [docResult, setDocResult] = useState(null);
@@ -13,7 +15,21 @@ export const useTranslationDocument = ({ sourceLang, targetLang, targetDialect }
   
   const { showToast } = useToast();
 
-  const handleDocumentSelected = async (fileAsset) => {
+  const handleDocumentSelected = (fileAsset) => {
+    setPendingFileAsset(fileAsset);
+    setDocConfirmVisible(true);
+  };
+
+  const cancelDocumentTranslation = () => {
+    setDocConfirmVisible(false);
+    setPendingFileAsset(null);
+  };
+
+  const confirmDocumentTranslation = async () => {
+    if (!pendingFileAsset) return;
+    
+    const fileAsset = pendingFileAsset;
+    setDocConfirmVisible(false);
     setDocResultVisible(true);
     setIsDocTranslating(true);
     setDocError(false);
@@ -46,6 +62,7 @@ export const useTranslationDocument = ({ sourceLang, targetLang, targetDialect }
       showToast(shortMsg, "error", "Translation Error");
     } finally {
       setIsDocTranslating(false);
+      setPendingFileAsset(null);
       try {
         await FileSystem.deleteAsync(fileAsset.uri, { idempotent: true });
       } catch (e) {
@@ -56,8 +73,9 @@ export const useTranslationDocument = ({ sourceLang, targetLang, targetDialect }
 
   return {
     docUploadVisible, setDocUploadVisible,
+    docConfirmVisible, setDocConfirmVisible,
     docResultVisible, setDocResultVisible,
     isDocTranslating, docResult, docError,
-    handleDocumentSelected
+    handleDocumentSelected, confirmDocumentTranslation, cancelDocumentTranslation
   };
 };

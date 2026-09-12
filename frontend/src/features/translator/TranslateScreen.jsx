@@ -10,6 +10,7 @@ import TopBar from '../../components/TopBar';
 import ContributionModal from '../../shared/components/wiki/ContributionModal';
 import LoadingModal from '../../shared/components/LoadingModal';
 import CustomizeModal from '../../shared/components/CustomizeModal';
+import ConfirmOverlay from '../../shared/components/ConfirmOverlay';
 import { styles } from './styles/TranslateStyles';
 import translateIcon from '../../../assets/icons/bottombar/translateIcon.png';
 
@@ -50,6 +51,7 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
     showCustomize, setShowCustomize, isCustomizeLoading,
     isPlayingAudio, skipDebounceRef,
     docUploadVisible, setDocUploadVisible,
+    docConfirmVisible, confirmDocumentTranslation, cancelDocumentTranslation,
     docResultVisible, setDocResultVisible,
     isDocTranslating, docResult, docError,
     playTranslatedAudio, playBase64Audio, handleCopy, isCopied,
@@ -201,6 +203,17 @@ export default function TranslateScreen({ activeTab, onNavigate }) {
         visible={docUploadVisible} 
         onClose={() => setDocUploadVisible(false)} 
         onFileSelected={handleDocumentSelected}
+      />
+
+      <ConfirmOverlay
+        visible={docConfirmVisible}
+        title="Processing Time"
+        message="This document will take approximately 2-3 minutes to translate. Are you sure you want to proceed?"
+        confirmText="Yes, Translate"
+        cancelText="Cancel"
+        type="success"
+        onConfirm={confirmDocumentTranslation}
+        onCancel={cancelDocumentTranslation}
       />
 
       <TranslationResultModal
