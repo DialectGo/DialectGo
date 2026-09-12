@@ -23,7 +23,8 @@ import datasetRoutes from './routes/dataset.route.js';
 import wikiRoutes from './routes/wiki.route.js';
 import notificationRoutes from './routes/notification.route.js';
 import activityRoutes from './routes/activity.route.js';
-import adminRoutes from './routes/admin.route.js';
+// Admin routes now live in backend/admin/ (dedicated MVC structure)
+import adminRoutes from '../admin/routes/admin.route.js';
 
 const app = express();
 // Trust the first proxy (e.g. Render, Heroku) so rate limiter can get the real client IP
