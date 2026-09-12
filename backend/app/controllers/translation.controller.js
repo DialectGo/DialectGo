@@ -7,10 +7,45 @@ import * as FileService from '../services/file.service.js';
 import { synthesizeSpeech } from '../services/tts.service.js';
 import fs from 'fs';
 
+// ─── Upload Safety Limits ────────────────────────────────────────────────────────────
+// These limits protect the free Groq API tier (8,000 TPM) and HuggingFace
+// from being overwhelmed by large documents during the research study.
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;            // 2 MB
+const MAX_TEXT_DENSITY_CHARS = 5000;                     // ~1–2 dense pages
+const MAX_FILE_SIZE_LABEL = '2 MB';
+const MAX_TEXT_DENSITY_LABEL = '5,000 characters (approximately 1–2 dense pages)';
+
 export const translateImage = async (req, res, next) => {
     try {
         const { image, sourceLang, targetLang, source_language_id, target_language_id, targetDialect } = req.body;
-        const text = await TranslationService.performOCR(image.replace(/^data:image\/\w+;base64,/, ''));
+
+        // ─── Guard 1: File size check (base64 string) ──────────────────────────────
+        // Base64 encodes ~4 chars per 3 bytes, so actual byte size ≈ base64.length * 0.75
+        const rawBase64 = (image || '').replace(/^data:image\/\w+;base64,/, '');
+        const estimatedBytes = Math.ceil(rawBase64.length * 0.75);
+        if (estimatedBytes > MAX_FILE_SIZE_BYTES) {
+            return res.status(413).json({
+                success: false,
+                error: 'FILE_TOO_LARGE',
+                message: `The image you uploaded is too large (approximately ${(estimatedBytes / 1024 / 1024).toFixed(1)} MB). The maximum allowed file size is ${MAX_FILE_SIZE_LABEL}. Please use a smaller image.`,
+            });
+        }
+
+        // Run OCR to extract the text
+        const text = await TranslationService.performOCR(rawBase64);
+
+        // ─── Guard 2: Text density check ───────────────────────────────────────
+        // The OCR has now analyzed the image. If it contains too much text,
+        // we stop here before triggering any expensive LLM API calls.
+        const cleanText = (text || '').trim();
+        console.log(`[translateImage] OCR extracted ${cleanText.length} characters.`);
+        if (cleanText.length > MAX_TEXT_DENSITY_CHARS) {
+            return res.status(413).json({
+                success: false,
+                error: 'TEXT_DENSITY_EXCEEDED',
+                message: `The image contains too much text (${cleanText.length.toLocaleString()} characters). The maximum allowed is ${MAX_TEXT_DENSITY_LABEL}. Please use an image with less text.`,
+            });
+        }
 
         // Run through the pre-processing pipeline before translation
         const result = await TranslationService.performPreprocessedTranslation(text, sourceLang, targetLang, targetDialect || null, req.token);
@@ -64,7 +99,18 @@ export const translateDocument = async (req, res, next) => {
             return res.status(400).json({ message: "No text could be extracted from the file." });
         }
 
-        // 3. Use the enhanced document translation pipeline
+        // ─── Guard: Text density check ──────────────────────────────────────────────
+        // The OCR / PDF parser has now analyzed the document. If it contains
+        // too much text, we stop here before triggering any LLM API calls.
+        console.log(`[translateDocument] Extracted ${extractedText.length} characters.`);
+        if (extractedText.length > MAX_TEXT_DENSITY_CHARS) {
+            return res.status(413).json({
+                success: false,
+                error: 'TEXT_DENSITY_EXCEEDED',
+                message: `The document contains too much text (${extractedText.length.toLocaleString()} characters). The maximum allowed is ${MAX_TEXT_DENSITY_LABEL}. Please use a shorter document.`,
+            });
+        }
+
         const shouldBreakdown = withBreakdown === 'true' || withBreakdown === true;
         const result = await TranslationService.performDocumentTranslation(
             extractedText, sourceLang, targetLang, targetDialect || null, req.token,
@@ -128,6 +174,17 @@ export const translateDocumentBase64 = async (req, res, next) => {
 
         if (!fileBase64) return res.status(400).json({ message: "No file data provided" });
 
+        // ─── Guard 1: File size check (base64 string) ──────────────────────────────
+        // Base64 encodes ~4 chars per 3 bytes, so actual byte size ≈ base64.length * 0.75
+        const estimatedBytes = Math.ceil(fileBase64.length * 0.75);
+        if (estimatedBytes > MAX_FILE_SIZE_BYTES) {
+            return res.status(413).json({
+                success: false,
+                error: 'FILE_TOO_LARGE',
+                message: `The file "${fileName || 'document'}" is too large (approximately ${(estimatedBytes / 1024 / 1024).toFixed(1)} MB). The maximum allowed file size is ${MAX_FILE_SIZE_LABEL}. Please use a smaller document (approximately 1–2 pages).`,
+            });
+        }
+
         console.log('[translateDocumentBase64] Received base64 file:', fileName, 'mimeType:', mimeType);
 
         // Write base64 to a temp file so extractTextFromFilepath can process it
@@ -155,7 +212,18 @@ export const translateDocumentBase64 = async (req, res, next) => {
             return res.status(400).json({ message: "No text could be extracted from the file." });
         }
 
-        // 3. Translate
+        // ─── Guard 2: Text density check ─────────────────────────────────────────────
+        // The extraction (OCR / PDF parser) has now analyzed the document.
+        // If it contains too much text, we stop here before triggering the
+        // expensive LLM pipeline (NER, DocType, Groq Chunking, HuggingFace).
+        if (extractedText.length > MAX_TEXT_DENSITY_CHARS) {
+            return res.status(413).json({
+                success: false,
+                error: 'TEXT_DENSITY_EXCEEDED',
+                message: `The document "${fileName || 'document'}" contains too much text (${extractedText.length.toLocaleString()} characters). The maximum allowed is ${MAX_TEXT_DENSITY_LABEL}. Please use a shorter document.`,
+            });
+        }
+
         const shouldBreakdown = withBreakdown === 'true' || withBreakdown === true;
         const result = await TranslationService.performDocumentTranslation(
             extractedText, sourceLang, targetLang, targetDialect || null, req.token,
