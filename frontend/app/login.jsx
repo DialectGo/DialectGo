@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import LoadingModal from '../src/shared/components/LoadingModal';
 import { styles } from '../src/features/auth/styles/LoginStyles';
 import { useRouter } from 'expo-router';
 import { supabase } from '../src/shared/api/supabase';
@@ -245,17 +246,11 @@ export default function LogIn({ onSwitch, onSuccess, panHandlers, initialEmail =
   return (
     <SafeAreaView style={styles.container}>
       {/* Google Sign-In Loading Overlay */}
-      {googleLoading && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.85)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#FFD54F" />
-          <Text style={{ color: '#FFF', marginTop: 16, fontFamily: 'Poppins-Medium', fontSize: 16, textAlign: 'center' }}>
-            {googleLoadingMsg || 'Setting up your account...'}
-          </Text>
-          <Text style={{ color: '#AAA', marginTop: 8, fontFamily: 'Poppins-Regular', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 }}>
-            This may take a moment on first sign-in
-          </Text>
-        </View>
-      )}
+      <LoadingModal 
+        visible={googleLoading} 
+        message={googleLoadingMsg || 'Setting up your account...'} 
+        subMessage="This may take a moment on first sign-in" 
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

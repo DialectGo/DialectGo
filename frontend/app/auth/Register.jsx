@@ -272,17 +272,11 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   return (
     <SafeAreaView style={styles.container}>
       {/* Google Sign-In Loading Overlay */}
-      {googleLoading && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.85)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#FFD54F" />
-          <Text style={{ color: '#FFF', marginTop: 16, fontFamily: 'Poppins-Medium', fontSize: 16, textAlign: 'center' }}>
-            {googleLoadingMsg || 'Setting up your account...'}
-          </Text>
-          <Text style={{ color: '#AAA', marginTop: 8, fontFamily: 'Poppins-Regular', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 }}>
-            This may take a moment on first sign-in
-          </Text>
-        </View>
-      )}
+      <LoadingModal 
+        visible={googleLoading} 
+        message={googleLoadingMsg || 'Setting up your account...'} 
+        subMessage="This may take a moment on first sign-in" 
+      />
       <TermsAndAgreementModal
         visible={showTerms}
         onClose={() => setShowTerms(false)}
