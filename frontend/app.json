@@ -5,21 +5,26 @@
     "slug": "DialectGo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/DialectGo-App-Logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/bee_splash_padded.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FEF3C7"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ralph.dialectgo.app"
     },
     "android": {
+      "splash": {
+        "image": "./assets/bee_splash_padded.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FEF3C7"
+      },
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/DialectGo-App-Logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": false,
@@ -27,7 +32,7 @@
       "package": "com.ralph.dialectgo.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/DialectGo-App-Logo.png"
     },
     "androidNavigationBar": {
       "backgroundColor": "#FFFFFF",

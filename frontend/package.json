@@ -4,7 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "export JAVA_HOME=\"/opt/homebrew/opt/openjdk@17\" && expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
   },
