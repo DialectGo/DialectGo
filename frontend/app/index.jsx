@@ -7,6 +7,7 @@ import AutoSplash from '../src/components/AutoSplash';
 import Onboarding from '../src/components/Onboarding';
 import AuthTransition from './auth/AuthTransition';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingModal from '../src/shared/components/LoadingModal';
 
 export default function MainIndex() {
   const [currentScreen, setCurrentScreen] = useState('loading');
@@ -69,7 +70,11 @@ export default function MainIndex() {
 return (
     <View style={styles.container}>
       {/* 1. Loading state while checking Supabase */}
-      {currentScreen === 'loading' && <ActivityIndicator size="large" color="#FFD54F" />}
+      <LoadingModal 
+        visible={currentScreen === 'loading'} 
+        message="Initializing DialectGo"
+        subMessage="Getting things ready..."
+      />
 
       {/* 2. New User: Shows Opening Animation */}
       {currentScreen === 'intro-splash' && (

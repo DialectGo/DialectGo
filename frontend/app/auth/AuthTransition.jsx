@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Keyboard
 } from 'react-native';
+import LoadingModal from '../../src/shared/components/LoadingModal';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
@@ -160,18 +161,21 @@ export default function AuthTransition() {
 
   return (
     <View style={styles.container}>
-      {/* Quick Login Overlay */}
-      {isQuickLoggingIn && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(28, 36, 44, 0.7)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#FFD54F" />
-        </View>
-      )}
+      <LoadingModal 
+        visible={isQuickLoggingIn} 
+        message="Signing In..." 
+        subMessage="Authenticating your profile" 
+      />
+      
+      <LoadingModal 
+        visible={isLoadingProfiles} 
+        message="Loading Profiles..." 
+        subMessage="Fetching saved accounts" 
+      />
 
       {/* Dynamic Content Based on Profiles */}
       {isLoadingProfiles ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#FFC107" />
-        </View>
+        <View style={{ flex: 1, justifyContent: 'center' }} />
       ) : profiles.length > 0 ? (
         // --- MULTI-PROFILE VIEW ---
         <View style={{ flex: 1, width: '100%', paddingHorizontal: 20, paddingTop: 60 }}>
