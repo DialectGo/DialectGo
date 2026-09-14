@@ -78,7 +78,7 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
     const em = email.trim();
     const pwd = password.trim();
     const cpwd = confirmPassword.trim();
-    
+
     // 1. Empty Field Validation
     if (!fName) newErrors.firstName = "First name is required";
     if (!lName) newErrors.lastName = "Last name is required";
@@ -272,10 +272,10 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
   return (
     <SafeAreaView style={styles.container}>
       {/* Google Sign-In Loading Overlay */}
-      <LoadingModal 
-        visible={googleLoading} 
-        message={googleLoadingMsg || 'Setting up your account...'} 
-        subMessage="This may take a moment on first sign-in" 
+      <LoadingModal
+        visible={googleLoading}
+        message={googleLoadingMsg || 'Setting up your account...'}
+        subMessage="This may take a moment on first sign-in"
       />
       <TermsAndAgreementModal
         visible={showTerms}
@@ -392,14 +392,14 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
 
             <View style={styles.inputGroup}>
               <Text style={styles.labelShadow}>Email</Text>
-              <TextInput 
-                style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} 
-                placeholder="email@example.com" 
+              <TextInput
+                style={[styles.bubbleInput, errors.email ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]}
+                placeholder="email@example.com"
                 placeholderTextColor="#9CA3AF"
-                keyboardType="email-address" 
-                autoCapitalize="none" 
-                value={email} 
-                onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }} 
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={(t) => { setEmail(t); if (errors.email) setErrors({ ...errors, email: null }); }}
                 onBlur={() => {
                   const em = email.trim();
                   const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
