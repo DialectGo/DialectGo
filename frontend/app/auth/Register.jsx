@@ -28,7 +28,7 @@ import { useToast } from '../../src/shared/context/ToastContext';
 import TermsAndAgreementModal from '../../src/features/auth/components/TermsAndAgreementModal';
 import AnimatedJeep from '../../src/features/auth/components/AnimatedJeep';
 import NetInfo from '@react-native-community/netinfo';
-
+import LoadingModal from '../../src/shared/components/LoadingModal';
 WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = endpoints.USER_REGISTER;
