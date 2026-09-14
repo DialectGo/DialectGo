@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/bee_splash_padded.png",
+      "image": "./assets/DialectGo-App-Logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FEF3C7"
+      "backgroundColor": "#FDCE4A"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,13 +19,13 @@
     },
     "android": {
       "splash": {
-        "image": "./assets/bee_splash_padded.png",
+        "image": "./assets/DialectGo-App-Logo.png",
         "resizeMode": "contain",
-        "backgroundColor": "#FEF3C7"
+        "backgroundColor": "#FDCE4A"
       },
       "adaptiveIcon": {
         "foregroundImage": "./assets/DialectGo-App-Logo.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FDCE4A"
       },
       "edgeToEdgeEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
