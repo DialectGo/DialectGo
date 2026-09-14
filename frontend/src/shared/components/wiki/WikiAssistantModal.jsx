@@ -10,7 +10,7 @@ import { supabase } from '../../api/supabase';
 import { WIKI_API_BASE } from '../../api/client';
 import { colors } from '../../theme/colorPalette';
 
-const BEE_LOGO = require('../../../../assets/logo/bee.png');
+const AI_CHATBOT_ICON = require('../../../../assets/icons/wiki/wiki_ai_chatbot_icon.png');
 
 export default function WikiAssistantModal({ visible, onClose, submissionId, submissionTitle }) {
   const [messages, setMessages] = useState([]);
@@ -175,7 +175,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
       <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.aiBubble]}>
         {!isUser && (
           <View style={styles.aiAvatar}>
-            <Image source={BEE_LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
+            <Image source={AI_CHATBOT_ICON} style={{ width: 28, height: 28, borderRadius: 14 }} resizeMode="contain" />
           </View>
         )}
         <View style={[styles.messageContent, isUser ? styles.userContent : styles.aiContent]}>
@@ -204,7 +204,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.aiIcon}>
-                <Image source={BEE_LOGO} style={{ width: 22, height: 22 }} resizeMode="contain" />
+                <Image source={AI_CHATBOT_ICON} style={{ width: 36, height: 36, borderRadius: 18 }} resizeMode="contain" />
               </View>
               <View>
                 <Text style={styles.headerTitle}>Dialect Wiki</Text>
@@ -232,7 +232,7 @@ export default function WikiAssistantModal({ visible, onClose, submissionId, sub
               isLoading ? (
                 <View style={[styles.messageBubble, styles.aiBubble]}>
                   <View style={styles.aiAvatar}>
-                    <Image source={BEE_LOGO} style={{ width: 18, height: 18 }} resizeMode="contain" />
+                    <Image source={AI_CHATBOT_ICON} style={{ width: 28, height: 28, borderRadius: 14 }} resizeMode="contain" />
                   </View>
                   <View style={[styles.messageContent, styles.aiContent]}>
                     <View style={styles.typingRow}>
@@ -309,7 +309,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surfaceLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -347,7 +346,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.surfaceLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
