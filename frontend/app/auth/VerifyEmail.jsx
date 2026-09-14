@@ -16,7 +16,7 @@ import { supabase } from '../../src/shared/api/supabase';
 import AuthLayout from './AuthLayout';
 import CustomButton from '../../src/shared/components/CustomButton';
 import { maskEmail } from '../../src/shared/utils/stringUtils';
-import verifyEmailImg from '../../assets/beelogo/verify_email_screen.png';
+import verifyEmailImg from '../../assets/bee-logo-images/bee_logo_4.png';
 import { useToast } from '../../src/shared/context/ToastContext';
 
 // Supabase standard OTP can be up to 8 digits

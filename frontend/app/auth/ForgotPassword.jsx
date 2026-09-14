@@ -16,7 +16,7 @@ import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
 import { useLocalSearchParams } from 'expo-router';
 import { PASSWORD_RESET_REDIRECT_URL } from '../../src/shared/api/client';
-import forgotPassImg from '../../assets/beelogo/forgot_pass_screen.png';
+import forgotPassImg from '../../assets/bee-logo-images/bee_logo_1.png';
 import { useToast } from '../../src/shared/context/ToastContext';
 
 export default function ForgotPassword() {

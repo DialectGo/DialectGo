@@ -15,7 +15,7 @@ import AuthLayout from './AuthLayout';
 import AuthInput from '../../src/shared/components/AuthInput';
 import CustomButton from '../../src/shared/components/CustomButton';
 import ConfirmOverlay from '../../src/shared/components/ConfirmOverlay';
-import newPassImg from '../../assets/beelogo/new_pass_screen.png';
+import newPassImg from '../../assets/bee-logo-images/bee_logo_3.png';
 import { useToast } from '../../src/shared/context/ToastContext';
 
 export default function ChangePassword() {
