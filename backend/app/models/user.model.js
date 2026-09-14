@@ -155,15 +155,32 @@ export const deleteUser = async (id) => {
   if (error) throw error;
 };
 
-// Add to user.model.js
-// user.model.js
+/** Minimum translations in a single day (Asia/Manila) for that day to count toward the streak. */
+const MIN_TRANSLATIONS_FOR_ACTIVE_DAY = 2;
 
+/**
+ * Recalculates a user's daily-translation streak and syncs it to their profile.
+ * A day counts as "active" once the user logs MIN_TRANSLATIONS_FOR_ACTIVE_DAY
+ * translations on that calendar date (Asia/Manila). The streak is the number
+ * of consecutive active days ending today or yesterday.
+ *
+ * @param {string} userId
+ * @param {string} token - Auth token for RLS-scoped Supabase client
+ * @returns {Promise<{ streak: number, activeDays: string[] }>}
+ */
 export const calculateAndSyncStreak = async (userId, token) => {
   const client = getAuthClient(token);
-  // 1. Fetch all translation timestamps for this user
-  // Helper to reliably get Manila date in YYYY-MM-DD
-  const getManilaDateString = (dateObj) => {
-    return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
+  // Helper to reliably get Manila date as a YYYY-MM-DD string
+  const getManilaDateString = (dateObj) =>
+    dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+
+  // Helper to advance a YYYY-MM-DD string by N days without going through
+  // a UTC-midnight Date reconstruction (avoids timezone drift on the diff).
+  const addDaysToDateString = (dateStr, days) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const utcMidnight = Date.UTC(year, month - 1, day + days);
+    return new Date(utcMidnight).toISOString().slice(0, 10);
   };
 
   const { data, error } = await client
@@ -174,58 +191,44 @@ export const calculateAndSyncStreak = async (userId, token) => {
 
   if (error) throw error;
 
-  // 2. Map translations to unique dates and count them
+  // Map translations to unique Manila-local dates and count them
   const dayCounts = {};
-  data.forEach(row => {
-    // Convert UTC timestamp from DB to Manila local date string (YYYY-MM-DD)
+  for (const row of data) {
     const date = getManilaDateString(new Date(row.created_at));
     dayCounts[date] = (dayCounts[date] || 0) + 1;
-  });
+  }
 
-  // 3. Identify "Active Days" (days with 3 or more translations)
+  // Identify "Active Days" (days meeting the minimum translation count)
   const activeDays = Object.keys(dayCounts)
-    .filter(date => dayCounts[date] >= 3)
-    .sort((a, b) => new Date(b) - new Date(a)); // Newest first
+    .filter((date) => dayCounts[date] >= MIN_TRANSLATIONS_FOR_ACTIVE_DAY)
+    .sort((a, b) => (a < b ? 1 : -1)); // Newest first, pure string compare (YYYY-MM-DD sorts lexically)
 
   if (activeDays.length === 0) {
     await client.from('profiles').update({ streak_count: 0 }).eq('id', userId);
     return { streak: 0, activeDays: [] };
   }
 
-  // 4. Calculate consecutive days
-  let streak = 0;
-  const todayObj = new Date();
-  const today = getManilaDateString(todayObj);
-  
-  const yesterdayObj = new Date();
-  yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-  const yesterdayStr = getManilaDateString(yesterdayObj);
+  const today = getManilaDateString(new Date());
+  const yesterday = addDaysToDateString(today, -1);
 
-  // Check if the user is active today or was at least active yesterday
-  // If not, the streak has already broken.
-  if (activeDays[0] === today || activeDays[0] === yesterdayStr) {
+  let streak = 0;
+
+  // Streak is only alive if the most recent active day is today or yesterday
+  if (activeDays[0] === today || activeDays[0] === yesterday) {
     streak = 1;
     for (let i = 0; i < activeDays.length - 1; i++) {
-      const current = new Date(activeDays[i]);
-      const next = new Date(activeDays[i + 1]);
-      
-      // Calculate difference in days
-      const diffTime = Math.abs(current - next);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const current = activeDays[i];
+      const expectedPrevious = addDaysToDateString(current, -1);
 
-      if (diffDays === 1) {
+      if (activeDays[i + 1] === expectedPrevious) {
         streak++;
       } else {
-        break; // Streak broken
+        break; // Gap found — streak stops here
       }
     }
   }
 
-  // 5. Sync to profile
-  await client
-    .from('profiles')
-    .update({ streak_count: streak })
-    .eq('id', userId);
+  await client.from('profiles').update({ streak_count: streak }).eq('id', userId);
 
   return { streak, activeDays };
 };
