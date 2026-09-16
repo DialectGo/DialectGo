@@ -21,6 +21,7 @@ import {
     Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TONE_OPTIONS = [
     { label: 'Formal', value: 'formal', icon: 'ribbon-outline' },
@@ -72,6 +73,7 @@ export default function CustomizeModal({ visible, onClose, onSubmit, isLoading }
     const [tone, setTone] = useState(null);
     const [audience, setAudience] = useState(null);
     const [context, setContext] = useState('');
+    const insets = useSafeAreaInsets();
 
     const handleSubmit = () => {
         onSubmit({ tone, audience, context: context.trim() || null, style: null });
@@ -87,14 +89,21 @@ export default function CustomizeModal({ visible, onClose, onSubmit, isLoading }
     const hasSelection = tone || audience || context.trim();
 
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+        <Modal 
+            visible={visible} 
+            transparent 
+            animationType="slide" 
+            onRequestClose={handleClose}
+            statusBarTranslucent={true}
+            navigationBarTranslucent={true}
+        >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={styles.overlay}
             >
                 <TouchableOpacity style={styles.backdrop} onPress={handleClose} activeOpacity={1} />
 
-                <View style={styles.sheet}>
+                <View style={[styles.sheet, { paddingBottom: Math.max(40, insets.bottom + 20) }]}>
                     {/* Handle */}
                     <View style={styles.handle} />
 

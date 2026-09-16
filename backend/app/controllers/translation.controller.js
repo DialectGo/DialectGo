@@ -549,6 +549,14 @@ export const customizeTranslation = async (req, res, next) => {
             tone, audience, context, style,
         });
 
+        if (!customized.success) {
+            return res.status(400).json({
+                success: false,
+                message: customized.explanation || 'Customization could not be completed.',
+                metadata: customized.metadata,
+            });
+        }
+
         // Save the customization report
         if (userId) {
             try {

@@ -28,10 +28,12 @@ export default function AboutScreen() {
       >
         <View style={styles.topSection}>
           <View style={styles.logoWrapper}>
-            <Image 
-              source={require('../../../assets/logo/bee.png')} 
-              style={styles.mainLogo} 
-            />
+            <View style={styles.innerLogoWrapper}>
+              <Image 
+                source={require('../../../assets/DialectGo-App-Logo.png')} 
+                style={styles.mainLogo} 
+              />
+            </View>
           </View>
           <Text style={styles.appName}>DialectGo</Text>
           <Text style={styles.versionTag}>Version 1.0.4</Text>
@@ -97,18 +99,24 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 30,
     backgroundColor: '#FFD54F',
-    justifyContent: 'center',
-    alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
   },
+  innerLogoWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   mainLogo: {
-    width: 90,
-    height: 90,
-    resizeMode: 'contain',
+    width: 180,
+    height: 180,
+    resizeMode: 'cover',
   },
   appName: {
     fontSize: 28,
