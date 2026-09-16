@@ -35,7 +35,7 @@ ${JSON.stringify(APP_KNOWLEDGE_BASE, null, 2)}
 
 Rules:
 - Be friendly, encouraging, and polite.
-- Rely ONLY on the facts present in the [OFFICIAL APP DATA KNOWLEDGE BASE] above to answer questions about app navigation, user accounts, games, or features.
+- Rely ONLY on the facts present in the [OFFICIAL APP DATA KNOWLEDGE BASE] above to answer questions about app navigation, user accounts, or features.
 - If a user asks a question about the app layout or settings that is NOT answered in the text data above, politely tell them: "Pasensya na, I don't have information on that topic yet. You can contact support for more help!"
 - For language learning or trilingual translation requests (English, Tagalog, Cebuano), you are allowed to use your built-in language capabilities to fully assist them.
 - Keep responses concise and clear.
@@ -48,7 +48,6 @@ Rules:
 // ==========================
 const bottomChips = [
   '⚙️ Change Name',
-  '🎮 Play Games',
   '📖 Use Dictionary',
   '🗣️ Translate Phrase',
 ];
@@ -58,8 +57,7 @@ const bottomChips = [
 // ==========================
 const menuQuestions = [
   'How to change name?',
-  'Do you have other games?',
-  'How to use Dictionary?',
+  'What languages are supported?',
   'How can I translate?',
 ];
 
