@@ -6,9 +6,9 @@ import { useRouter } from 'expo-router';
 import ProfileTopBar from '../../components/ProfileTopBar';
 import ProfileMenuItem from '../../shared/components/profile/ProfileMenuItem';
 import {
-  HOW_TO_USE_STEPS,
+  HOW_TO_USE_SECTIONS,
   TERMS_AND_CONDITIONS_SECTIONS,
-  PRIVACY_POLICY_TEXT,
+  PRIVACY_POLICY_SECTIONS,
 } from '../../constants/legalContent';
 
 const MODAL_TITLES = {
@@ -17,17 +17,50 @@ const MODAL_TITLES = {
   privacy: 'Privacy Policy',
 };
 
-/**
- * Renders the terms & conditions as a list of headed sections rather than
- * one undifferentiated block of text, so a multi-paragraph legal doc is
- * actually scannable inside a modal.
- */
-const TermsAndConditionsContent = () => (
+const SectionedLegalContent = ({ sections }) => (
   <>
-    {TERMS_AND_CONDITIONS_SECTIONS.map((section) => (
-      <View key={section.heading} style={legalStyles.section}>
-        <Text style={legalStyles.sectionHeading}>{section.heading}</Text>
-        <Text style={legalStyles.sectionBody}>{section.body}</Text>
+    {sections.map((section, index) => (
+      <View key={section.heading}>
+        <View style={legalStyles.section}>
+          <View style={legalStyles.headingRow}>
+            <View style={legalStyles.badge}>
+              <Text style={legalStyles.badgeText}>{index + 1}</Text>
+            </View>
+            <Text style={legalStyles.sectionHeading}>{section.heading}</Text>
+          </View>
+          <Text style={legalStyles.sectionBody}>{section.body}</Text>
+        </View>
+        {index < sections.length - 1 && <View style={legalStyles.divider} />}
+      </View>
+    ))}
+  </>
+);
+
+const SectionedGuideContent = ({ sections }) => (
+  <>
+    {sections.map((section, sectionIndex) => (
+      <View key={section.heading}>
+        <View style={legalStyles.section}>
+          <View style={legalStyles.headingRow}>
+            <View style={legalStyles.badge}>
+              <Text style={legalStyles.badgeText}>{sectionIndex + 1}</Text>
+            </View>
+            <Text style={legalStyles.sectionHeading}>{section.heading}</Text>
+          </View>
+
+          {section.steps.map((step, stepIndex) => (
+            <View key={step.label} style={legalStyles.stepRow}>
+              <View style={legalStyles.stepDot}>
+                <Text style={legalStyles.stepDotText}>{stepIndex + 1}</Text>
+              </View>
+              <Text style={legalStyles.stepText}>
+                <Text style={legalStyles.stepLabel}>{step.label}: </Text>
+                {step.description}
+              </Text>
+            </View>
+          ))}
+        </View>
+        {sectionIndex < sections.length - 1 && <View style={legalStyles.divider} />}
       </View>
     ))}
   </>
@@ -36,8 +69,7 @@ const TermsAndConditionsContent = () => (
 export default function SettingsScreen() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState(null); // 'guide' | 'terms' | 'privacy' | null
-
+  const [modalType, setModalType] = useState(null); 
   const handlePress = (type) => {
     setModalType(type);
     setModalVisible(true);
@@ -51,15 +83,11 @@ export default function SettingsScreen() {
   const renderModalBody = () => {
     switch (modalType) {
       case 'guide':
-        return HOW_TO_USE_STEPS.map((step) => (
-          <Text key={step} style={styles.modalBodyText}>
-            {step}
-          </Text>
-        ));
+        return <SectionedGuideContent sections={HOW_TO_USE_SECTIONS} />;
       case 'terms':
-        return <TermsAndConditionsContent />;
+        return <SectionedLegalContent sections={TERMS_AND_CONDITIONS_SECTIONS} />;
       case 'privacy':
-        return <Text style={styles.modalBodyText}>{PRIVACY_POLICY_TEXT}</Text>;
+        return <SectionedLegalContent sections={PRIVACY_POLICY_SECTIONS} />;
       default:
         return null;
     }
@@ -90,21 +118,32 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.versionText}>DialectGo Version 1.0.4</Text>
+        <Text style={styles.versionText}>DialectGo Version 1.8.5</Text>
       </ScrollView>
 
       <Modal animationType="fade" transparent visible={modalVisible} onRequestClose={handleClose}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{modalType ? MODAL_TITLES[modalType] : ''}</Text>
+          <View style={[styles.modalContent, legalStyles.modalContentOverride]}>
+            <View style={legalStyles.headerRow}>
+              <Text style={[styles.modalTitle, legalStyles.headerTitle]} numberOfLines={1}>
+                {modalType ? MODAL_TITLES[modalType] : ''}
+              </Text>
+              <TouchableOpacity
+                onPress={handleClose}
+                style={legalStyles.closeIconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={legalStyles.closeIconText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={legalStyles.headerAccent} />
 
             <ScrollView style={styles.modalBodyScroll} showsVerticalScrollIndicator={false}>
               {renderModalBody()}
             </ScrollView>
-
-            <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
-              <Text style={styles.closeBtnText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -112,21 +151,109 @@ export default function SettingsScreen() {
   );
 }
 
-// TODO for you: fold these into SettingsStyles.js so all screen styling lives
-// in one place — kept local here since I don't have that file's contents.
 const legalStyles = StyleSheet.create({
+  modalContentOverride: {
+    maxHeight: '80%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    flex: 1,
+    marginRight: 12,
+    marginBottom: 0,
+  },
+  closeIconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#FFF3CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeIconText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#421C00',
+  },
+  headerAccent: {
+    height: 3,
+    borderRadius: 2,
+    marginTop: 10,
+    marginBottom: 14,
+    width: 48,
+  },
   section: {
-    marginBottom: 16,
+    paddingVertical: 14,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  badge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFD54F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#421C00',
   },
   sectionHeading: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    marginBottom: 4,
     color: '#1A1A1A',
   },
   sectionBody: {
     fontSize: 14,
     lineHeight: 20,
     color: '#3A3A3A',
+    marginLeft: 34, // aligns under heading text, past the badge
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginLeft: 34,
+    marginBottom: 8,
+  },
+  stepDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: '#FFD54F',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    marginTop: 1,
+  },
+  stepDotText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#421C00',
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#3A3A3A',
+  },
+  stepLabel: {
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E5D9B8', // muted warm gray, sits quietly against the amber theme
+    marginVertical: 4,
   },
 });
