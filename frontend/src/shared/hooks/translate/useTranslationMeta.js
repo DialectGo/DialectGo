@@ -32,8 +32,8 @@ export const useTranslationMeta = ({ inputText, translation, setTranslation, sou
 
     try {
       const breakdown = await fetchBreakdownSSE({
-        sourceText: translation,
-        translatedText: inputText,
+        sourceText: inputText,
+        translatedText: translation,
         sourceLang,
         targetLang,
         targetDialect: targetDialect || null,
@@ -59,8 +59,8 @@ export const useTranslationMeta = ({ inputText, translation, setTranslation, sou
     setIsCustomizeLoading(true);
     try {
       const customizedText = await customizeTranslation({
-        sourceText: translation,
-        translatedText: inputText,
+        sourceText: inputText,
+        translatedText: translation,
         sourceLang,
         targetLang,
         options: params,
