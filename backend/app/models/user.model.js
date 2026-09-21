@@ -17,7 +17,7 @@ export const registerUser = async (data) => {
   const { data: result, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: meta }
+    options: { data: { ...meta, role: 'user' } }
   });
 
   if (error) throw error;
@@ -32,12 +32,15 @@ export const registerUser = async (data) => {
   if (result.user) {
     try {
       await updateUser(result.user.id, {
+        first_name: meta.firstName || null,
+        last_name: meta.lastName || null,
         birth_date: meta.birthDate || null,
         country: meta.country || null,
         province: meta.province || null,
         city: meta.city || null,
         username: meta.username || null,
-        preferred_language_code: meta.preferredLanguageCode || null
+        preferred_language_code: meta.preferredLanguageCode || null,
+        role: 'user' // Explicitly set role for manual sync fallback
       });
     } catch (syncError) {
       console.error("Warning: Could not sync additional profile data:", syncError);
