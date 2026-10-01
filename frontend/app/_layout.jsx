@@ -6,6 +6,7 @@ import { ToastProvider } from '../src/shared/context/ToastContext';
 import React, { useState, useEffect } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 import OfflineScreen from '../src/shared/components/OfflineScreen';
+import UpdateRestartModal from '../src/shared/components/UpdateRestartModal';
 
 export default function RootLayout() {
   const [isConnected, setIsConnected] = useState(true);
@@ -33,6 +34,7 @@ export default function RootLayout() {
             }}
           />
           {!isConnected && inTabs && <OfflineScreen />}
+          <UpdateRestartModal />
         </ProfileProvider>
       </ToastProvider>
     </SafeAreaProvider>
