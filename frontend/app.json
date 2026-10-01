@@ -3,9 +3,6 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/39758670-e393-4a78-b40d-34dbcc73e25f"
-    },
     "scheme": "dialectgo",
     "name": "DialectGo",
     "slug": "DialectGo",
@@ -64,8 +61,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "39758670-e393-4a78-b40d-34dbcc73e25f"
+        "projectId": "6de09f0b-4eae-4437-a7c5-7d340fd4e4b0"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6de09f0b-4eae-4437-a7c5-7d340fd4e4b0",
+      "checkAutomatically": "ON_ERROR_RECOVERY"
     }
   }
 }
