@@ -36,4 +36,4 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 🚀 Push OTA Update
-        run: eas update --channel preview --message "${{ github.event.head_commit.message }}" --non-interactive
+        run: NODE_ENV=production eas update --channel preview --message "${{ github.event.head_commit.message }}" --non-interactive
