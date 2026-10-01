@@ -1,5 +1,11 @@
 {
   "expo": {
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/39758670-e393-4a78-b40d-34dbcc73e25f"
+    },
     "scheme": "dialectgo",
     "name": "DialectGo",
     "slug": "DialectGo",
