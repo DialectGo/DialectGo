@@ -98,8 +98,10 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
     }
 
     // 3. Password Strength & Matching
-    if (pwd && pwd.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    if (pwd && pwd.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    } else if (pwd && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(pwd)) {
+      newErrors.password = "Must include an uppercase, a lowercase, and a number";
     }
     if (pwd && cpwd && pwd !== cpwd) {
       newErrors.confirmPassword = "Passwords do not match";
@@ -336,13 +338,13 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>First Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" placeholderTextColor="#9CA3AF" value={firstName} onChangeText={(t) => { setFirstName(t); if (errors.firstName) setErrors({ ...errors, firstName: null }); }} />
-                {errors.firstName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.firstName}</Text>}
+                <TextInput style={[styles.bubbleInput, errors.firstName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="First" placeholderTextColor="#9CA3AF" value={firstName} onChangeText={(t) => { setFirstName(t); if (errors.firstName) setErrors({ ...errors, firstName: null }); }} maxLength={50} />
+                {errors.firstName ? <Text style={hintStyles.error}>{errors.firstName}</Text> : <Text style={hintStyles.hint}>ℹ 2–50 characters</Text>}
               </View>
               <View style={[styles.inputGroup, { width: '48%' }]}>
                 <Text style={styles.labelShadow}>Last Name</Text>
-                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" placeholderTextColor="#9CA3AF" value={lastName} onChangeText={(t) => { setLastName(t); if (errors.lastName) setErrors({ ...errors, lastName: null }); }} />
-                {errors.lastName && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.lastName}</Text>}
+                <TextInput style={[styles.bubbleInput, errors.lastName ? { borderColor: '#FF4D4D', borderWidth: 1.5 } : null]} placeholder="Last" placeholderTextColor="#9CA3AF" value={lastName} onChangeText={(t) => { setLastName(t); if (errors.lastName) setErrors({ ...errors, lastName: null }); }} maxLength={50} />
+                {errors.lastName ? <Text style={hintStyles.error}>{errors.lastName}</Text> : <Text style={hintStyles.hint}>ℹ 2–50 characters</Text>}
               </View>
             </View>
 
@@ -407,8 +409,9 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                     setErrors(prev => ({ ...prev, email: "Please enter a valid Gmail address (e.g. user@gmail.com)" }));
                   }
                 }}
+                maxLength={254}
               />
-              {errors.email && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.email}</Text>}
+              {errors.email ? <Text style={hintStyles.error}>{errors.email}</Text> : <Text style={hintStyles.hint}>ℹ Must be a valid Gmail address</Text>}
             </View>
 
             <View style={styles.inputGroup}>
@@ -421,12 +424,13 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                   secureTextEntry={secureTextEntry}
                   value={password}
                   onChangeText={(t) => { setPassword(t); if (errors.password) setErrors({ ...errors, password: null, confirmPassword: null }); }}
+                  maxLength={128}
                 />
                 <TouchableOpacity onPress={() => setSecureTextEntry(!secureTextEntry)}>
                   <FontAwesome5 name={secureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
-              {errors.password && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.password}</Text>}
+              {errors.password ? <Text style={hintStyles.error}>{errors.password}</Text> : <Text style={hintStyles.hint}>ℹ Min 8 chars · uppercase · lowercase · number</Text>}
             </View>
 
             <View style={styles.inputGroup}>
@@ -439,12 +443,13 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
                   secureTextEntry={confirmSecureTextEntry}
                   value={confirmPassword}
                   onChangeText={(t) => { setConfirmPassword(t); if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: null }); }}
+                  maxLength={128}
                 />
                 <TouchableOpacity onPress={() => setConfirmSecureTextEntry(!confirmSecureTextEntry)}>
                   <FontAwesome5 name={confirmSecureTextEntry ? "eye-slash" : "eye"} size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
-              {errors.confirmPassword && <Text style={{ color: '#FF4D4D', fontSize: 12, marginTop: 4, marginLeft: 10, fontWeight: 'bold' }}>{errors.confirmPassword}</Text>}
+              {errors.confirmPassword ? <Text style={hintStyles.error}>{errors.confirmPassword}</Text> : <Text style={hintStyles.hint}>ℹ Must match the password above</Text>}
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20, paddingHorizontal: 5 }}>
@@ -501,3 +506,23 @@ export default function SignUp({ onSwitch, onSuccess, panHandlers }) {
     </SafeAreaView>
   );
 }
+
+// --- Field Requirement Hint Styles ---
+const hintStyles = StyleSheet.create({
+  hint: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 10.5,
+    color: '#9CA3AF',
+    marginTop: 4,
+    marginLeft: 15,
+    lineHeight: 14,
+  },
+  error: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 12,
+    color: '#FF4D4D',
+    fontWeight: 'bold',
+    marginTop: 4,
+    marginLeft: 10,
+  },
+});
