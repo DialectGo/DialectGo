@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { authService } from '../services/authService';
 
-import { LayoutDashboard, Users, BookOpen, Globe, FileText, Bell, LineChart } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, Globe, FileText, Bell } from 'lucide-react';
 
 const MENU = [
   { name: 'Dashboard',    icon: <LayoutDashboard size={20} /> },
@@ -12,7 +12,7 @@ const MENU = [
   { name: 'Notifications',icon: <Bell size={20} /> },
 ];
 
-const Sidebar = ({ isOpen, activeTab, onTabChange, onLogout }) => {
+const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
   const [admin, setAdmin] = useState({ name: 'Admin', initials: 'AD', loading: true });
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange, onLogout }) => {
   }, []);
 
   return (
-    <aside className={`sidebar ${!isOpen ? 'hidden' : ''}`}>
+    <aside id="admin-sidebar" aria-label="Admin navigation" inert={!isOpen} className={`sidebar ${isOpen ? 'open' : 'hidden'}`}>
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="brand-icon">DG</div>
@@ -58,11 +58,13 @@ const Sidebar = ({ isOpen, activeTab, onTabChange, onLogout }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        <div className="nav-section-label">Workspace</div>
         {MENU.map(item => (
           <button
             key={item.name}
             className={`nav-item ${activeTab === item.name ? 'active' : ''}`}
+            aria-current={activeTab === item.name ? 'page' : undefined}
             onClick={() => onTabChange(item.name)}
           >
             <span className="nav-icon">{item.icon}</span>

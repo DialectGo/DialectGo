@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, LogOut } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
@@ -12,29 +12,33 @@ import { authService } from './services/authService';
 import './index.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
+  const [isCompact, setIsCompact] = useState(() => window.innerWidth <= 1024);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 1024);
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // On desktop (>1024px) sidebar is always visible; on mobile it toggles
   useEffect(() => {
-    const checkDesktop = () => {
-      if (window.innerWidth > 1024) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
-    };
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
+    const updateViewport = () => setIsCompact(window.innerWidth <= 1024);
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
   }, []);
 
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      setIsAuthenticated(true);
-    }
-  }, []);
+    if (!isSidebarOpen || !isCompact) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+        document.getElementById('admin-menu-toggle')?.focus();
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isSidebarOpen, isCompact]);
 
   const handleLogout = () => {
     authService.clearToken();
@@ -48,13 +52,11 @@ function App() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    // Close sidebar on mobile after navigation
-    if (window.innerWidth <= 1024) {
+    if (isCompact) {
       setIsSidebarOpen(false);
     }
   };
 
-  const isDesktop = () => window.innerWidth > 1024;
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -74,17 +76,19 @@ function App() {
 
   return (
     <div className="app-layout">
-      {/* Mobile hamburger */}
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <button
-        className="hamburger-btn"
+        className={`hamburger-btn ${isSidebarOpen ? 'sidebar-open' : ''}`}
+        id="admin-menu-toggle"
+        aria-expanded={isSidebarOpen}
+        aria-controls="admin-sidebar"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Toggle sidebar"
+        aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
       >
         {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
 
-      {/* Mobile overlay */}
-      {isSidebarOpen && !isDesktop() && (
+      {isSidebarOpen && isCompact && (
         <div
           className="sidebar-overlay"
           onClick={() => setIsSidebarOpen(false)}
@@ -95,17 +99,16 @@ function App() {
         isOpen={isSidebarOpen}
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        onLogout={handleLogout}
       />
 
-      <div className={`main-viewport ${!isSidebarOpen || !isDesktop() ? 'full-width' : ''}`}>
+      <div className={`main-viewport ${!isSidebarOpen || isCompact ? 'full-width' : ''}`}>
         {/* Navbar */}
         <div className="navbar">
           <div className="navbar-left">
             <div>
               <h1 className="navbar-title">{activeTab}</h1>
               <div className="navbar-subtitle">
-                {activeTab === 'Dashboard'     && 'AI Operations & Data Governance Command Center'}
+                {activeTab === 'Dashboard'     && 'Your platform at a glance'}
                 {activeTab === 'Users'         && 'Manage user accounts and permissions'}
                 {activeTab === 'Dictionary'    && 'Manage dialect dictionary entries'}
                 {activeTab === 'Translations'  && 'Review user-recommended translations'}
@@ -130,7 +133,7 @@ function App() {
           </div>
         </div>
 
-        <main>{renderActiveView()}</main>
+        <main id="main-content" tabIndex={-1} key={activeTab}>{renderActiveView()}</main>
       </div>
     </div>
   );
