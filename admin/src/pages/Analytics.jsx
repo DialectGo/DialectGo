@@ -83,7 +83,7 @@ const AnalyticStat = ({ icon: Icon, label, value, sub, color, bg }) => (
     <div>
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
-      {sub && <div className="stat-trend down">{sub}</div>}
+      {sub && <div className="stat-trend text-muted">{sub}</div>}
     </div>
   </div>
 );
@@ -117,11 +117,11 @@ const computeRepetitionScore = (text) => {
 const Analytics = () => {
   const [activeTab, setActiveTab] = useState('hallucination');
   const [period, setPeriod] = useState('30d');
-  const [feedbackData, setFeedbackData]     = useState([]);
+  const [feedbackData, setFeedbackData] = useState([]);
   const [hallucinationData, setHallucinationData] = useState([]);
   const [analyticsStats, setAnalyticsStats] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [exportPreview, setExportPreview] = useState(null);
   const [selectedLang, setSelectedLang] = useState('ALL');
@@ -282,7 +282,7 @@ const Analytics = () => {
       const res = await apiFetch('/api/admin/analytics/export-dataset');
       const dataset = res?.data ?? [];
       const json = JSON.stringify(dataset, null, 2);
-      
+
       // Keep up to 100 items for the interactive preview
       setExportPreview(dataset.slice(0, 100));
 
@@ -292,9 +292,9 @@ const Analytics = () => {
 
       // Trigger download
       const blob = new Blob([json], { type: 'application/json' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
       a.download = `hallucination_dataset_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
@@ -308,14 +308,14 @@ const Analytics = () => {
   // Summary stats
   const totalNegative = feedbackData.filter(f => f.rating === 0).length;
   const totalPositive = feedbackData.filter(f => f.rating === 1).length;
-  const total         = totalNegative + totalPositive;
-  const negativePct   = total ? Math.round((totalNegative / total) * 100) : 0;
+  const total = totalNegative + totalPositive;
+  const negativePct = total ? Math.round((totalNegative / total) * 100) : 0;
 
   const TABS = [
-    { id: 'hallucination', label: 'Hallucination Detection',  icon: <AlertTriangle size={15} /> },
-    { id: 'feedback',      label: 'Feedback Trends',          icon: <ThumbsDown size={15} /> },
-    { id: 'engine',        label: 'Engine Telemetry',         icon: <Zap size={15} /> },
-    { id: 'prescriptions', label: 'AI Recommendations',       icon: <Database size={15} /> },
+    { id: 'hallucination', label: 'Hallucination Detection', icon: <AlertTriangle size={15} /> },
+    { id: 'feedback', label: 'Feedback Trends', icon: <ThumbsDown size={15} /> },
+    { id: 'engine', label: 'Engine Telemetry', icon: <Zap size={15} /> },
+    { id: 'prescriptions', label: 'AI Recommendations', icon: <Database size={15} /> },
   ];
 
   return (
@@ -323,7 +323,7 @@ const Analytics = () => {
 
       {/* ── Period filter ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div className="info-box info" style={{ flex: 1, minWidth: 240 }}>
+        <div className="info-box" style={{ flex: 1, minWidth: 240 }}>
           <Info size={16} style={{ flexShrink: 0, marginTop: 1 }} />
           <span>This dashboard analyses <strong>user feedback</strong> to detect NLLB hallucinations and surface fine-tuning opportunities.</span>
         </div>
@@ -345,13 +345,13 @@ const Analytics = () => {
       {/* ── Summary stat strip ────────────────────────────────────── */}
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         <AnalyticStat icon={ThumbsDown} label="Negative Feedbacks" value={loading ? '—' : totalNegative.toLocaleString()}
-          sub={`${negativePct}% of total`} color="var(--danger)" bg="var(--danger-bg)" />
+          sub={`${negativePct}% of total`}/>
         <AnalyticStat icon={ThumbsUp} label="Positive Feedbacks" value={loading ? '—' : totalPositive.toLocaleString()}
-          sub={null} color="var(--success)" bg="var(--success-bg)" />
+          sub={null} color="var(--success)" />
         <AnalyticStat icon={AlertTriangle} label="Flagged Pairs" value={loading ? '—' : hallucinationData.length.toLocaleString()}
-          sub="Potential hallucinations" color="var(--warning)" bg="var(--warning-bg)" />
-        <AnalyticStat icon={TrendingDown} label="High-Risk Pairs" value={loading ? '—' : flaggedRows.filter(r => r.riskScore >= 0.7).length.toLocaleString()}
-          sub="Risk score ≥ 70%" color="var(--danger)" bg="var(--danger-bg)" />
+          sub="Potential hallucinations" />
+        <AnalyticStat icon={TrendingDown} label="High-Risk Pairs" value={loading ? '—' : hallucinationData.filter(h => Math.min(computeRepetitionScore(h.translated_text) * 0.6 + Math.min((h.negative_count || 0) / 10, 1) * 0.4, 1) >= 0.7).length.toLocaleString()}
+          sub="Risk score ≥ 70%"/>
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────── */}
@@ -369,121 +369,121 @@ const Analytics = () => {
       ════════════════════════════════════════════════════════════════ */}
       {activeTab === 'hallucination' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          
+
           {/* ── Main Content: Chart & Table ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            
+
             {/* Bar chart */}
             <div className="chart-container" style={{ margin: 0 }}>
-            <div className="chart-header">
-              <div>
-                <div className="chart-title">Flagged Translation Pairs — By Language</div>
-                <div className="chart-subtitle">Number of hallucination-suspect pairs per language pair based on negative feedback</div>
+              <div className="chart-header">
+                <div>
+                  <div className="chart-title">Flagged Translation Pairs — By Language</div>
+                  <div className="chart-subtitle">Number of hallucination-suspect pairs per language pair based on negative feedback</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleExportDataset(false)} disabled={exporting}>
+                    {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Database size={13} />}
+                    View JSON
+                  </button>
+                  <button className="btn btn-primary btn-sm" onClick={() => handleExportDataset(true)} disabled={exporting}>
+                    {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
+                    Export Dataset
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => handleExportDataset(false)} disabled={exporting}>
-                  {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Database size={13} />}
-                  View JSON
-                </button>
-                <button className="btn btn-primary btn-sm" onClick={() => handleExportDataset(true)} disabled={exporting}>
-                  {exporting ? <RefreshCw size={13} className="animate-spin" /> : <Download size={13} />}
-                  Export Dataset
-                </button>
+              <div style={{ height: 280 }}>
+                <Bar data={hallucinationBarData} options={CHART_DEFAULTS} />
               </div>
             </div>
-            <div style={{ height: 280 }}>
-              <Bar data={hallucinationBarData} options={CHART_DEFAULTS} />
-            </div>
-          </div>
 
             {/* Filters + Table */}
             <div className="table-wrapper" style={{ margin: 0 }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                <Filter size={14} /> Filters:
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  <Filter size={14} /> Filters:
+                </div>
+                <select className="select" style={{ width: 'auto', fontSize: '0.8rem', padding: '6px 28px 6px 10px' }}
+                  value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
+                  <option value="ALL">All Severity</option>
+                  <option value="high">High Risk (≥70%)</option>
+                  <option value="medium">Medium Risk (40–70%)</option>
+                </select>
+                <select className="select" style={{ width: 'auto', fontSize: '0.8rem', padding: '6px 28px 6px 10px' }}
+                  value={selectedLang} onChange={e => setSelectedLang(e.target.value)}>
+                  <option value="ALL">All Languages</option>
+                  <option value="ceb">Cebuano</option>
+                  <option value="tgl">Tagalog</option>
+                  <option value="eng">English</option>
+                  <option value="war">Waray</option>
+                  <option value="ilo">Ilocano</option>
+                </select>
+                <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {flaggedRows.length} pairs shown
+                </span>
               </div>
-              <select className="select" style={{ width: 'auto', fontSize: '0.8rem', padding: '6px 28px 6px 10px' }}
-                value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
-                <option value="ALL">All Severity</option>
-                <option value="high">High Risk (≥70%)</option>
-                <option value="medium">Medium Risk (40–70%)</option>
-              </select>
-              <select className="select" style={{ width: 'auto', fontSize: '0.8rem', padding: '6px 28px 6px 10px' }}
-                value={selectedLang} onChange={e => setSelectedLang(e.target.value)}>
-                <option value="ALL">All Languages</option>
-                <option value="ceb">Cebuano</option>
-                <option value="tgl">Tagalog</option>
-                <option value="eng">English</option>
-                <option value="war">Waray</option>
-                <option value="ilo">Ilocano</option>
-              </select>
-              <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                {flaggedRows.length} pairs shown
-              </span>
-            </div>
 
-            {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-                <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 8px' }} />
-                <div>Analysing translation logs…</div>
-              </div>
-            ) : flaggedRows.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon" style={{ margin: '0 auto 12px' }}><CheckCircle size={26} /></div>
-                <div className="empty-text">No hallucination pairs detected</div>
-                <div className="empty-subtext">No negative-feedback translation pairs found for the selected period and filters.</div>
-              </div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Source Text</th>
-                    <th>Translated Text</th>
-                    <th>Language Pair</th>
-                    <th>Neg. Feedbacks</th>
-                    <th>Repetition</th>
-                    <th>Risk Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flaggedRows.map((row, idx) => {
-                    const risk = row.riskScore;
-                    const rowClass = risk >= 0.7 ? 'hallucination-row high-risk' : risk >= 0.4 ? 'hallucination-row medium-risk' : 'hallucination-row';
-                    return (
-                      <tr key={row.id || idx} className={rowClass}>
-                        <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{idx + 1}</td>
-                        <td>
-                          <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.83rem', color: 'var(--text-primary)', fontWeight: 500 }}
-                            title={row.source_text}>{row.source_text || '—'}</div>
-                        </td>
-                        <td>
-                          <div style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.83rem', color: risk >= 0.7 ? 'var(--danger)' : 'var(--text-secondary)' }}
-                            title={row.translated_text}>{row.translated_text || '—'}</div>
-                        </td>
-                        <td>
-                          <span className="badge badge-pending">
-                            {row.source_lang || '?'} → {row.target_lang || '?'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge badge-${row.negativeFeedbacks > 3 ? 'flagged' : 'pending'}`}>
-                            {row.negativeFeedbacks}
-                          </span>
-                        </td>
-                        <td>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                            {Math.round(row.repScore * 100)}%
-                          </span>
-                        </td>
-                        <td style={{ minWidth: 140 }}>
-                          <RiskBar score={row.riskScore} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {loading ? (
+                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 8px' }} />
+                  <div>Analysing translation logs…</div>
+                </div>
+              ) : flaggedRows.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon" style={{ margin: '0 auto 12px' }}><CheckCircle size={26} /></div>
+                  <div className="empty-text">No hallucination pairs detected</div>
+                  <div className="empty-subtext">No negative-feedback translation pairs found for the selected period and filters.</div>
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Source Text</th>
+                      <th>Translated Text</th>
+                      <th>Language Pair</th>
+                      <th>Neg. Feedbacks</th>
+                      <th>Repetition</th>
+                      <th>Risk Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flaggedRows.map((row, idx) => {
+                      const risk = row.riskScore;
+                      const rowClass = risk >= 0.7 ? 'hallucination-row high-risk' : risk >= 0.4 ? 'hallucination-row medium-risk' : 'hallucination-row';
+                      return (
+                        <tr key={row.id || idx} className={rowClass}>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{idx + 1}</td>
+                          <td>
+                            <div style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.83rem', color: 'var(--text-primary)', fontWeight: 500 }}
+                              title={row.source_text}>{row.source_text || '—'}</div>
+                          </td>
+                          <td>
+                            <div style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.83rem', color: risk >= 0.7 ? 'var(--danger)' : 'var(--text-secondary)' }}
+                              title={row.translated_text}>{row.translated_text || '—'}</div>
+                          </td>
+                          <td>
+                            <span className="badge badge-pending">
+                              {row.source_lang || '?'} → {row.target_lang || '?'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge badge-${row.negativeFeedbacks > 3 ? 'flagged' : 'pending'}`}>
+                              {row.negativeFeedbacks}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                              {Math.round(row.repScore * 100)}%
+                            </span>
+                          </td>
+                          <td style={{ minWidth: 140 }}>
+                            <RiskBar score={row.riskScore} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
@@ -491,18 +491,18 @@ const Analytics = () => {
           {/* ── Right Column: JSON Viewer (Fixed Drawer) ── */}
           {exportPreview && (
             <>
-              <div 
-                className="sidebar-overlay" 
-                onClick={() => setExportPreview(null)} 
-                style={{ zIndex: 100 }} 
+              <div
+                className="sidebar-overlay"
+                onClick={() => setExportPreview(null)}
+                style={{ zIndex: 100 }}
               />
-              <div 
-                className="card" 
-                style={{ 
-                  margin: 0, 
-                  position: 'fixed', 
-                  right: 0, 
-                  top: 0, 
+              <div
+                className="card"
+                style={{
+                  margin: 0,
+                  position: 'fixed',
+                  right: 0,
+                  top: 0,
                   bottom: 0,
                   width: 'min(90vw, 450px)',
                   height: '100vh',
@@ -524,11 +524,11 @@ const Analytics = () => {
                   </button>
                 </div>
                 <div className="dataset-preview" style={{ padding: 24, overflow: 'auto', flex: 1, background: 'var(--bg-primary)' }}>
-                  <JsonView 
-                    value={exportPreview} 
-                    displayDataTypes={false} 
-                    displayObjectSize={true} 
-                    collapsed={2} 
+                  <JsonView
+                    value={exportPreview}
+                    displayDataTypes={false}
+                    displayObjectSize={true}
+                    collapsed={2}
                   />
                 </div>
               </div>
@@ -608,7 +608,7 @@ const Analytics = () => {
       ════════════════════════════════════════════════════════════════ */}
       {activeTab === 'prescriptions' && (
         <div>
-          <div className="info-box info" style={{ marginBottom: 20 }}>
+          <div className="info-box analytics-note" style={{ marginBottom: 20 }}>
             <Info size={16} style={{ flexShrink: 0 }} />
             <span>These recommendations are generated by analysing corpus OOV frequencies, negative feedback clusters, and dialect usage trends.</span>
           </div>

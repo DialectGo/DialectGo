@@ -9,7 +9,8 @@ const Login = ({ onLoginSuccess }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   async function handleLogin() {
-    if (!email || !password) {
+    if (isLoading) return;
+    if (!email.trim() || !password) {
       setError('Please enter your email and password.');
       return;
     }
@@ -17,22 +18,28 @@ const Login = ({ onLoginSuccess }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/auth/login', {
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+      const response = await fetch(`${apiBase}/api/auth/login`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
+        body:    JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error('The login server returned an unexpected response. Check the API connection.');
+      });
 
       if (!response.ok) {
         throw new Error(data.message || 'Login failed.');
       }
 
+      if (!data.token || typeof data.token !== 'string') {
+        throw new Error('The login server did not return a session. Please try again.');
+      }
       authService.setToken(data.token);
       onLoginSuccess();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof TypeError ? 'Unable to reach the login server. Check your connection and try again.' : err.message);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +56,7 @@ const Login = ({ onLoginSuccess }) => {
 
         {/* Error message */}
         {error && (
-          <div className="info-box danger" style={{ marginBottom: 16 }}>
+          <div className="info-box danger" role="alert" style={{ marginBottom: 16 }}>
             <AlertCircle size={15} style={{ flexShrink: 0 }} />
             {error}
           </div>
@@ -57,10 +64,11 @@ const Login = ({ onLoginSuccess }) => {
 
         {/* Email */}
         <div className="form-group">
-          <label className="form-label">Email Address</label>
+          <label className="form-label" htmlFor="admin-email">Email Address</label>
           <input
             id="admin-email"
             type="email"
+            autoComplete="username"
             className="input"
             placeholder="admin@dialectgo.com"
             value={email}
@@ -71,10 +79,11 @@ const Login = ({ onLoginSuccess }) => {
 
         {/* Password */}
         <div className="form-group">
-          <label className="form-label">Password</label>
+          <label className="form-label" htmlFor="admin-password">Password</label>
           <input
             id="admin-password"
             type="password"
+            autoComplete="current-password"
             className="input"
             placeholder="••••••••"
             value={password}

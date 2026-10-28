@@ -1,92 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Activity, Globe, Users, CheckCircle
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Activity, Globe, Users, CheckCircle, ArrowUpRight, BookOpen, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../services/apiService';
 import Analytics from './Analytics';
 
-// ─── Quick-Stat Widget ─────────────────────────────────────────────────────
-const QuickStat = ({ icon: Icon, label, value, color, bg }) => (
-  <div className="stat-card">
-    <div className="stat-icon" style={{ background: bg, color }}>
-      <Icon size={20} />
-    </div>
-    <div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-    </div>
-  </div>
-);
-
-// ─── Dashboard ─────────────────────────────────────────────────────────────
-const Dashboard = () => {
+export default function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
-
+  const [error, setError] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(null);
   useEffect(() => {
+    let active = true;
     apiFetch('/api/admin/dashboard')
-      .then(payload => setStats(payload.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
+      .then(payload => { if (active) { setStats(payload.data); setUpdatedAt(new Date()); } })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
-
-  const quickStats = [
-    {
-      icon: Users,
-      label: 'Total Users',
-      value: loading ? '—' : (stats?.users?.total ?? 0).toLocaleString(),
-      color: 'var(--info)',
-      bg: 'var(--info-bg)',
-    },
-    {
-      icon: Activity,
-      label: 'Active Today',
-      value: loading ? '—' : (stats?.users?.active ?? 0).toLocaleString(),
-      color: 'var(--success)',
-      bg: 'var(--success-bg)',
-    },
-    {
-      icon: Globe,
-      label: 'Wiki Submissions',
-      value: loading ? '—' : (stats?.wiki?.total ?? 0).toLocaleString(),
-      color: 'var(--warning)',
-      bg: 'var(--warning-bg)',
-    },
-    {
-      icon: CheckCircle,
-      label: 'Pending Reviews',
-      value: loading ? '—' : ((stats?.wiki?.pending ?? 0) + (stats?.translations?.pending ?? 0)).toLocaleString(),
-      color: 'var(--danger)',
-      bg: 'var(--danger-bg)',
-    },
+  const refreshStats = () => {
+    setLoading(true);
+    setError(false);
+    apiFetch('/api/admin/dashboard')
+      .then(payload => { setStats(payload.data); setUpdatedAt(new Date()); })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  };
+  const available = !loading && !error;
+  const display = value => available && Number.isFinite(value) ? value.toLocaleString() : '\u2014';
+  const wikiPending = stats?.wiki?.pending;
+  const translationPending = stats?.translations?.pending;
+  const pending = Number.isFinite(wikiPending) && Number.isFinite(translationPending) ? wikiPending + translationPending : null;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const metrics = [
+    { icon: Users, label: 'Total users', value: stats?.users?.total, color: 'info' },
+    { icon: Activity, label: 'Enabled accounts', value: stats?.users?.active, color: 'success' },
+    { icon: Globe, label: 'Wiki submissions', value: stats?.wiki?.total, color: 'warning' },
+    { icon: CheckCircle, label: 'Pending reviews', value: pending, color: 'danger' },
   ];
-
+  const shortcuts = [
+    { tab: 'Translations', icon: CheckCircle, title: 'Review translations', description: 'Check suggestions from your community.' },
+    { tab: 'Wiki', icon: Globe, title: 'Moderate Wiki', description: 'Review and publish dialect submissions.' },
+    { tab: 'Dictionary', icon: BookOpen, title: 'Manage dictionary', description: 'Keep dialect words and meanings up to date.' },
+  ];
   return (
-    <div style={{ animation: 'fadeIn 0.3s ease' }}>
-      {/* Hero Banner */}
-      <div className="dashboard-hero">
-        <div className="hero-greeting">{greeting}, Administrator</div>
-        <div className="hero-title">DialectGo Command Center</div>
-        <div className="hero-subtitle">
-          AI Operations &amp; Data Governance — Monitor translation pipelines, govern dialect data,
-          and manage the DialectGo ecosystem from a single hub.
+    <div className="dashboard-page">
+      <section className="dashboard-hero" aria-labelledby="welcome-title">
+        <div>
+          <div className="hero-greeting">Your admin workspace</div>
+          <h2 className="hero-title" id="welcome-title">{greeting}, Administrator.</h2>
+          <p className="hero-subtitle">Keep your community growing, your dialect data accurate, and every contribution moving forward.</p>
+          <button className="btn btn-primary hero-action" onClick={() => onNavigate('Translations')}>Review translations <ArrowUpRight size={16} /></button>
+        </div>
+        <div className="hero-mark" aria-hidden="true"><Globe size={112} strokeWidth={0.8} /><span>Connecting people.<br />Preserving dialects.</span></div>
+      </section>
+      <div className="overview-heading">
+        <h2>Platform overview</h2>
+        <div className="flex items-center gap-12">
+          {updatedAt && !loading && !error && <span className="text-xs text-muted">Updated {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+          <button className="btn btn-secondary" onClick={refreshStats} disabled={loading}><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {loading ? 'Refreshing...' : 'Refresh'}</button>
         </div>
       </div>
-
-      {/* Quick Stats */}
-      <div className="stats-grid">
-        {quickStats.map(s => (
-          <QuickStat key={s.label} {...s} />
+      {error && <div className="info-box danger" role="alert">Overview could not be loaded. Refresh to try again.</div>}
+      <div className="stats-grid dashboard-stats" aria-busy={loading}>
+        {metrics.map(({ icon: Icon, label, value, color }) => (
+          <div className="stat-card" key={label}>
+            <div className="stat-icon" style={{ background: `var(--${color}-bg)`, color: `var(--${color})` }}><Icon size={20} /></div>
+            <div><div className="stat-label">{label}</div><div className="stat-value">{display(value)}</div></div>
+          </div>
         ))}
       </div>
-
-      <div style={{ marginTop: 32 }}>
-        <Analytics />
-      </div>
+      <section aria-labelledby="quick-actions-title" className="quick-actions-section">
+        <div className="overview-heading"><h2 id="quick-actions-title">Quick actions</h2><span>Pick up where it matters</span></div>
+        <div className="quick-actions-grid">
+          {shortcuts.map(({ tab, icon: Icon, title, description }) => (
+            <button key={tab} className="quick-action" onClick={() => onNavigate(tab)}><Icon size={22} /><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} /></button>
+          ))}
+        </div>
+      </section>
+      <Analytics />
     </div>
   );
-};
-
-export default Dashboard;
+}

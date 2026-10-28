@@ -5,17 +5,17 @@ import CardSkeleton from '../components/fallbacks/CardSkeleton';
 import TableSkeleton from '../components/fallbacks/TableSkeleton';
 
 const UserManagement = () => {
-  const [users, setUsers]             = useState([]);
-  const [loading, setLoading]         = useState(true);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter]   = useState('ALL');
-  const [page, setPage]               = useState(1);
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
 
   // Modal
-  const [showModal, setShowModal]   = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [targetUser, setTargetUser] = useState(null);
-  const [newRole, setNewRole]       = useState('user');
+  const [newRole, setNewRole] = useState('user');
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -35,7 +35,7 @@ const UserManagement = () => {
     try {
       await apiFetch(`/api/admin/users/${targetUser.id}/role`, {
         method: 'PUT',
-        body:   JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole }),
       });
       setShowModal(false);
       fetchUsers();
@@ -48,7 +48,7 @@ const UserManagement = () => {
     try {
       await apiFetch(`/api/admin/users/${user.id}/toggle`, {
         method: 'PUT',
-        body:   JSON.stringify({ is_disabled: !user.is_disabled }),
+        body: JSON.stringify({ is_disabled: !user.is_disabled }),
       });
       fetchUsers();
     } catch (err) {
@@ -60,21 +60,21 @@ const UserManagement = () => {
     const q = searchQuery.toLowerCase();
     const matchesSearch = !q ||
       (u.username || '').toLowerCase().includes(q) ||
-      (u.email    || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
       (u.first_name || '').toLowerCase().includes(q) ||
-      (u.last_name  || '').toLowerCase().includes(q);
+      (u.last_name || '').toLowerCase().includes(q);
     const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  const totalPages  = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const stats = {
-    total:    users.length,
-    active:   users.filter(u => !u.is_disabled).length,
-    disabled: users.filter(u =>  u.is_disabled).length,
-    admins:   users.filter(u =>  u.role === 'admin').length,
+    total: users.length,
+    active: users.filter(u => !u.is_disabled).length,
+    disabled: users.filter(u => u.is_disabled).length,
+    admins: users.filter(u => u.role === 'admin').length,
   };
 
   const roleBadge = (role) => {
@@ -103,10 +103,10 @@ const UserManagement = () => {
       {/* Stats */}
       <div className="stats-grid" style={{ marginBottom: 24 }}>
         {[
-          { icon: Users,      label: 'Total Users', value: stats.total,    color: 'var(--info)',    bg: 'var(--info-bg)' },
-          { icon: UserCheck,  label: 'Active',       value: stats.active,   color: 'var(--success)', bg: 'var(--success-bg)' },
-          { icon: UserX,      label: 'Disabled',     value: stats.disabled, color: 'var(--danger)',  bg: 'var(--danger-bg)' },
-          { icon: ShieldCheck,label: 'Admins',        value: stats.admins,   color: 'var(--warning)', bg: 'var(--warning-bg)' },
+          { icon: Users, label: 'Total Users', value: stats.total, color: 'var(--info)', bg: 'var(--info-bg)' },
+          { icon: UserCheck, label: 'Active', value: stats.active, color: 'var(--success)', bg: 'var(--success-bg)' },
+          { icon: UserX, label: 'Disabled', value: stats.disabled, color: 'var(--danger)', bg: 'var(--danger-bg)' },
+          { icon: ShieldCheck, label: 'Admins', value: stats.admins, color: 'var(--warning)', bg: 'var(--warning-bg)' },
         ].map(s => (
           <div key={s.label} className="stat-card">
             <div className="stat-icon" style={{ background: s.bg, color: s.color }}>
@@ -141,7 +141,7 @@ const UserManagement = () => {
 
       {/* Table */}
       <div className="table-wrapper">
-        <table className="data-table">
+        <table className="data-table user-management-table">
           <thead>
             <tr>
               <th>User</th>
