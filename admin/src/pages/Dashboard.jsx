@@ -29,8 +29,6 @@ export default function Dashboard({ onNavigate }) {
   const wikiPending = stats?.wiki?.pending;
   const translationPending = stats?.translations?.pending;
   const pending = Number.isFinite(wikiPending) && Number.isFinite(translationPending) ? wikiPending + translationPending : null;
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const metrics = [
     { icon: Users, label: 'Total users', value: stats?.users?.total, color: 'info' },
     { icon: Activity, label: 'Enabled accounts', value: stats?.users?.active, color: 'success' },
@@ -46,12 +44,16 @@ export default function Dashboard({ onNavigate }) {
     <div className="dashboard-page">
       <section className="dashboard-hero" aria-labelledby="welcome-title">
         <div>
-          <div className="hero-greeting">Your admin workspace</div>
-          <h2 className="hero-title" id="welcome-title">{greeting}, Administrator.</h2>
-          <p className="hero-subtitle">Keep your community growing, your dialect data accurate, and every contribution moving forward.</p>
+          <div className="hero-greeting">Community review</div>
+          <h2 className="hero-title" id="welcome-title">Keep dialect knowledge moving</h2>
+          <p className="hero-subtitle">Review community contributions and keep the dictionary useful for everyone.</p>
           <button className="btn btn-primary hero-action" onClick={() => onNavigate('Translations')}>Review translations <ArrowUpRight size={16} /></button>
         </div>
-        <div className="hero-mark" aria-hidden="true"><Globe size={112} strokeWidth={0.8} /><span>Connecting people.<br />Preserving dialects.</span></div>
+        <div className="hero-queue" aria-label={`${display(pending)} contributions awaiting review`}>
+          <span className="hero-queue-label">Awaiting review</span>
+          <strong className="hero-queue-value">{display(pending)}</strong>
+          <span className="hero-queue-note">Wiki and translation submissions</span>
+        </div>
       </section>
       <div className="overview-heading">
         <h2>Platform overview</h2>
@@ -70,7 +72,7 @@ export default function Dashboard({ onNavigate }) {
         ))}
       </div>
       <section aria-labelledby="quick-actions-title" className="quick-actions-section">
-        <div className="overview-heading"><h2 id="quick-actions-title">Quick actions</h2><span>Pick up where it matters</span></div>
+        <div className="overview-heading"><h2 id="quick-actions-title">Quick actions</h2><span>Review and maintain content</span></div>
         <div className="quick-actions-grid">
           {shortcuts.map(({ tab, icon: Icon, title, description }) => (
             <button key={tab} className="quick-action" onClick={() => onNavigate(tab)}><Icon size={22} /><span><strong>{title}</strong><span>{description}</span></span><ArrowUpRight size={18} /></button>

@@ -53,7 +53,7 @@ const Sidebar = ({ isOpen, activeTab, onTabChange }) => {
         <div className="brand-icon">DG</div>
         <div>
           <div className="brand-text">DialectGo</div>
-          <div className="brand-sub">Admin Panel</div>
+          <div className="brand-sub">Admin workspace</div>
         </div>
       </div>
 
