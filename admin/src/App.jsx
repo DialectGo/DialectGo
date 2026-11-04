@@ -122,9 +122,6 @@ function App() {
               <div className="date">
                 {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </div>
-              <div className="greeting">
-                {new Date().getHours() < 12 ? 'Good Morning!' : new Date().getHours() < 18 ? 'Good Afternoon!' : 'Good Evening!'}
-              </div>
             </div>
             <button className="btn-signout" onClick={handleLogout}>
               <LogOut size={14} />
