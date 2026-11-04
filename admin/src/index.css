@@ -1451,13 +1451,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-/* Keep the sidebar control usable at every viewport width. */
 .hamburger-btn.sidebar-open { left: calc(var(--sidebar-width) - 50px); }
 .sidebar.open .sidebar-logo { padding-left: 20px; padding-right: 60px; }
 .main-viewport.full-width .navbar { padding-left: 48px; }
 
-/* Unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.
-   Quiet editorial workspace for community language review. */
 :root {
   --bg-primary: #f6f4ef;
   --bg-secondary: #fffefa;
