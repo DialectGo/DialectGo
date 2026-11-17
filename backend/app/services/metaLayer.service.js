@@ -57,7 +57,7 @@
 
 import { randomUUID } from 'node:crypto';
 import Groq from 'groq-sdk';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('MetaLayer');
@@ -224,10 +224,11 @@ async function withGeminiBackoff(fn, label = 'Gemini call') {
  * @param {Object} params.responseSchema
  * @param {number} [params.maxOutputTokens]
  * @param {number} [params.temperature]
+ * @param {string} [params.thinkingLevel] - ThinkingLevel enum value (limits thinking-token spend)
  * @param {string} params.label
  * @returns {Promise<Object>}
  */
-async function callGeminiJson({ systemInstruction, prompt, responseSchema, maxOutputTokens = 2000, temperature = 0.3, label }) {
+async function callGeminiJson({ systemInstruction, prompt, responseSchema, maxOutputTokens = 2000, temperature = 0.3, thinkingLevel, label }) {
     const client = getGeminiClient();
 
     const response = await withTimeout(
@@ -241,6 +242,7 @@ async function callGeminiJson({ systemInstruction, prompt, responseSchema, maxOu
                     responseSchema,
                     maxOutputTokens,
                     temperature,
+                    ...(thinkingLevel ? { thinkingConfig: { thinkingLevel } } : {}),
                 },
             }),
             label
@@ -249,12 +251,38 @@ async function callGeminiJson({ systemInstruction, prompt, responseSchema, maxOu
         label
     );
 
-    const rawText = response?.text;
-    if (!rawText) {
-        throw new Error('Gemini returned an empty response');
+    const finishReason = response?.candidates?.[0]?.finishReason;
+    const usage = response?.usageMetadata;
+    logger.info(`${label} Gemini response`, {
+        finishReason,
+        promptTokens: usage?.promptTokenCount,
+        outputTokens: usage?.candidatesTokenCount,
+        thinkingTokens: usage?.thoughtsTokenCount,
+        totalTokens: usage?.totalTokenCount,
+        maxOutputTokens,
+    });
+
+    // Gemini 3.x is a "thinking" model: thinking tokens count against
+    // maxOutputTokens, so a small budget can be exhausted before (or midway
+    // through) the JSON body. Detect this explicitly instead of letting
+    // JSON.parse fail on a truncated string.
+    if (finishReason === 'MAX_TOKENS') {
+        const err = new Error('The AI response was too long and got cut off. Try a shorter passage.');
+        err.code = 'GEMINI_MAX_TOKENS';
+        throw err;
     }
 
-    return JSON.parse(rawText);
+    const rawText = response?.text;
+    if (!rawText) {
+        throw new Error(`Gemini returned an empty response${finishReason ? ` (finishReason: ${finishReason})` : ''}`);
+    }
+
+    try {
+        return JSON.parse(rawText);
+    } catch (parseErr) {
+        logger.error(`${label} returned invalid JSON`, { finishReason, length: rawText.length, tail: rawText.slice(-120) });
+        throw new Error('The AI returned an incomplete response. Please try again.');
+    }
 }
 
 // ─── Analysis Prompt Builder ────────────────────────────────────────────────
@@ -506,7 +534,10 @@ export async function customizeTranslation({ sourceText, translatedText, sourceL
             systemInstruction: buildCustomizationSystemPrompt(),
             prompt: buildCustomizationUserPrompt({ sourceText, translatedText, sourceLang, targetLang, tone, audience, context, style }),
             responseSchema: CUSTOMIZATION_RESPONSE_SCHEMA,
-            maxOutputTokens: 800,
+            // 800 was too small: thinking tokens + rewritten text + explanation
+            // + changes[] routinely exceeded it, truncating the JSON.
+            maxOutputTokens: 2048,
+            thinkingLevel: ThinkingLevel.LOW,
             temperature: 0.5,
             label: 'customizeTranslation',
         });

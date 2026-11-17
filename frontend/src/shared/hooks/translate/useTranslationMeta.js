@@ -72,7 +72,7 @@ export const useTranslationMeta = ({ inputText, translation, setTranslation, sou
       setBreakdownData(null); // Invalidate breakdown since translation changed
     } catch (err) {
       console.error('Customize error', err);
-      Alert.alert('Error', 'Could not reach customization service.');
+      Alert.alert('Customization failed', err?.message || 'Could not reach customization service.');
     } finally {
       setIsCustomizeLoading(false);
     }
